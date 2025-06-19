@@ -1,10 +1,9 @@
 import  mongoose, {Schema} from "mongoose";
 
-const mongoose = require('mongoose');
-const departmentbudgetSchema = new mongoose.Schema({
+const departmentbudgetSchema = new Schema({
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: 'Employee',
     required: true,
     immutable: true // Middleware
   },

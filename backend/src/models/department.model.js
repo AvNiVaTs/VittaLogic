@@ -1,8 +1,6 @@
 import mongoose, {Schema} from "mongoose";
 
-const mongoose = require('mongoose');
-
-const departmentSchema = new mongoose.Schema({
+const departmentSchema = new Schema({
   department_id: {
     type: String,
     unique: true,
