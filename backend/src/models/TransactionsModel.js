@@ -73,7 +73,8 @@ const allowedModes = {
   ]
 };
 
-const allowedStatuses = ['Pending', 'Completed', 'Failed'];
+const allowedStatuses = [
+  "Pending", "Approved", "Completed", "Rejected", "On Hold"];
 
 const transactionSchema = new Schema({
   transactionId: {
