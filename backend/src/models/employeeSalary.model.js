@@ -1,4 +1,4 @@
-import mongoose, {Schema} from "mongoode";
+import mongoose, { Schema } from "mongoose";
 
 const allowedRoles = [
   "C-Level Executive",
