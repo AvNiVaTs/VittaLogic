@@ -48,7 +48,7 @@ const departmentbudgetSchema = new Schema({
     required:false //should it be auto calculated in the backend?
   },*/
 },
-{timestamp: true}
+{timestamps: true}
 );
 
 export const DepartmentBudget = mongoose.model('DepartmentBudget',departmentbudgetSchema);

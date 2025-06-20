@@ -27,6 +27,6 @@ const departmentSchema = new Schema({
     required: true,
     immutable: true
   }
-}, {timestamp : true});
+}, {timestamps : true});
 
 export const Department = mongoose.model('Department',departmentSchema);

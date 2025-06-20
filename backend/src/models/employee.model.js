@@ -15,72 +15,21 @@ const allowedServices = [
 ];
 
 const allowedRoles = [
-  "CEO",
-  "COO",
-  "CFO",
-  "CTO",
-  "CMO",
-  "CHRO",
-  "Director",
-  "Manager",
-  "Team Lead",
-  "Staff",
-  "Intern",
-  "Finance Manager",
-  "Accounts Executive",
-  "Budget Analyst",
-  "Payroll Officer",
-  "Auditor",
-  "Bookkeeper",
-  "Operations Manager",
-  "Logistics Coordinator",
-  "Procurement Officer",
-  "Inventory Manager",
-  "Facility Supervisor",
-  "Software Engineer",
-  "Full Stack Developer",
-  "Frontend Developer",
-  "Backend Developer",
-  "QA Tester",
-  "DevOps Engineer",
-  "IT Support Specialist",
-  "System Administrator",
-  "Network Engineer",
-  "Data Scientist",
-  "AI/ML Engineer",
-  "Sales Executive",
-  "Business Development Manager",
-  "Digital Marketing Specialist",
-  "SEO Expert",
-  "Content Writer",
-  "Brand Manager",
-  "Marketing Analyst",
-  "HR Manager",
-  "Recruiter",
-  "Training & Development Officer",
-  "HR Generalist",
-  "Compensation & Benefits Analyst",
-  "Vendor Relationship Manager",
-  "Customer Support Executive",
-  "Client Success Manager",
-  "Service Coordinator",
-  "Project Manager",
-  "Product Manager",
-  "Scrum Master",
-  "Business Analyst",
-  "Legal Advisor",
-  "Compliance Officer",
-  "Risk Analyst",
-  "Contract Manager",
-  "UI/UX Designer",
-  "Graphic Designer",
-  "Visual Content Creator",
-  "Product Designer",
-  "Admin Officer",
-  "Office Assistant",
-  "Receptionist",
-  "Facility Manager",
-  "Security Officer"
+  "C-Level Executive",
+  "Department Head / Director",
+  "Finance & Accounts",
+  "Operations & Administration",
+  "Software Development",
+  "IT & Infrastructure",
+  "Data Science & AI",
+  "Sales & Business Development",
+  "Marketing & Content",
+  "Human Resources (HR)",
+  "Customer & Vendor Relations",
+  "Product & Project Management",
+  "Legal & Compliance",
+  "Design & User Experience",
+  "Support Staff / Interns"
 ];
 
 const employeeSchema = new Schema({
@@ -121,8 +70,8 @@ const employeeSchema = new Schema({
     required: true,
     unique: true,
     validate: {
-      validator: v => /^[6-9]\d{9}$/.test(v),
-      message: 'Invalid Indian contact number'
+      validator: v => /^\+?[1-9]\d{7,14}$/.test(v),
+      message: 'Invalid contact number format. Use international format like +14155552671'
     }
   },
   password: {
@@ -140,7 +89,7 @@ const employeeSchema = new Schema({
     required: true
   },
   department: {
-    type: Schema.Types.ObjectId,
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'Department',
     required: true
   },
@@ -150,7 +99,7 @@ const employeeSchema = new Schema({
     required: true
   },
   createdBy: { // Middleware
-    type: Schema.Types.ObjectId,
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'Employee',
     required: true,
     immutable: true
