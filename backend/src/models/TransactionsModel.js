@@ -1,76 +1,165 @@
-const mongoose = require('mongoose');
+import mongoose, { Schema } from 'mongoose';
 
-const decimal = mongoose.Schema.Types.Decimal128;
+const allowedTypes = ["Income", "Expenses", "Transfer", "Investments"];
+const allowedSubTypes = {
+  Income: [
+    "Sales Revenue",
+    "Interest Income",
+    "Dividend Income",
+    "Rental Income",
+    "Refund Received",
+    "Commission Received",
+    "Investment Gain",
+    "Miscellaneous Income"
+  ],
+  Expenses: [
+    "Office Supplies",
+    "Travel & Lodging",
+    "Salaries & Wages",
+    "Utility Bills",
+    "Rent",
+    "Professional Fees",
+    "Marketing & Advertising",
+    "Insurance Premiums",
+    "Software Subscriptions",
+    "Repairs & Maintenance",
+    "Loan Interest Paid",
+    "Miscellaneous Expense"
+  ],
+    Transfer:  [
+    "Bank to Cash",
+    "Cash to Bank",
+    "Inter-departmental Transfer",
+    "Account Reconciliation",
+    "Internal Adjustment",
+    "Currency Conversion",
+    "Opening Balance Transfer"
+    ],
+  Investments: [
+    "Equity Purchase",
+    "Mutual Funds Investment",
+    "Fixed Deposit",
+    "Bonds Purchase",
+    "Real Estate Investment",
+    "Reinvestment of Returns",
+    "Asset Acquisition",
+    "SIP (Systematic Investment Plan)"
+]
+};
 
-const transaction_modes = []
+const allowedModeCategories = ["Digital", "Cash", "Cheque"];
+const allowedModes = {
+  Digital: [
+    "NEFT",
+    "RTGS",
+    "IMPS",
+    "UPI",
+    "Bank Transfer",
+    "Credit Card",
+    "Debit Card",
+    "Online Wallet",
+    "Net Banking"
+  ],
+  Cash:  [
+    "Cash Payment",
+    "Cash Deposit",
+    "Cash Withdrawal"
+  ],
+  Cheque:  [
+    "Cheque Issued",
+    "Cheque Received",
+    "Post-Dated Cheque",
+    "Cancelled Cheque"
+  ]
+};
 
-const transactionsSchema = new mongoose.Schema({
-    transaction_id: {
+const allowedStatuses = ['Pending', 'Completed', 'Failed'];
+
+const transactionSchema = new Schema({
+  transactionId: {
     type: String,
-    required: true,
-    unique: true
+    default: () => 'TXN-' + Date.now(),
+    unique: true,
+    immutable: true
   },
-  entered_by: {
-    type: String,
-    required: true, // shouldn't it be automatically filled?? //fixed field
-    ref: 'Employees'
-  }, 
-  approved_by: {
-    type: String,
-    required: true,
-    ref: 'Employees'
+  enteredBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
   },
-  date: {
+  approvedBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  transactionDate: {
     type: Date,
-    required: true
+    required: true,
+    validate: {
+      validator: (v) => v instanceof Date && !isNaN(v) && v <= new Date(),
+      message: 'Transaction Date cannot be in the future'
+    }
   },
-  transaction_type: {
+  transactionType: {
     type: String,
+    enum: allowedTypes,
     required: true
   },
-  transaction_subtype: {
+  transactionSubType: {
     type: String,
-    required: true
+    required: true,
+    validate: {
+      validator: function (val) {
+        return allowedSubTypes[this.transactionType]?.includes(val);
+      },
+      message: 'Invalid SubType for the selected Type'
+    }
   },
-  transaction_mode_category: {
+  transactionModeCategory: {
     type: String,
+    enum: allowedModeCategories,
     required: true
   },
-  transaction_mode: {
-    type: String,       //shouldn't it be enum type???? 
-    required: true
+  transactionMode: {
+    type: String,
+    required: true,
+    validate: {
+      validator: function (val) {
+        return allowedModes[this.transactionModeCategory]?.includes(val);
+      },
+      message: 'Invalid Transaction Mode for the selected Mode Category'
+    }
   },
+  transactionFor: [{
+    type: Schema.Types.ObjectId,
+    required: true
+    // No ref here as it links to multiple models
+  }],
   amount: {
-    type: decimal,
+    type: Number,
     required: true,
-    min: 0
+    min: [0, 'Amount must be positive']
+    // Populate this server-side using logic
   },
-  debit_account_id: {
-    type: String,
-    required: true,
-    ref: 'Accounts'
+  debitAccount: {
+    type: Schema.Types.ObjectId,
+    ref: 'Account',
+    required: true
   },
-  credit_account_id: {
+  creditAccount: {
+    type: Schema.Types.ObjectId,
+    ref: 'Account',
+    required: true
+  },
+  status: {
     type: String,
-    required: true,
-    ref: 'Accounts'
+    enum: allowedStatuses,
+    required: true
   },
   narration: {
     type: String,
-    required: false
-  },
-  status: {
-    type: String,  //shouldnt it be enum?
-    required: true
-  },
-  department_id: {
-    type: String,
-    required: true,
-    ref: 'Departments'
+    trim: true,
+    maxlength: 300
   }
-},
-{
-  timestamps: true
-});
+}, { timestamps: true });
 
-export const transaction = mongoose.model('Transactions',transactionsSchema);
+export const Transaction = mongoose.model('Transaction', transactionSchema);
