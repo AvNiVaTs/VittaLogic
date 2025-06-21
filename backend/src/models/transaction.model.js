@@ -74,7 +74,12 @@ const allowedModes = {
 };
 
 const allowedStatuses = [
-  "Pending", "Approved", "Completed", "Rejected", "On Hold"];
+  "Pending", 
+  "Approved", 
+  "Completed", 
+  "Rejected", 
+  "On Hold"
+];
 
 const transactionSchema = new Schema({
   transactionId: {
@@ -83,14 +88,15 @@ const transactionSchema = new Schema({
     unique: true,
     immutable: true
   },
-  enteredBy: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
+  enteredBy: { // Middleware
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Employee',
     required: true
   },
   approvedBy: {
     type: Schema.Types.ObjectId,
-    ref: 'User'
+    ref: 'Employee',
+    require: true
   },
   transactionDate: {
     type: Date,
@@ -135,7 +141,7 @@ const transactionSchema = new Schema({
     required: true
     // No ref here as it links to multiple models
   }],
-  amount: {
+  amount: { // Controller
     type: Number,
     required: true,
     min: [0, 'Amount must be positive']
