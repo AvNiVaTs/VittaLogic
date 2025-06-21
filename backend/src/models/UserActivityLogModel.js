@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const useractivitylogschema = new mongoose.Schema({
+const userActivityLogSchema = new mongoose.Schema({
   activity_id: {
     type: String,
     required: true,
@@ -25,4 +25,4 @@ const useractivitylogschema = new mongoose.Schema({
   }
 );
 
-export const useractivitylog = mongoose.model('UserActivityLog',useractivitylogschema);
+export const userActivityLog = mongoose.model('UserActivityLog', userActivityLogSchema);
