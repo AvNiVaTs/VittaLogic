@@ -1,4 +1,6 @@
 import mongoose, { Schema } from "mongoose";
+import jwt from "jsonwebtoken"
+import bcrypt from "bcrypt"
 
 // === Organization Schema ===
 const organizationSchema = new Schema({
@@ -110,23 +112,32 @@ const organizationSchema = new Schema({
   }
 }, {timestamps: true});
 
-userSchema.pre("save", async function (next) {
-  if(!this.isModified("password")) return next();
+// ====== Password Encryption ======
+organizationSchema.pre("save", async function (next) {
+  const authorized = this.authorizedPerson
 
-  this.password = await bcrypt.hash(this.password, 10)
+  if(authorized && authorized.password && authorized.confirmpassword && (authorized.password!==authorized.confirmpassword)){
+    return next(new Error("Password and confirm password doesn't match"))
+  }
+
+  if(this.isModified("authorizedPerson.password")){
+    authorized.password = await bcrypt.hash(this.password, 10)
+    authorized.confirmpassword = undefined//clear confirm password
+  }
   next()
 })
 
-userSchema.methods.isPasswordCorrect = async function(password){
-  return await bcrypt.compare(password, this.password)
+// ====== Check Password ======
+organizationSchema.methods.isPasswordCorrect = async function(password){
+  return await bcrypt.compare(password, this.authorizedPerson.password)
 }
 
-userSchema.methods.generateAccessToken = function(){
+organizationSchema.methods.generateAccessToken = function(){
   return jwt.sign({
       _id: this._id,
       email: this.email,
-      username: this.username,
-      fullName: this.fullName
+      // username: this.username,
+      organizationName: this.organizationName
   },
   process.env.ACCESS_TOKEN_SECRET,
   {
@@ -134,7 +145,8 @@ userSchema.methods.generateAccessToken = function(){
   }
 )
 }
-userSchema.methods.generateRefreshToken = function(){
+
+organizationSchema.methods.generateRefreshToken = function(){
   return jwt.sign({
       _id: this._id
   },
@@ -145,4 +157,4 @@ userSchema.methods.generateRefreshToken = function(){
 )
 }
 
-export const Organziation = mongoose.model('Organization', organizationSchema);
+export const Organization = mongoose.model('Organization', organizationSchema);
