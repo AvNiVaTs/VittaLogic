@@ -1,6 +1,6 @@
 import  mongoose, {Schema} from "mongoose";
 
-const departmentbudgetSchema = new Schema({
+const departmentBudgetSchema = new Schema({
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Employee',
@@ -12,7 +12,7 @@ const departmentbudgetSchema = new Schema({
     ref: 'Department',
     required: true
   },
-  bdgetId: {
+  budgetId: {
     type: String,
     unique: true,
     immutable: true,
@@ -41,7 +41,7 @@ const departmentbudgetSchema = new Schema({
   budgetNote: {
     type: String,
     trim: true,
-    maxlength: 300
+    maxLength: 300
   }
   /*used_amount: {
     type:decimal,
@@ -51,4 +51,4 @@ const departmentbudgetSchema = new Schema({
 {timestamps: true}
 );
 
-export const DepartmentBudget = mongoose.model('DepartmentBudget',departmentbudgetSchema);
+export const DepartmentBudget = mongoose.model('DepartmentBudget',departmentBudgetSchema);
