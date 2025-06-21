@@ -1,71 +1,114 @@
 import mongoose, { Schema } from "mongoose";
 
+// === Organization Schema ===
 const organizationSchema = new Schema({
-  Organization_Name: {
+  organizationName: {
     type: String,
     required: true,
     unique: true,
     trim: true
   },
-  PAN_No: {
+  panNumber: {
     type: String,
     uppercase: true,
     match: /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/,
-    required: false
+    sparse: true
   },
-  Organization_Website_Link: {
+  website: {
     type: String,
     match: /^(https?:\/\/)?([\w-]+(\.[\w-]+)+)([\/#?]?.*)$/,
-    required: false
+    sparse: true
   },
-  Organization_Email: {
+  email: {
     type: String,
     required: true,
     lowercase: true,
-    match: /.+\@.+\..+/
+    match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   },
-  Contact_Number: {
+  contactNumber: {
     type: String,
     required: true,
-    match: /^[0-9+\-() ]{7,20}$/ // allows international format
+    match: /^[0-9+\-() ]{7,20}$/
   },
-  GSTIN: {
+  gstin: {
     type: String,
     required: true,
     unique: true,
     uppercase: true,
     match: /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/
   },
-  Organization_Address: {
+  address: {
     type: String,
     required: true,
     trim: true
   },
-  Country: {
+  country: {
     type: String,
     required: true
   },
-  Pincode: {
+  pincode: {
     type: String,
     required: true,
-    match: /^[1-9][0-9]{5}$/ // Indian Pincode format
+    match: /^[1-9][0-9]{5}$/ // Indian Pincode
   },
-  Bank_Name: {
+
+  // === Authorized Person Details ===
+  authorizedPerson: {
+    firstName: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    lastName: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    email: {
+      type: String,
+      required: true,
+      lowercase: true,
+      match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    },
+    designation: {
+      type: String,
+      required: true
+    },
+    contactNumber: {
+      type: String,
+      required: true,
+      match: /^[0-9+\-() ]{7,20}$/
+    },
+    password: {
+      type: String,
+      required: true,
+      select: false // excludes password by default in queries
+    },
+    confirmpassword: {
+      type: String,
+      required: true,
+      select: false
+    },
+  },
+
+  // === Bank Details ===
+  bankName: {
     type: String,
     required: true,
     trim: true
   },
-  IFSC_Code: {
+  ifscCode: {
     type: String,
     required: true,
     uppercase: true,
     match: /^[A-Z]{4}0[A-Z0-9]{6}$/
   },
-  Bank_Account_No: {
+  bankAccountNumber: {
     type: String,
     required: true,
     match: /^[0-9]{9,18}$/
   }
+<<<<<<< HEAD
 }, {timestamps: true});
 
 userSchema.pre("save", async function (next) {
@@ -104,3 +147,10 @@ userSchema.methods.generateRefreshToken = function(){
 }
 
 export const Organziation = mongoose.model('Organization', organizationSchema);
+=======
+}, {
+  timestamps: true
+});
+
+export const OrganizationModel = mongoose.model('Organization', organizationSchema);
+>>>>>>> 0e9de67bddbf8c25919c3ed76388da6e9bbe4ef9
