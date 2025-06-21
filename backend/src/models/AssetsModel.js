@@ -1,4 +1,6 @@
-const mongoose = require('mongoose');
+import mongoose, {Schema} from "mongoose";
+
+
 
 const assetsSchema = new mongoose.Schema({
   asset_id: {
