@@ -108,7 +108,6 @@ const organizationSchema = new Schema({
     required: true,
     match: /^[0-9]{9,18}$/
   }
-<<<<<<< HEAD
 }, {timestamps: true});
 
 userSchema.pre("save", async function (next) {
@@ -147,10 +146,3 @@ userSchema.methods.generateRefreshToken = function(){
 }
 
 export const Organziation = mongoose.model('Organization', organizationSchema);
-=======
-}, {
-  timestamps: true
-});
-
-export const OrganizationModel = mongoose.model('Organization', organizationSchema);
->>>>>>> 0e9de67bddbf8c25919c3ed76388da6e9bbe4ef9
