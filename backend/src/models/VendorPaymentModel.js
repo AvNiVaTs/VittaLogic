@@ -1,42 +1,71 @@
-const mongoose = require('mongoose');
+import mongoose from "mongoose";
 
 const decimal = mongoose.Schema.Types.Decimal128;
 
-const vendorpaymentschema = new mongoose.Schema({
-  transaction_id: {
+const PAYMENT_METHODS = [
+  "Bank Transfer", 
+  "Wire Transfer", 
+  "Cheque", 
+  "Cash", 
+  "Online Payment", 
+  "UPI", 
+  "NEFT", 
+  "RTGS"
+];
+
+const PAYMENT_STATUSES = [
+  "Processing", 
+  "Pending", 
+  "Completed", 
+  "Failed",
+  "Cancelled", 
+  "On Hold"
+];
+
+const vendorPaymentSchema = new mongoose.Schema({
+  payment_id: {
     type: String,
     required: true,
-    ref: 'Transactions'
+    unique: true,
+    trim: true
   },
-  payment_id: {      //should be payment_id since it is pk
-    tpye: String,
+  vendor_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Vendor',
     required: true,
+    index: true
   },
-  payment_date: {
-    type: Date,
-    required:true
-  },
-  amount: {
+  payment_amount: {
     type: decimal,
-    required: true
+    required: true,
+    min: 0.01
   },
-  payment_method: {
-    type: String,    //should be enum type
-    required: true
+  due_date: {
+    type: Date,
+    required: true,
+    validate: {
+      validator: function (v) {
+        return v instanceof Date && !isNaN(v);
+      },
+      message: 'Invalid due date' // will this work?
+    }
   },
   purpose: {
     type: String,
+    required: true,
+    trim: true
+  },
+  payment_method: {
+    type: String,
+    enum: PAYMENT_METHODS,
     required: true
   },
   status: {
     type: String,
-    required: true
-  },
-  vendor_id: {
-    type: String,
+    enum: PAYMENT_STATUSES,
     required: true,
-    ref: 'Vendors'
+    default: "Pending"  ///should there be a default?
   }
 });
 
-export const vendorpayments = mongoose.model('VendorPayments',vendorpaymentschema);
+export const vendorpayments = mongoose.model('VendorPayments', vendorPaymentSchema);
