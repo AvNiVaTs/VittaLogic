@@ -86,12 +86,14 @@ const assetSchema = new Schema({
     type: String,
     unique: true,
     default: () => 'AST-' + Date.now(),
-    immutable: true
+    immutable: true,
+    index : true
   },
   assetName: {
     type: String,
     required: true,
-    trim: true
+    trim: true,
+    index : true
   },
   assetType: {
     type: String,

@@ -14,7 +14,8 @@ const assetMaintenanceSchema = new Schema({
     type: String,
     unique: true,
     immutable: true,
-    default: () => `MTN-${Date.now()}`
+    default: () => `MTN-${Date.now()}`,
+    index : true
   },
 
   assetId: {

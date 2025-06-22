@@ -7,7 +7,8 @@ const assetDisposalSchema = new Schema({
     type: String,
     unique: true,
     immutable: true,
-    default: () => `DSP-${Date.now()}`
+    default: () => `DSP-${Date.now()}`,
+    index : true
   },
 
   assetId: {
