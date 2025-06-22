@@ -5,7 +5,8 @@ const departmentSchema = new Schema({
     type: String,
     unique: true,
     immutable: true,
-    default: () => 'DEPT-' + Date.now()
+    default: () => 'DEPT-' + Date.now(),
+    index : true
   },
   departmentName: {
     type: String,
@@ -14,7 +15,8 @@ const departmentSchema = new Schema({
     set: v => v.trim().replace(/\s+/g, ' '),
     validate: {
       validator: v => /^[A-Za-z0-9 &()\-]+$/.test(v),
-      message: props => `"${props.value}" is not a valid department name.`
+      message: props => `"${props.value}" is not a valid department name.`,
+      index : true
     }
   },
   departmentDescription: {
