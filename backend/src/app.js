@@ -14,4 +14,9 @@ app.use(express.static("public"))
 
 app.use(cookieParser())
 
+import orgRouter from "./routes/organization.routes.js"
+
+app.use("/api/v1/org", orgRouter)
+    //http://localhost:8000/api/v1/org/register
+
 export { app }

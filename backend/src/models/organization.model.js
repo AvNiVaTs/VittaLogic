@@ -1,6 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import jwt from "jsonwebtoken"
 import bcrypt from "bcrypt"
+import { ApiErr } from "../utils/ApiError.js"
 
 // === Organization Schema ===
 const organizationSchema = new Schema({
@@ -116,12 +117,12 @@ const organizationSchema = new Schema({
 organizationSchema.pre("save", async function (next) {
   const authorized = this.authorizedPerson
 
-  if(authorized && authorized.password && authorized.confirmpassword && (authorized.password!==authorized.confirmpassword)){
-    return next(new Error("Password and confirm password doesn't match"))
+  if(authorized && authorized.password && authorized.confirmpassword && (authorized.password !== authorized.confirmpassword)){
+    return next(new ApiErr(401, "Password and confirm password doesn't match"))
   }
 
   if(this.isModified("authorizedPerson.password")){
-    authorized.password = await bcrypt.hash(this.password, 10)
+    authorized.password = await bcrypt.hash(authorized.password, 10)
     authorized.confirmpassword = undefined//clear confirm password
   }
   next()
