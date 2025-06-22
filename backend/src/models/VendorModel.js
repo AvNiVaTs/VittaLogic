@@ -130,5 +130,5 @@ const vendorSchema = new mongoose.Schema({
   }
 });
 
-export const vendor = mongoose.model('Vendor', vendorSchema);
+export const Vendor = mongoose.model('Vendor', vendorSchema);
 

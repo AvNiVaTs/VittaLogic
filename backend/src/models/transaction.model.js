@@ -94,7 +94,7 @@ const transactionSchema = new Schema({
     required: true
   },
   approvedBy: {
-    type: Schema.Types.ObjectId,
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'Employee',
     require: true
   },
@@ -137,7 +137,7 @@ const transactionSchema = new Schema({
     }
   },
   transactionFor: [{
-    type: Schema.Types.ObjectId,
+    type: mongoose.Schema.Types.ObjectId,
     required: true
     // No ref here as it links to multiple models
   }],
@@ -148,12 +148,12 @@ const transactionSchema = new Schema({
     // Populate this server-side using logic
   },
   debitAccount: {
-    type: Schema.Types.ObjectId,
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'Account',
     required: true
   },
   creditAccount: {
-    type: Schema.Types.ObjectId,
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'Account',
     required: true
   },

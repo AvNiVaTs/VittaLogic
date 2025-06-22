@@ -20,6 +20,13 @@ const allowedRoles = [
 
 
 const employeeSalarySchema = new Schema({
+    salaryId: {
+        type: String,
+        unique: true,
+        immutable: true,
+        default: () => 'SAL-' + Date.now(),
+        index : true 
+    },
     department: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Department',
