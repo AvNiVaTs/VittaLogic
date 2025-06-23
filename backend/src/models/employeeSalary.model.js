@@ -75,6 +75,12 @@ const employeeSalarySchema = new Schema({
         ref: 'Employee',
         required: true,
         immutable: true
+    },
+    updatedBy: { //Middleware
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Employee',
+        required: true,
+        immutable: true
     }
 }, { timestamps: true });
 
