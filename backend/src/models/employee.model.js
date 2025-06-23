@@ -14,7 +14,7 @@ const allowedServices = [
   'Approval'
 ];
 
-const allowedRoles = [
+const allowedDesignation = [
   "C-Level Executive",
   "Department Head / Director",
   "Finance & Accounts",
@@ -31,6 +31,10 @@ const allowedRoles = [
   "Design & User Experience",
   "Support Staff / Interns"
 ];
+
+const allowedLevel = [
+  1, 2, 3, 4
+]
 
 const employeeSchema = new Schema({
   employeeId: {
@@ -81,8 +85,8 @@ const employeeSchema = new Schema({
   },
   designation: {
     type: String,
-    required: true,
-    trim : true
+    enum : allowedDesignations,
+    required: true
   },
   dateOfJoining: {
     type: Date,
@@ -95,8 +99,14 @@ const employeeSchema = new Schema({
   },
   role: {
     type: String,
-    enum: allowedRoles,
-    required: true
+    required: true,
+    trim : true
+  },
+  level : {
+    type : Number,
+    enum : allowedLevel,
+    default : 1,
+    required : true 
   },
   createdBy: { // Middleware
     type: mongoose.Schema.Types.ObjectId,
