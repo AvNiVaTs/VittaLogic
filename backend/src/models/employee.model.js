@@ -114,6 +114,12 @@ const employeeSchema = new Schema({
     required: true,
     immutable: true
   },
+  updatedBy: { // Middleware
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Employee',
+    required: true,
+    immutable: true
+  },
   servicePermissions: {
     type: [String],
     validate: {
