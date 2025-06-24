@@ -65,7 +65,8 @@ const customerSchema = new Schema({
     type: String,
     required: true,
     unique: true,
-    trim: true
+    trim: true,
+    immutable: true
   },
 
   company_Name: {
