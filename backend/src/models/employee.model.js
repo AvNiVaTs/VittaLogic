@@ -1,5 +1,5 @@
 import mongoose, {Schema} from "mongoose";
-import { formatName } from 'utils/formatName.js';
+import { formatName } from '../utils/formatName.js';
 import bcrypt from "bcrypt";
 
 const allowedServices = [
