@@ -5,7 +5,7 @@ const departmentSchema = new Schema({
     type: String,
     unique: true,
     immutable: true,
-    default: () => 'DEPT-' + Date.now(),
+    required: true,
     index : true
   },
   departmentName: {
