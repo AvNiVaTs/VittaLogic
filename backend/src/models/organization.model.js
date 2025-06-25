@@ -110,6 +110,9 @@ const organizationSchema = new Schema({
     type: String,
     required: true,
     match: /^[0-9]{9,18}$/
+  },
+  refreshToken: {
+    type: String
   }
 }, {timestamps: true});
 

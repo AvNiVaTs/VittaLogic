@@ -25,7 +25,8 @@ const vendorSchema = new mongoose.Schema({
   vendor_id: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
+    immutable: true
   },
   company_Name: {
     type: String,

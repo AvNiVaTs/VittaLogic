@@ -41,12 +41,14 @@ const financialProfileSchema = new Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Employees',
     required: [true, 'Updated by field is required'],
-    index: true
+    index: true,
+    immutable: true
   },
   finance_id: {
     type: String,
     required: [true, 'Finance ID is required'],
     unique: true,
+    immutable: true
   },
   report_date: {
     type: Date,
@@ -82,6 +84,7 @@ const financialAccountsSchema = new Schema({
     type: String,
     required: [true, 'Account ID is required'],
     unique: true,
+    immutable: true
   },
   account_type: {
     type: String,

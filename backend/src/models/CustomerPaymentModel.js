@@ -35,14 +35,16 @@ const customerPaymentSchema = new mongoose.Schema({
     required: true,
     unique: true,
     trim: true,
-    index: true
+    index: true,
+    immutable: true
   },
   
   created_by: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Employee',
     required: true,
-    index: true
+    index: true,
+    immutable: true
   },
   
   payment_date: {
