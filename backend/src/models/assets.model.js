@@ -78,6 +78,15 @@ const allowedAssetSubtypes = {
   ]
 };
 
+const allowedStatus = [
+  "Active",
+  "Maintianance Needed",
+  "Under Repair",
+  "Under Maintenance",
+  "Disposed",
+  "Unoperational"
+]
+
 const assetAssign = ['Assigned' , 'Unassigned'];
 
 
@@ -113,6 +122,7 @@ const assetSchema = new Schema({
   assignedStatus: {
     type: String,
     enum: assetAssign,
+    required: true,
     default: 'Unassigned'
   },
   assignedto: {
@@ -122,6 +132,12 @@ const assetSchema = new Schema({
   assignedtodepartment: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Department'
+  },
+  status: {
+    type: String,
+    enum: allowedStatus,
+    required: true,
+    deafult: "Active"
   },
   purchaseFrom: {
     type: mongoose.Schema.Types.ObjectId,
