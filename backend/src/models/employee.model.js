@@ -1,7 +1,5 @@
 import mongoose, {Schema} from "mongoose";
-import { formatName } from 'utils/formatName.js';
-import bcrypt from "bcrypt";
-
+import { formatName } from '../utils/formatName.js';
 const allowedServices = [
   'Department',
   'Employee',
@@ -85,7 +83,7 @@ const employeeSchema = new Schema({
   },
   designation: {
     type: String,
-    enum : allowedDesignations,
+    enum : allowedDesignation,
     required: true
   },
   dateOfJoining: {

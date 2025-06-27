@@ -1,24 +1,5 @@
 import mongoose, { Schema } from "mongoose";
 
-const allowedRoles = [
-  "C-Level Executive",
-  "Department Head / Director",
-  "Finance & Accounts",
-  "Operations & Administration",
-  "Software Development",
-  "IT & Infrastructure",
-  "Data Science & AI",
-  "Sales & Business Development",
-  "Marketing & Content",
-  "Human Resources (HR)",
-  "Customer & Vendor Relations",
-  "Product & Project Management",
-  "Legal & Compliance",
-  "Design & User Experience",
-  "Support Staff / Interns"
-];
-
-
 const employeeSalarySchema = new Schema({
     salaryId: {
         type: String,
@@ -33,8 +14,8 @@ const employeeSalarySchema = new Schema({
         required: true
     },
     role: {
-        type: String,
-        enum: allowedRoles,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Employee',
         required: true
     },
     employee: {
