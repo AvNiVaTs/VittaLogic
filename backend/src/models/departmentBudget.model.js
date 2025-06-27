@@ -18,7 +18,7 @@ const departmentBudgetSchema = new Schema({
     immutable: true,
     default: () => 'BUDG-' + Date.now()
   },
-  //period: {}, //changing period into two columns "from_date" to "to_date"
+  
   timePeriodFrom: {
     type: Date,
     required: true
@@ -43,10 +43,6 @@ const departmentBudgetSchema = new Schema({
     trim: true,
     maxLength: 300
   }
-  /*used_amount: {
-    type:decimal,
-    required:false //should it be auto calculated in the backend?
-  },*/
 },
 {timestamps: true}
 );
