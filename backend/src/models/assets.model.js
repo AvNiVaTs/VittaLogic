@@ -1,4 +1,4 @@
-import mongoose, {Schema} from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
 const allowedAssetTypes = [
     "IT Equipment",
@@ -114,6 +114,14 @@ const assetSchema = new Schema({
     type: String,
     enum: assetAssign,
     default: 'Unassigned'
+  },
+  assignedto: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Employee'
+  },
+  assignedtodepartment: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Department'
   },
   purchaseFrom: {
     type: mongoose.Schema.Types.ObjectId,

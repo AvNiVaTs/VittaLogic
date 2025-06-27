@@ -121,9 +121,6 @@ const vendorSchema = new mongoose.Schema({
     currency: { 
       type: String 
     },
-    exchangeRate: { 
-      type: Number, min: 0 
-    },
     iecCode: {
       type: String,
       match: /^[A-Z0-9]{10}$/i // 10 character IEC code
