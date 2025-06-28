@@ -101,17 +101,11 @@ const vendorSchema = new mongoose.Schema({
     },
     taxId: { 
       type: String,
-      required: function () {
-        return this.vendor_location === "Indian";
-      }
     },
     panNumber: {
       type: String,
       uppercase: true,
       match: /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, // PAN format
-      required: function () {
-        return this.vendor_location === "Indian";
-      }
     }
   },
 
@@ -166,9 +160,6 @@ const vendorSchema = new mongoose.Schema({
     iecCode: {
       type: String,
       match: /^[A-Z0-9]{10}$/i, // 10 character IEC code
-      required: function () {
-        return this.vendor_location === "International";
-      }
     }
   },
   createdBy: { //Middleware
@@ -186,4 +177,3 @@ const vendorSchema = new mongoose.Schema({
 } , {timestamps : true} );
 
 export const Vendor = mongoose.model('Vendor', vendorSchema);
-

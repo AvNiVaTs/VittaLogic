@@ -44,7 +44,8 @@ const vendorPaymentSchema = new mongoose.Schema({
   exchangeRate: { 
     type: decimal,
     required: true, 
-    min: 0 
+    min: 0.001,
+    default: 1
   },
   payment_amount_in_vendor_currency: {
     type: decimal,
