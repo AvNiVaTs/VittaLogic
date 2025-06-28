@@ -36,7 +36,17 @@ const vendorPaymentSchema = new mongoose.Schema({
     required: true,
     index: true
   },
-  payment_amount: {
+  payment_amount_in_vendor_currency: {
+    type: decimal,
+    required: true,
+    min: 0.01
+  },
+  exchangeRate: { 
+    type: decimal,
+    required: true, 
+    min: 0 
+  },
+  payment_amount_in_vendor_currency: {
     type: decimal,
     required: true,
     min: 0.01
