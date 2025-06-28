@@ -68,62 +68,107 @@ const vendorSchema = new mongoose.Schema({
       type: String,
       unique: true,
       sparse: true, // allows null values to skip the uniqueness constraint
-      match: /^[0-9]{9,18}$/ // basic bank account number check
+      match: /^[0-9]{9,18}$/, // basic bank account number check
+      required: function () {            //function that checks if the vendor location is indian. if true then required becomes true
+        return this.vendor_location === "Indian";
+      }
     },
     bankName: { 
-      type: String 
+      type: String,
+      required: function () {
+        return this.vendor_location === "Indian";
+      }
     },
     bankBranch: { 
-      type: String 
+      type: String,
+      required: function () {
+        return this.vendor_location === "Indian";
+      }
     },
     ifscCode: {
       type: String,
       uppercase: true,
-      match: /^[A-Z]{4}0[A-Z0-9]{6}$/ // typical IFSC pattern
+      match: /^[A-Z]{4}0[A-Z0-9]{6}$/, // typical IFSC pattern
+      required: function () {
+        return this.vendor_location === "Indian";
+      }
     },
     accountHolderName: { 
-      type: String 
+      type: String,
+      required: function () {
+        return this.vendor_location === "Indian";
+      }
     },
     taxId: { 
-      type: String 
+      type: String,
+      required: function () {
+        return this.vendor_location === "Indian";
+      }
     },
     panNumber: {
       type: String,
       uppercase: true,
-      match: /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/ // PAN format
+      match: /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, // PAN format
+      required: function () {
+        return this.vendor_location === "Indian";
+      }
     }
   },
 
   internationalBankDetails: {
     countryName: { 
-      type: String 
+      type: String,
+      required: function () {
+        return this.vendor_location === "International";
+      }
     },
     bankName: { 
-      type: String 
+      type: String,
+      required: function () {
+        return this.vendor_location === "International";
+      } 
     },
     ibanOrAccountNumber: {
       type: String,
       unique: true,
       sparse: true,
-      match: /^[A-Z0-9]{15,34}$/ // loose IBAN/account format
+      match: /^[A-Z0-9]{15,34}$/, // loose IBAN/account format
+      required: function () {
+        return this.vendor_location === "International";
+      }
     },
     swiftBicCode: {
       type: String,
       uppercase: true,
-      match: /^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/ // SWIFT/BIC pattern
+      match: /^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/, // SWIFT/BIC pattern
+      required: function () {
+        return this.vendor_location === "International";
+      }
     },
     bankAddress: { 
-      type: String 
+      type: String,
+      required: function () {
+        return this.vendor_location === "International";
+      } 
     },
     beneficiaryName: { 
-      type: String 
+      type: String, 
+      required: function () {
+        return this.vendor_location === "International";
+      }
     },
     currency: { 
-      type: String 
+      type: String,
+      required: function () {
+        return this.vendor_location === "International";
+      }
     },
     iecCode: {
       type: String,
-      match: /^[A-Z0-9]{10}$/i // 10 character IEC code
+      match: /^[A-Z0-9]{10}$/i, // 10 character IEC code
+      required: function () {
+        return this.vendor_location === "International";
+      }
     }
   }
 });
