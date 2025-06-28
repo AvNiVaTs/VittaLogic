@@ -15,6 +15,15 @@ const STATUS = [
   "On Hold", 
 ];
 
+const APPROVALFOR = [
+    "Asset",
+    "Liability",
+    "Customer Payment",
+    "Vendor Payment",
+    "Salary",
+    "Department Budget"
+];
+
 const approvalSchema = new Schema({
     approval_id: {
         type: String,
@@ -38,6 +47,11 @@ const approvalSchema = new Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Employee',
         index: true
+    },
+    approvalfor: {
+        type: String,
+        enum: APPROVALFOR,
+        required: true
     },
     sender_department: {
         type: mongoose.Schema.Types.ObjectId,

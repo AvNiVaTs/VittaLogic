@@ -85,7 +85,7 @@ const allowedStatus = [
   "Under Maintenance",
   "Disposed",
   "Unoperational"
-]
+];
 
 const assetAssign = ['Assigned' , 'Unassigned'];
 
