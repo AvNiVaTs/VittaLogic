@@ -14,8 +14,8 @@ const CUSTOMER_TYPES = [
 ];
 
 const CUSTOMER_LOCATIONS = [
-  'Indian', 
-  'International'
+  "Indian", 
+  "International"
 ];
 
 const INDIAN_CUSTOMER_SEGMENTS = [
@@ -144,91 +144,148 @@ const customerSchema = new Schema({
   // Indian-only Fields
   indian_Details: {
     stateProvince: { 
-      type:String 
+      type:String,
+      required: function () {
+        return this.vendor_location === "Indian";
+      }
     },
     customer_Segment: {
       type: String,
-      enum: INDIAN_CUSTOMER_SEGMENTS
+      enum: INDIAN_CUSTOMER_SEGMENTS,
+      required: function () {
+        return this.vendor_location === "Indian";
+      }
     },
     preferred_Shipping_Method: {
       type: String,
-      enum: INDIAN_SHIPPING_METHODS
+      enum: INDIAN_SHIPPING_METHODS,
+      required: function () {
+        return this.vendor_location === "Indian";
+      }
     },
     bank_AccountNumber: {
       type: String,
       match: /^[0-9]{9,18}$/,
       sparse: true,
-      unique: true
+      unique: true,
+      required: function () {
+        return this.vendor_location === "Indian";
+      }
     },
     bank_Name: {
-      type: String 
+      type: String,
+      required: function () {
+        return this.vendor_location === "Indian";
+      }
     },
     bank_Branch: { 
-      type:String 
+      type:String,
+      required: function () {
+        return this.vendor_location === "Indian";
+      }
     },
     ifsc_Code: {
       type: String,
-      match: /^[A-Z]{4}0[A-Z0-9]{6}$/
+      match: /^[A-Z]{4}0[A-Z0-9]{6}$/,
+      required: function () {
+        return this.vendor_location === "Indian";
+      }
     },
     account_HolderName: { 
-      type: String 
+      type: String,
+      required: function () {
+        return this.vendor_location === "Indian";
+      }
     },
     gstin: {
       type: String,
       match: /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/,
       sparse: true,
-      uppercase: true
+      uppercase: true,
     },
     pan_Number: {
       type: String,
       match: /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/,
       sparse: true,
-      uppercase: true
+      uppercase: true,
     }
   },
 
   // International-only Fields
   internationalDetails: {
     TIN_VAT_EIN_Company_RegNo: { 
-      type: String 
+      type: String,
+      required: function () {
+        return this.vendor_location === "International";
+      }
     },
     customerPriority: {
       type: String,
-      enum: INTERNATIONAL_CUSTOMER_PRIORITIES
+      enum: INTERNATIONAL_CUSTOMER_PRIORITIES,
+      required: function () {
+        return this.vendor_location === "International";
+      }
     },
     preferredShippingMethod: {
       type: String,
-      enum: INTERNATIONAL_SHIPPING_METHODS
+      enum: INTERNATIONAL_SHIPPING_METHODS,
+      required: function () {
+        return this.vendor_location === "International";
+      }
     },
     defaultCurrency: {
       type: String,
-      enum: INTERNATIONAL_CURRENCIES
+      enum: INTERNATIONAL_CURRENCIES,
+      required: function () {
+        return this.vendor_location === "International";
+      }
     },
     applicableTaxProfile: {
       type: String,
-      enum: INTERNATIONAL_TAX_PROFILES
+      enum: INTERNATIONAL_TAX_PROFILES,
+      required: function () {
+        return this.vendor_location === "International";
+      }
     },
     countryName: { 
-      type: String 
+      type: String,
+      required: function () {
+        return this.vendor_location === "International";
+      }
     },
     bankName: {
-      tpye: String 
+      tpye: String,
+      required: function () {
+        return this.vendor_location === "International";
+      }
     },
     ibanOrAccountNumber: {
       type: String,
       match: /^[A-Z0-9]{15,34}$/,
       sparse: true,
-      unique: true
+      unique: true,
+      required: function () {
+        return this.vendor_location === "International";
+      }
     },
     swiftCode: {
       type: String,
-      match: /^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/
+      match: /^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/,
+      required: function () {
+        return this.vendor_location === "International";
+      }
     },
     bankAddress: { 
-      type: String 
+      type: String,
+      required: function () {
+        return this.vendor_location === "International";
+      }
     },
     beneficiaryName: {
-      type: String 
+      type: String,
+      required: function () {
+        return this.vendor_location === "International";
+      }
     },
     iecCode: {
       type: String,
