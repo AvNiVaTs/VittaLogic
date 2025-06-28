@@ -208,10 +208,17 @@ const liabilitySchema = new Schema({
     reference_number: String,
     notes: String
   }], */
-  created_by: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Employees',
-    required: [true, 'Created by field is required']
+  createdBy: { //Middleware
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Employee',
+      required: true,
+      immutable: true
+  },
+  updatedBy: { //Middleware
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Employee',
+      required: true,
+      immutable: true
   },
   approved_id: {
     type: mongoose.Schema.Types.ObjectId,

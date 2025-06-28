@@ -234,8 +234,20 @@ const customerSchema = new Schema({
       type: String,
       match: /^[A-Z0-9]{10}$/i
     }
+  },
+  createdBy: { //Middleware
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Employee',
+      required: true,
+      immutable: true
+  },
+  updatedBy: { //Middleware
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Employee',
+      required: true,
+      immutable: true
   }
 
-});
+} , {timestamps : true});
 
 export const customer = mongoose.model('Customer', vendorschema);

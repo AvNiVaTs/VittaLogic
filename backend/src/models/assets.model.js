@@ -177,11 +177,17 @@ const assetSchema = new Schema({
   documents: [{
     type: String // URL or filename
   }],
-  entered_by: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Employee',
-    required: true,
-    immutable: true
+  enteredBy: { //Middleware
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Employee',
+      required: true,
+      immutable: true
+  },
+  updatedBy: { //Middleware
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Employee',
+      required: true,
+      immutable: true
   }
 }, { timestamps: true });
 

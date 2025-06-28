@@ -76,7 +76,19 @@ const vendorPaymentSchema = new mongoose.Schema({
     enum: PAYMENT_STATUSES,
     required: true,
     default: "Pending"  ///should there be a default?
+  },
+  createdBy: { //Middleware
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Employee',
+      required: true,
+      immutable: true
+  },
+  updatedBy: { //Middleware
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Employee',
+      required: true,
+      immutable: true
   }
-});
+} , {timestamps : true});
 
 export const vendorpayments = mongoose.model('VendorPayments', vendorPaymentSchema);

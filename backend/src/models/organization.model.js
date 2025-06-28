@@ -113,6 +113,18 @@ const organizationSchema = new Schema({
   },
   refreshToken: {
     type: String
+  },
+  createdBy: { //Middleware
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Employee',
+      required: true,
+      immutable: true
+  },
+  updatedBy: { //Middleware
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Employee',
+      required: true,
+      immutable: true
   }
 }, {timestamps: true});
 

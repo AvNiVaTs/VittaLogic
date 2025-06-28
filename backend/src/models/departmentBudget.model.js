@@ -42,6 +42,18 @@ const departmentBudgetSchema = new Schema({
     type: String,
     trim: true,
     maxLength: 300
+  },
+  createdBy: { //Middleware
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Employee',
+      required: true,
+      immutable: true
+  },
+  updatedBy: { //Middleware
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Employee',
+      required: true,
+      immutable: true
   }
 },
 {timestamps: true}

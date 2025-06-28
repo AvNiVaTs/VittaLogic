@@ -170,8 +170,20 @@ const vendorSchema = new mongoose.Schema({
         return this.vendor_location === "International";
       }
     }
-  }
-});
+  },
+  createdBy: { //Middleware
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Employee',
+        required: true,
+        immutable: true
+    },
+    updatedBy: { //Middleware
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Employee',
+        required: true,
+        immutable: true
+    }
+} , {timestamps : true} );
 
 export const Vendor = mongoose.model('Vendor', vendorSchema);
 

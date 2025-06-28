@@ -122,7 +122,19 @@ const customerPaymentSchema = new mongoose.Schema({
     required: true,
     min: 0,
     default: 1.0
-  }
+  },
+  createdBy: { //Middleware
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Employee',
+        required: true,
+        immutable: true
+    },
+    updatedBy: { //Middleware
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Employee',
+        required: true,
+        immutable: true
+    }
 }, {
   timestamps: true,
   collection: "customer_payments"
