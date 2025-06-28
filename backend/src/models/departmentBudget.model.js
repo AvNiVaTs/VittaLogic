@@ -38,6 +38,11 @@ const departmentBudgetSchema = new Schema({
     required: true,
     min: [0, 'Allocated amount must be a positive number']
   },
+  approvalId : {
+    type : mongoose.Schema.Types.ObjectId,
+    ref : 'Approval',
+    required : True
+  },
   budgetNote: {
     type: String,
     trim: true,
