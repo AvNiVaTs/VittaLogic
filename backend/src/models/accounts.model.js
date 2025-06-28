@@ -14,12 +14,12 @@ const accountsSchema = new mongoose.Schema({
   },
   name:{
     type: String,
-    requried: true,
+    required: true,
     trim: true
   },
   account_type:{
     type: String,
-    enum: acctype, 
+    enum: Account_type, 
     required: true
   },
   medium:{
@@ -34,7 +34,7 @@ const accountsSchema = new mongoose.Schema({
   },
   balance:{
     type: decimal,
-    required: true,   //doubt, will it be calcuated in the backend automatically or the user will update it?
+    required: true,   //doubt, will it be calculated in the backend automatically or the user will update it?
     min: 0
   },
 });

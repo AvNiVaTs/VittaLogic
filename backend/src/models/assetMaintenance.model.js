@@ -45,9 +45,8 @@ const assetMaintenanceSchema = new Schema({
     }
   },
 
-
   nextMaintenanceDate: {
-    type: Date // Middleware
+    type: Date // Middleware (automatic)
   },
 
   amcProviderName: {
