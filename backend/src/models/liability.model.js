@@ -213,10 +213,10 @@ const liabilitySchema = new Schema({
     ref: 'Employees',
     required: [true, 'Created by field is required']
   },
-  approved_id: {
+  approval_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Approval',
-    required: [true, 'Approved by field is required']
+    required: [true, 'Approval ID field is required']
   },
 }, {
   timestamps: true,
