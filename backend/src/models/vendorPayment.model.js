@@ -43,11 +43,11 @@ const vendorPaymentSchema = new mongoose.Schema({
   },
   exchangeRate: { 
     type: decimal,
-    required: true, 
+    required: true,
     min: 0.001,
     default: 1
   },
-  payment_amount_in_vendor_currency: {
+  payment_amount_in_indian_currency: {
     type: decimal,
     required: true,
     min: 0.01
@@ -92,4 +92,4 @@ const vendorPaymentSchema = new mongoose.Schema({
   }
 } , {timestamps : true});
 
-export const vendorpayments = mongoose.model('VendorPayments', vendorPaymentSchema);
+export const VendorPayments = mongoose.model('VendorPayments', vendorPaymentSchema);
