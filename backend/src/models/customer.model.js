@@ -114,7 +114,7 @@ const customerSchema = new Schema({
 
   customer_Location: {
     type: String,
-    enum: CUSTOMER_LOCATION,
+    enum: CUSTOMER_LOCATIONS,
     required: true
   },
 
@@ -307,4 +307,4 @@ const customerSchema = new Schema({
 
 } , {timestamps : true});
 
-export const customer = mongoose.model('Customer', vendorschema);
+export const Customer = mongoose.model('Customer', customerSchema);

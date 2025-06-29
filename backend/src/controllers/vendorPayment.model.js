@@ -78,21 +78,19 @@ const getVendorPaymentById = asyncHandler(async (req, res) => {
     )
 })
 
-const updateVendor = asyncHandler(async (req, res) => {
+const updateVendorPayment = asyncHandler(async (req, res) => {
     const {id} = req.params
-    const updates = req.body
+    const {due_date, status, updatedBy} = req.body
 
     const payment = await VendorPayments.findById(id);
     if(!payment){
         throw new ApiErr(400, "Payment not found")
     }
 
-    if(updates.payment_amount_in_vendor_currency || updates.exchangeRate){
-        const amount = updates.payment_amount_in_vendor_currency ?? payment.payment_amount_in_vendor_currency
-        const rate = updates.exchangeRate ?? updates.exchangeRate
-        updates.payment_amount_in_indian_currency = toNumber(amount)*toNumber(rate)
-    }
+    const updates = {}
 
+    if(due_date) updates.due_date = due_date
+    if(status) updates.status = status
     updates.updatedBy = req.body.updatedBy
 
     const updated = await VendorPayments.findByIdAndUpdate(id, updates, {new: true})
@@ -120,17 +118,13 @@ const deleteVendorPayment = asyncHandler(async (req, res) => {
 })
 
 const searchVendorPayment = asyncHandler(async (req, res)=>{
-    const {company_Name, status, method, purpose} = req.query
+    const {company_Name, vendor_id, payment_id, status} = req.query
     const query = {}
 
     if(status) query.status = status
-    if(method) query.payment_method = method
-    if(purpose) query.purpose = {
-        $regex: purpose,
-        $options: "i"
-    }
+    if(payment_id) query.payment_id = payment_id.trim()
+    if(vendor_id) query.vendor_id = vendor_id
 
-    let vendorIds = []
     if(company_Name){
         const vendors = await Vendor.find(
             {
@@ -142,9 +136,16 @@ const searchVendorPayment = asyncHandler(async (req, res)=>{
             "payment_id"
         )
 
-        vendorIds = vendors.map(v => v.payment_id)
-        query.vendor_id = {
-            $in: vendorIds
+        const vendorIds = vendors.map(v => v.payment_id)
+        
+        if(vendorIds.length>0){
+            query.vendor_id = {
+                $in: vendorIds
+            }
+        }else{
+            return res.status(200).json(
+                new ApiResponse(200, [], "No vendor payment found for given company name")
+            )
         }
     }
 
@@ -161,7 +162,7 @@ export {
     createVendorPayment,
     getAllVendorPayments,
     getVendorPaymentById,
-    updateVendor,
+    updateVendorPayment,
     deleteVendorPayment,
     searchVendorPayment
 }
