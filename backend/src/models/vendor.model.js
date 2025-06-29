@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose ,  {Schema} from "mongoose";
 
 const Vendor_types = [
   "Technology", 
@@ -21,7 +21,7 @@ const Vendor_location = [
   "International"
 ];
 
-const vendorSchema = new mongoose.Schema({
+const vendorSchema = new Schema({
   vendor_id: {
     type: String,
     required: true,

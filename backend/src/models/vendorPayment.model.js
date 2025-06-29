@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, {Schema} from "mongoose";
 
 const decimal = mongoose.Schema.Types.Decimal128;
 
@@ -22,7 +22,7 @@ const PAYMENT_STATUSES = [
   "On Hold"
 ];
 
-const vendorPaymentSchema = new mongoose.Schema({
+const vendorPaymentSchema = new Schema({
   payment_id: {
     type: String,
     required: true,
@@ -35,6 +35,11 @@ const vendorPaymentSchema = new mongoose.Schema({
     ref: 'Vendor',
     required: true,
     index: true
+  },
+  currency : {
+    type : mongoose.Schema.Types.ObjectId,
+    ref : 'Vendor',
+    required : true 
   },
   payment_amount_in_vendor_currency: {
     type: decimal,
@@ -92,4 +97,4 @@ const vendorPaymentSchema = new mongoose.Schema({
   }
 } , {timestamps : true});
 
-export const VendorPayments = mongoose.model('VendorPayments', vendorPaymentSchema);
+export const VendorPayment = mongoose.model('VendorPayment', vendorPaymentSchema);
