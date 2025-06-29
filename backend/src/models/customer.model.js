@@ -120,25 +120,24 @@ const customerSchema = new Schema({
 
   // Shared Additional Fields
   industry_Sector: { 
-    type: String 
+    type: String ,
   },
   billing_Address: { 
-    type: String 
+    type: String, 
+    required : true
   },
   receiver_Name: { 
-    type: String 
+    type: String ,
+    required : true
   },
   receiver_ContactNo: {
     type: String,
+    required : true,
     match: /^[0-9+\-() ]{7,20}$/
   },
   shipping_Addresses: {
     type: [String], //type: [String] tells Mongoose that this field is an array of strings
     validate: v => Array.isArray(v) && v.length > 0
-  },
-  created_By: {
-    type: String,
-    required: true
   },
 
   // Indian-only Fields
@@ -146,21 +145,21 @@ const customerSchema = new Schema({
     stateProvince: { 
       type:String,
       required: function () {
-        return this.vendor_location === "Indian";
+        return this.customer_Location === "Indian";
       }
     },
     customer_Segment: {
       type: String,
       enum: INDIAN_CUSTOMER_SEGMENTS,
       required: function () {
-        return this.vendor_location === "Indian";
+        return this.customer_Location === "Indian";
       }
     },
     preferred_Shipping_Method: {
       type: String,
       enum: INDIAN_SHIPPING_METHODS,
       required: function () {
-        return this.vendor_location === "Indian";
+        return this.customer_Location === "Indian";
       }
     },
     bank_AccountNumber: {
@@ -169,32 +168,32 @@ const customerSchema = new Schema({
       sparse: true,
       unique: true,
       required: function () {
-        return this.vendor_location === "Indian";
+        return this.customer_Location === "Indian";
       }
     },
     bank_Name: {
       type: String,
       required: function () {
-        return this.vendor_location === "Indian";
+        return this.customer_Location === "Indian";
       }
     },
     bank_Branch: { 
       type:String,
       required: function () {
-        return this.vendor_location === "Indian";
+        return this.customer_Location === "Indian";
       }
     },
     ifsc_Code: {
       type: String,
       match: /^[A-Z]{4}0[A-Z0-9]{6}$/,
       required: function () {
-        return this.vendor_location === "Indian";
+        return this.customer_Location === "Indian";
       }
     },
     account_HolderName: { 
       type: String,
       required: function () {
-        return this.vendor_location === "Indian";
+        return this.customer_Location === "Indian";
       }
     },
     gstin: {
@@ -216,47 +215,47 @@ const customerSchema = new Schema({
     TIN_VAT_EIN_Company_RegNo: { 
       type: String,
       required: function () {
-        return this.vendor_location === "International";
+        return this.customer_Location === "International";
       }
     },
     customerPriority: {
       type: String,
       enum: INTERNATIONAL_CUSTOMER_PRIORITIES,
       required: function () {
-        return this.vendor_location === "International";
+        return this.customer_Location === "International";
       }
     },
     preferredShippingMethod: {
       type: String,
       enum: INTERNATIONAL_SHIPPING_METHODS,
       required: function () {
-        return this.vendor_location === "International";
+        return this.customer_Location === "International";
       }
     },
     defaultCurrency: {
       type: String,
       enum: INTERNATIONAL_CURRENCIES,
       required: function () {
-        return this.vendor_location === "International";
+        return this.customer_Location === "International";
       }
     },
     applicableTaxProfile: {
       type: String,
       enum: INTERNATIONAL_TAX_PROFILES,
       required: function () {
-        return this.vendor_location === "International";
+        return this.customer_Location === "International";
       }
     },
     countryName: { 
       type: String,
       required: function () {
-        return this.vendor_location === "International";
+        return this.customer_Location === "International";
       }
     },
     bankName: {
       tpye: String,
       required: function () {
-        return this.vendor_location === "International";
+        return this.customer_Location === "International";
       }
     },
     ibanOrAccountNumber: {
@@ -265,26 +264,26 @@ const customerSchema = new Schema({
       sparse: true,
       unique: true,
       required: function () {
-        return this.vendor_location === "International";
+        return this.customer_Location === "International";
       }
     },
     swiftCode: {
       type: String,
       match: /^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/,
       required: function () {
-        return this.vendor_location === "International";
+        return this.customer_Location === "International";
       }
     },
     bankAddress: { 
       type: String,
       required: function () {
-        return this.vendor_location === "International";
+        return this.customer_Location === "International";
       }
     },
     beneficiaryName: {
       type: String,
       required: function () {
-        return this.vendor_location === "International";
+        return this.customer_Location === "International";
       }
     },
     iecCode: {
@@ -307,4 +306,4 @@ const customerSchema = new Schema({
 
 } , {timestamps : true});
 
-export const customer = mongoose.model('Customer', vendorschema);
+export const Customer = mongoose.model('Customer', customerSchema);
