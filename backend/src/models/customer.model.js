@@ -59,14 +59,15 @@ const customerSchema = new Schema({
     type: String,
     required: true,
     unique: true,
-    trim: true,
+    index : true,
     immutable: true
   },
 
   company_Name: {
     type: String,
     required: true,
-    trim: true
+    trim: true,
+    index : true
   },
 
   address: {
@@ -84,7 +85,8 @@ const customerSchema = new Schema({
   customer_Types: {
     type: [String],
     required: true,
-    enum: CUSTOMER_TYPES
+    enum: CUSTOMER_TYPES,
+    index : true
   },
 
   contact_Person: {
@@ -130,7 +132,8 @@ const customerSchema = new Schema({
   customerPriority: {
     type: String,
     enum: CUSTOMER_PRIORITIES,
-    required: true
+    required: true,
+    index : true
   },
 
   customer_Location: {
@@ -285,7 +288,6 @@ const customerSchema = new Schema({
   updatedBy: { //Middleware
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Employee',
-      required: true,
       immutable: true
   }
 

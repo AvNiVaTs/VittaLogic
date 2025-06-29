@@ -38,8 +38,8 @@ const employeeSchema = new Schema({
   employeeId: {
     type: String,
     unique: true,
+    required: true,
     immutable: true,
-    default: () => 'EMP-' + Date.now(),
     index : true
   },
   employeeName: {
@@ -104,7 +104,8 @@ const employeeSchema = new Schema({
     type : Number,
     enum : allowedLevel,
     default : 1,
-    required : true 
+    required : true ,
+    index : true
   },
   createdBy: { // Middleware
     type: mongoose.Schema.Types.ObjectId,
@@ -115,7 +116,6 @@ const employeeSchema = new Schema({
   updatedBy: { // Middleware
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Employee',
-    required: true,
     immutable: true
   },
   servicePermissions: {

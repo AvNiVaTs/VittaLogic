@@ -5,7 +5,7 @@ const employeeSalarySchema = new Schema({
         type: String,
         unique: true,
         immutable: true,
-        default: () => 'SAL-' + Date.now(),
+        required :true,
         index : true 
     },
     department: {
@@ -60,7 +60,6 @@ const employeeSalarySchema = new Schema({
     updatedBy: { //Middleware
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Employee',
-        required: true,
         immutable: true
     }
 }, { timestamps: true });

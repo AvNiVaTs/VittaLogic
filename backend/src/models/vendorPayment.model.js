@@ -27,14 +27,13 @@ const vendorPaymentSchema = new Schema({
     type: String,
     required: true,
     unique: true,
-    trim: true,
-    immutable: true
+    immutable: true,
+    index : true
   },
   vendor_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Vendor',
     required: true,
-    index: true
   },
   currency : {
     type : mongoose.Schema.Types.ObjectId,
@@ -81,7 +80,8 @@ const vendorPaymentSchema = new Schema({
     type: String,
     enum: PAYMENT_STATUSES,
     required: true,
-    default: "Pending"  ///should there be a default?
+    default: "Pending" , ///should there be a default?
+    index : true
   },
   createdBy: { //Middleware
       type: mongoose.Schema.Types.ObjectId,
@@ -92,7 +92,6 @@ const vendorPaymentSchema = new Schema({
   updatedBy: { //Middleware
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Employee',
-      required: true,
       immutable: true
   }
 } , {timestamps : true});

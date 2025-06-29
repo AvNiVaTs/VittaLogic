@@ -94,15 +94,21 @@ const assetSchema = new Schema({
   assetId: {
     type: String,
     unique: true,
-    default: () => 'AST-' + Date.now(),
     immutable: true,
+    required : true,
     index : true
   },
+  linked_asset_id : {
+    type : mongoose.Schema.Types.ObjectId,
+    ref : 'EnteredAsset',
+    immutable: true,
+    required : true
+  },
   assetName: {
-    type: String,
-    required: true,
-    trim: true,
-    index : true
+    type : mongoose.Schema.Types.ObjectId,
+    ref : 'EnteredAsset',
+    immutable: true,
+    required : true
   },
   assetType: {
     type: String,
@@ -140,34 +146,33 @@ const assetSchema = new Schema({
     deafult: "Active"
   },
   purchaseFrom: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Vendor',
-    required: true
+    type : mongoose.Schema.Types.ObjectId,
+    ref : 'EnteredAsset',
+    immutable: true,
+    required : true
   },
-  purchaseDate: {
-    type: Date,
-    required: true,
-    validate: {
-      validator: function (v) {
-        return v <= new Date();
-      },
-      message: 'Purchase date cannot be in the future'
-    }
+  purchaseDate: { // from created on field
+    type : mongoose.Schema.Types.ObjectId,
+    ref : 'EnteredAsset',
+    immutable: true,
+    required : true
   },
-  purchaseCost: {
-    type: Number,
-    required: true,
-    min: [0, 'Purchase cost must be non-negative']
+  purchaseCost: { // cost_per_unit
+    type : mongoose.Schema.Types.ObjectId,
+    ref : 'EnteredAsset',
+    immutable: true,
+    required : true
   },
   expectedUsefulLife: {
     type: Number,
     required: true,
     min: [0.1, 'Expected useful life must be at least 0.1 year']
   },
-  numberOfDuplicates: {
-    type: Number,
-    default: 1,
-    min: [1, 'At least one asset must be entered']
+  numberOfAssets: { // quantity
+    type : mongoose.Schema.Types.ObjectId,
+    ref : 'EnteredAsset',
+    immutable: true,
+    required : true
   },
   description: {
     type: String,
@@ -186,7 +191,6 @@ const assetSchema = new Schema({
   updatedBy: { //Middleware
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Employee',
-      required: true,
       immutable: true
   }
 }, { timestamps: true });

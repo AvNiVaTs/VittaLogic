@@ -40,7 +40,7 @@ const financialProfileSchema = new Schema({
   updated_by: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Employees',
-    required: [true, 'Updated by field is required'],
+    required : true,
     index: true,
     immutable: true
   },
@@ -48,17 +48,8 @@ const financialProfileSchema = new Schema({
     type: String,
     required: [true, 'Finance ID is required'],
     unique: true,
-    immutable: true
-  },
-  report_date: {
-    type: Date,
-    required: [true, 'Report date is required'],
-    validate: {
-      validator: function(date) {
-        return date <= new Date();
-      },
-      message: 'Report date cannot be in the future'
-    }
+    immutable: true,
+    index : true
   },
   reserve_capital_cash: {
     type: DECIMAL_TYPE,
@@ -76,15 +67,16 @@ const financialProfileSchema = new Schema({
       message: 'Reserve capital bank must be greater than 0'
     }
   }
-});
+} , {timestamps : true});
 
 // Financial Accounts Schema
-const financialAccountsSchema = new Schema({
+const financialAccountSchema = new Schema({
   account_id: {
     type: String,
     required: [true, 'Account ID is required'],
     unique: true,
-    immutable: true
+    immutable: true,
+    index : true
   },
   account_type: {
     type: String,
@@ -99,7 +91,8 @@ const financialAccountsSchema = new Schema({
     required: [true, 'Account name is required'],
     trim: true,
     maxlength: [100, 'Account name cannot exceed 100 characters'],
-    minlength: [2, 'Account name must be at least 2 characters']
+    minlength: [2, 'Account name must be at least 2 characters'],
+    index : true
   },
   parent_account_id: {
     type: String,
@@ -127,6 +120,7 @@ const financialAccountsSchema = new Schema({
   },
   is_active: {
     type: Boolean,
+    enum : BOOLEAN_OPTIONS,
     default: true
   },
   enteredBy: { //Middleware
@@ -138,7 +132,6 @@ const financialAccountsSchema = new Schema({
   updatedBy: { //Middleware
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Employee',
-      required: true,
       immutable: true
   }
 }, {
@@ -156,4 +149,5 @@ const financialAccountsSchema = new Schema({
 
 // Export models
 export const FinancialProfile = model('FinancialProfile', financialProfileSchema);
-export const FinancialAccount = model('FinancialAccount', financialAccountsSchema);
+
+export const FinancialAccount = model('FinancialAccount', financialAccountSchema);

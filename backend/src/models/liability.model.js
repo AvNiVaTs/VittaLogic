@@ -19,8 +19,8 @@ const LIABILITY_TYPES = [
 ];
 
 const INTEREST_TYPES = [
-  "Fixed", 
-  "Variable", 
+  "Simple", 
+  "Compound", 
   "None"
 ];
 
@@ -36,7 +36,8 @@ const STATUS_OPTIONS = [
   "Pending", 
   "Completed", 
   "Defaulted", 
-  "On Hold"
+  "On Hold",
+  "Overdue"
 ];
 
 const PRIORITY_LEVELS = [
@@ -52,14 +53,16 @@ const liabilitySchema = new Schema({
     type: String,
     required: [true, 'Liability ID is required'],
     unique: true,
-    immutable: true
+    immutable: true,
+    index : true
   },
   liability_name: {
     type: String,
     required: [true, 'Liability name is required'],
     trim: true,
     maxlength: [100, 'Liability name cannot exceed 100 characters'],
-    minlength: [2, 'Liability name must be at least 2 characters']
+    minlength: [2, 'Liability name must be at least 2 characters'],
+    index : true
   },
   liability_type: {
     type: String,
@@ -142,21 +145,14 @@ const liabilitySchema = new Schema({
     required: [true, 'Priority is required'],
     default: 'Medium'
   },
-  associated_entities: {
-    type: [String],
-    validate: {
-      validator: function(entities) {
-        return entities && entities.length > 0;
-      },
-      message: 'At least one associated entity is required'
-    }
-  },
   liability_account: {
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,
+    ref : 'FinancialAccount',
     required: [true, 'Liability account is required'],
   },
   liability_vendor: {         //how this works?
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,
+    ref : 'Vendor',
     required: [true, 'Liability vendor is required'],
     trim: true,
     maxlength: [100, 'Vendor name cannot exceed 100 characters']
@@ -217,7 +213,6 @@ const liabilitySchema = new Schema({
   updatedBy: { //Middleware
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Employee',
-      required: true,
       immutable: true
   },
   approval_id: {

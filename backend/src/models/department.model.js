@@ -32,7 +32,6 @@ const departmentSchema = new Schema({
   updatedBy: { //Middleware
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Employee',
-      required: true,
       immutable: true
   }
 }, {timestamps : true});

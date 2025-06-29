@@ -21,7 +21,8 @@ const APPROVALFOR = [
     "Customer Payment",
     "Vendor Payment",
     "Salary",
-    "Department Budget"
+    "Department Budget",
+    "Service"
 ];
 
 const approvalSchema = new Schema({
@@ -30,23 +31,22 @@ const approvalSchema = new Schema({
         required: [true, 'Approval ID is required'],
         unique: true,
         immutable: true,
-        default: () => 'SAL-' + Date.now(),
-        index: true,
+        index : true
     },
     approved_to: {                               //Employee id
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Employee',
-        index: true
+        required : true
     },
     sender_name: {                              //approval sender name
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Employee',
-        index: true
+
     },
     sender_designation: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Employee',
-        index: true
+
     },
     approvalfor: {
         type: String,
@@ -56,13 +56,13 @@ const approvalSchema = new Schema({
     sender_department: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Employee',
-        index: true
+
     },
     approval_created_by: {                    //approval sender employee id
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Employee',
         required: [true, 'Approval creator is required'],
-        index: true
+
     },
     min_expense: {
         type: decimal,
@@ -115,7 +115,7 @@ const approvalSchema = new Schema({
             },
             message: 'Tentative date must be in the future'
         },
-        index: true
+
     },
     reason: {
         type: String,
@@ -150,6 +150,6 @@ const approvalSchema = new Schema({
         type: Date,
         index: true
     }
-});
+} ,  {timestamps : true});
 
-export const Approval_Service = mongoose.model('Approval', approvalSchema);
+export const Approval = mongoose.model('Approval', approvalSchema);

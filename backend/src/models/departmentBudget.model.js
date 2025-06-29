@@ -16,7 +16,8 @@ const departmentBudgetSchema = new Schema({
     type: String,
     unique: true,
     immutable: true,
-    default: () => 'BUDG-' + Date.now()
+    required : true,
+    index : true
   },
   
   timePeriodFrom: {
@@ -48,16 +49,9 @@ const departmentBudgetSchema = new Schema({
     trim: true,
     maxLength: 300
   },
-  createdBy: { //Middleware
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Employee',
-      required: true,
-      immutable: true
-  },
   updatedBy: { //Middleware
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Employee',
-      required: true,
       immutable: true
   }
 },

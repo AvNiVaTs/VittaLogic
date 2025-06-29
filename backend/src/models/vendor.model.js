@@ -13,6 +13,7 @@ const Vendor_types = [
   "Wholesale", 
   "Construction", 
   "Healthcare",
+  "Liability",
   "Others" //added others it was not in the front end
 ];
 
@@ -26,12 +27,14 @@ const vendorSchema = new Schema({
     type: String,
     required: true,
     unique: true,
-    immutable: true
+    immutable: true,
+    index : true
   },
   company_Name: {
     type: String,
     required: true,
-    trim: true
+    trim: true,
+    index : true
   },
   company_Address: {
     type: String,
@@ -40,7 +43,8 @@ const vendorSchema = new Schema({
   vendor_type: {
     type: String,
     enum: Vendor_types,
-    required: true //added others in the enum list
+    required: true,
+    index : true //added others in the enum list
   },
   contactPerson: {
     name: { 
@@ -171,7 +175,6 @@ const vendorSchema = new Schema({
   updatedBy: { //Middleware
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Employee',
-      required: true,
       immutable: true
   }
 }, {timestamps: true});

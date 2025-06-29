@@ -35,7 +35,6 @@ const customerPaymentSchema = new Schema({
     type: String,
     required: true,
     unique: true,
-    trim: true,
     index: true,
     immutable: true
   },
@@ -43,7 +42,6 @@ const customerPaymentSchema = new Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Customer',
     required: true,
-    index: true
   },
   
   payment_amount: {
@@ -109,11 +107,10 @@ const customerPaymentSchema = new Schema({
         required: true,
         immutable: true
     },
-    updatedBy: { //Middleware
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Employee',
-        required: true,
-        immutable: true,
+  updatedBy: { //Middleware
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Employee',
+      immutable: true
     }
 }, {
   timestamps: true
