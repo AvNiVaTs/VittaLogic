@@ -161,7 +161,24 @@ const vendorSchema = new mongoose.Schema({
       type: String,
       match: /^[A-Z0-9]{10}$/i, // 10 character IEC code
     }
+<<<<<<< HEAD
   }
 }, {timestamps: true});
+=======
+  },
+  createdBy: { //Middleware
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Employee',
+        required: true,
+        immutable: true
+    },
+    updatedBy: { //Middleware
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Employee',
+        required: true,
+        immutable: true
+    }
+} , {timestamps : true} );
+>>>>>>> 3a19db70eaab04a4137ff7a0ce4b537d636f4053
 
 export const Vendor = mongoose.model('Vendor', vendorSchema);

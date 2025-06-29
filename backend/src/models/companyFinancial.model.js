@@ -129,11 +129,18 @@ const financialAccountsSchema = new Schema({
     type: Boolean,
     default: true
   },
-  entered_by: {                                        
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Employees',
-    required: [true, 'Created by field is required']
-},
+  enteredBy: { //Middleware
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Employee',
+      required: true,
+      immutable: true
+  },
+  updatedBy: { //Middleware
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Employee',
+      required: true,
+      immutable: true
+  }
 }, {
   timestamps: true,
 //  toJSON: { virtuals: true },         //This enables virtual fields (computed or derived values) to be included when the document is converted to JSON

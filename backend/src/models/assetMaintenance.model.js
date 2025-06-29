@@ -84,11 +84,17 @@ const assetMaintenanceSchema = new Schema({
     type: String // store file URLs or paths
   }],
 
-  enteredBy: { // Middleware 
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Employee',
-    required: true,
-    immutable: true
+  enteredBy: { //Middleware
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Employee',
+      required: true,
+      immutable: true
+  },
+  updatedBy: { //Middleware
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Employee',
+      required: true,
+      immutable: true
   }
 
 }, { timestamps: true });
