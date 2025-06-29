@@ -18,19 +18,13 @@ const CUSTOMER_LOCATIONS = [
   "International"
 ];
 
-const INDIAN_CUSTOMER_SEGMENTS = [
-  "Premium", 
-  "Regular", 
-  "One-time"
-];
-
 const INDIAN_SHIPPING_METHODS = [
   "Road", 
   "Rail", 
   "Air"
 ];
 
-const INTERNATIONAL_CUSTOMER_PRIORITIES = [
+const CUSTOMER_PRIORITIES = [
   "Low", 
   "Medium", 
   "High"
@@ -111,13 +105,7 @@ const customerSchema = new Schema({
       match: /^[0-9+\-() ]{7,20}$/
     }
   },
-
-  customer_Location: {
-    type: String,
-    enum: CUSTOMER_LOCATIONS,
-    required: true
-  },
-
+  
   // Shared Additional Fields
   industry_Sector: { 
     type: String ,
@@ -139,18 +127,22 @@ const customerSchema = new Schema({
     type: [String], //type: [String] tells Mongoose that this field is an array of strings
     validate: v => Array.isArray(v) && v.length > 0
   },
+  customerPriority: {
+    type: String,
+    enum: CUSTOMER_PRIORITIES,
+    required: true
+  },
+
+  customer_Location: {
+    type: String,
+    enum: CUSTOMER_LOCATIONS,
+    required: true
+  },
 
   // Indian-only Fields
   indian_Details: {
     stateProvince: { 
       type:String,
-      required: function () {
-        return this.customer_Location === "Indian";
-      }
-    },
-    customer_Segment: {
-      type: String,
-      enum: INDIAN_CUSTOMER_SEGMENTS,
       required: function () {
         return this.customer_Location === "Indian";
       }
@@ -214,13 +206,6 @@ const customerSchema = new Schema({
   internationalDetails: {
     TIN_VAT_EIN_Company_RegNo: { 
       type: String,
-      required: function () {
-        return this.customer_Location === "International";
-      }
-    },
-    customerPriority: {
-      type: String,
-      enum: INTERNATIONAL_CUSTOMER_PRIORITIES,
       required: function () {
         return this.customer_Location === "International";
       }

@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, {Schema} from "mongoose";
 
 const decimal = mongoose.Schema.Types.Decimal128;
 
@@ -7,7 +7,8 @@ const PAYMENT_STATUS = [
   "Completed", 
   "Overdue", 
   "Cancelled", 
-  "Processing"
+  "Processing",
+  "On Hold"
 ];
 
 const RECEIVABLES_AGING = [
@@ -29,7 +30,7 @@ const CURRENCIES = [
   "INR"
 ];
 
-const customerPaymentSchema = new mongoose.Schema({
+const customerPaymentSchema = new Schema({
   payment_id: {
     type: String,
     required: true,
@@ -38,21 +39,6 @@ const customerPaymentSchema = new mongoose.Schema({
     index: true,
     immutable: true
   },
-  
-  created_by: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Employee',
-    required: true,
-    index: true,
-    immutable: true
-  },
-  
-  payment_date: {
-    type: Date,
-    required: true,
-    default: Date.now
-  },
-  
   customer_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Customer',
@@ -85,13 +71,7 @@ const customerPaymentSchema = new mongoose.Schema({
     default: "Pending",
     index: true
   },
-  
-  credit_limit: {
-    type: decimal,
-    required: true,
-    min: 0
-  },
-  
+    
   credit_days: {
     type: Number,
     required: true,
@@ -111,8 +91,8 @@ const customerPaymentSchema = new mongoose.Schema({
   },
   
   currency: {
-    type: String,
-    enum: CURRENCIES,
+    type: mongoose.Schema.Types.ObjectId,
+    ref : 'Customer',
     required: true,
     default: "INR"
   },
@@ -133,11 +113,10 @@ const customerPaymentSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Employee',
         required: true,
-        immutable: true
+        immutable: true,
     }
 }, {
-  timestamps: true,
-  collection: "customer_payments"
+  timestamps: true
 });
 
 // Essential indexes for MongoDB Atlas //query optimizations (optional)
@@ -146,4 +125,4 @@ const customerPaymentSchema = new mongoose.Schema({
 //customerPaymentSchema.index({ createdAt: -1 });
 
 // Export model
-module.exports = mongoose.model("CustomerPayments", customerPaymentSchema);
+export const CustomerPayment = mongoose.model("CustomerPayment", customerPaymentSchema);
