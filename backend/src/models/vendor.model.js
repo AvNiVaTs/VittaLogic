@@ -162,6 +162,6 @@ const vendorSchema = new mongoose.Schema({
       match: /^[A-Z0-9]{10}$/i, // 10 character IEC code
     }
   }
-});
+}, {timestamps: true});
 
 export const Vendor = mongoose.model('Vendor', vendorSchema);

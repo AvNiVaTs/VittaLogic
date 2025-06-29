@@ -58,7 +58,7 @@ const registerOrg = asyncHandler(async (req, res) => {
         throw new ApiErr(400, "All fields are required")
       }
 
-      //check if org alredy exists: email
+      //check if org already exists: email
       const existedOrg = await Organization.findOne({email})
       if(existedOrg){
         throw new ApiErr(409, "Organization with email already exists")

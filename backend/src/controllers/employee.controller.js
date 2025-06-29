@@ -139,7 +139,7 @@ const updatedEmpDetails = asyncHandler(async (req, res) => {
         runValidators: true
     })
     if(!updatedEmp){
-        throw new ApiErr(404, "Employee not find")
+        throw new ApiErr(404, "Employee not found")
     }
 
     return res
@@ -152,9 +152,9 @@ const updatedEmpDetails = asyncHandler(async (req, res) => {
 const deleteEmp = asyncHandler(async (req, res) => {
     const {id} = req.params
 
-    const deleted = await Employee.findByIdAndUpdate(id)
+    const deleted = await Employee.findByIdAndDelete(id)
     if(!deleted){
-        throw new ApiErr(404, deleted, "Employee deleted")
+        throw new ApiErr(404, "Employee not able deleted")
     }
 
     return res
@@ -190,6 +190,10 @@ const searchEmpDept = asyncHandler(async (req, res) => {
     const employees = await Employee.find({department: departmentId}).select(
         "employeeId employeeName designation level"
     )
+
+    if(!employees){
+        throw new ApiErr(400, "No employee found")
+    }
 
     return res
     .status(200)
