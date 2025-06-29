@@ -15,7 +15,7 @@ const registerVendor = asyncHandler(async (req, res) => {
         internationalBankDetails
     } = req.body
 
-    if([company_Name, company_Address, vendor_type, contactPerson, vendor_location].some((field) => field?.trim()==="")){
+    if(!company_Name?.trim() || !company_Address?.trim() || !Array.isArray(vendor_type) || vendor_type.length === 0 || !contactPerson || !vendor_location?.trim()){
         throw new ApiErr(400, "All required fields are required")
     }
 
@@ -76,6 +76,10 @@ const updateVendor = asyncHandler(async (req, res) => {
 
     const updates = req.body
     updates.updatedBy = req.body.updatedBy
+
+    if (updates.vendor_type && (!Array.isArray(updates.vendor_type) || updates.vendor_type.length === 0)) {
+        throw new ApiErr(400, "Vendor type must be a non-empty array");
+    }
 
     const updatedVen = await Vendor.findByIdAndUpdate(id, updates, {
         new: true,
@@ -140,11 +144,32 @@ const searchVendorByName = asyncHandler(async (req, res) => {
     )
 })
 
+const filterVendorByType = asyncHandler(async (req, res) =>{
+    const {type} = req.query
+
+    if(!type){
+        throw new ApiErr(400, "Vendor type required in query")
+    }
+
+    const vendors = await Vendor.find({vendor_type: type})
+
+    if(!vendors || vendors.length===0){
+        throw new ApiErr(404, "No vendor found of this type")
+    }
+
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(200, vendors, `Vendors of type '${type}' fetched`)
+    )
+})
+
 export {
     registerVendor,
     getAllVendor,
     updateVendor,
     deleteVendor,
     searchVendorById,
-    searchVendorByName
+    searchVendorByName,
+    filterVendorByType
 }

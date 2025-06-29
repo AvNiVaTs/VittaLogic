@@ -114,7 +114,7 @@ const customerSchema = new Schema({
 
   customer_Location: {
     type: String,
-    enum: CUSTOMER_LOCATION,
+    enum: CUSTOMER_LOCATIONS,
     required: true
   },
 

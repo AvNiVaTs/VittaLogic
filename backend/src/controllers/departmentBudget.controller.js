@@ -68,41 +68,7 @@ const getDeptBudget = asyncHandler(async (req, res) => {
     )
 })
 
-const editDeptBudget = asyncHandler(async (req, res) => {
-    const {allocatedAmount, budgetNote} = req.body
-
-    if(allocatedAmount===undefined || allocatedAmount===null){
-        throw new ApiErr(400, "Amount allocation needed")
-    }
-
-    const budgetId = req.params.id || req.deptBudget?._id
-    if(!budgetId){
-        throw new ApiErr(400, "Budget ID not provided")
-    }
-
-    const updateBudget = await DepartmentBudget.findByIdAndUpdate(
-        budgetId,
-        {
-            $set: {
-                allocatedAmount,
-                budgetNote
-            }
-        }, {new: true}
-    )
-
-    if(!updateBudget){
-        throw new ApiErr(404, "Budget not found")
-    }
-
-    return res
-    .status(200)
-    .json(
-        new ApiResponse(200, deptBudget, "Budget details updated")
-    )
-})
-
 export {
     registerBudget,
-    getDeptBudget,
-    editDeptBudget
+    getDeptBudget
 }
