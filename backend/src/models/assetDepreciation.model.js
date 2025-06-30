@@ -13,7 +13,7 @@ const assetDepreciationSchema = new Schema({
     type: String,
     unique: true,
     immutable: true,
-    default: () => 'DEP-' + Date.now(),
+    required : true,
     index : true
   },
 
@@ -23,13 +23,15 @@ const assetDepreciationSchema = new Schema({
     required: true
   },
 
-  purchaseCost: { // Hooks and JWT auto Fetch
-    type: Number,
+  purchaseCost: { // Hooks and JWT auto Fetch from Asset
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Asset',
     required: true
   },
 
   purchaseDate: { // Hooks and JWT auto Fetch
-    type: Date,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Asset',
     required: true
   },
 
