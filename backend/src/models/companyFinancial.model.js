@@ -21,6 +21,8 @@ const ACCOUNT_TYPES = [
   "Budget Account"
 ];
 
+const ACCOUNT_CATEGORY = ["Credit Account", "Debit Account"];
+
 const BOOLEAN_OPTIONS = ["Yes", "No"];
 
 // Helper function to validate decimal values
@@ -85,6 +87,11 @@ const financialAccountSchema = new Schema({
       message: 'Invalid account type'
     },
     required: [true, 'Account type is required']
+  },
+  account_category: {
+    type: String,
+    enum: ACCOUNT_CATEGORY,
+    required: true
   },
   account_name: {
     type: String,

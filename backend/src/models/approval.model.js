@@ -25,6 +25,8 @@ const APPROVALFOR = [
     "Service"
 ];
 
+
+
 const approvalSchema = new Schema({
     approval_id: {
         type: String,
@@ -136,7 +138,7 @@ const approvalSchema = new Schema({
         },
         required: [true, 'Status is required'],
         default: "Pending",
-        index: true
+        index: true,
     },
     approver_note: {
         type: String,
