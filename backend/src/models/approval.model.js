@@ -48,15 +48,15 @@ const approvalSchema = new Schema({
         ref: 'Employee',
 
     },
-    approvalfor: {
-        type: String,
-        enum: APPROVALFOR,
-        required: true
-    },
     sender_department: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Employee',
 
+    },
+    approvalfor: {
+        type: String,
+        enum: APPROVALFOR,
+        required: true
     },
     approval_created_by: {                    //approval sender employee id
         type: mongoose.Schema.Types.ObjectId,

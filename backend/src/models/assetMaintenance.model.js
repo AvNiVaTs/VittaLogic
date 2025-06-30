@@ -14,10 +14,15 @@ const assetMaintenanceSchema = new Schema({
     type: String,
     unique: true,
     immutable: true,
-    default: () => `MTN-${Date.now()}`,
+    required: true, 
     index : true
   },
 
+  assetType : {
+    type : mongoose.Schema.Types.ObjectId,
+    ref : Asset,
+    required : true
+  },
   assetId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Asset',
