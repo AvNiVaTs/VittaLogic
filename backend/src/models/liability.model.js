@@ -110,15 +110,6 @@ const liabilitySchema = new Schema({
     min: [0, 'Interest rate cannot be negative'],
     max: [100, 'Interest rate cannot exceed 100%']
   },
-//  variable_rate_benchmark: {  //no idea wtf this does //also we need to add extra fields for variable interest rate
-//    type: String,
-//    validate: {
-//      validator: function(value) {
-//        return this.interest_type !== 'Variable' || (value && value.length > 0);
-//      },
-//      message: 'Variable rate benchmark is required for variable interest rates'
-//    }
-//  },
   payment_terms: {
     type: String,
     enum: {
@@ -161,49 +152,6 @@ const liabilitySchema = new Schema({
     type: String,  //cloudinary url
     required: true
   },
-/*  attachments: [{ //how to handle attachments??  //cloudinary
-    filename: {
-      type: String,
-      required: true
-    },
-//    file_path: {
-//      type: String,   
-//      required: true
-//    },
-    file_type: {
-      type: String,
-      enum: ['pdf', 'doc', 'docx', 'jpg', 'png'],
-      required: true
-    },
-    file_size: {
-      type: Number,
-      max: [10485760, 'File size cannot exceed 10MB'] // 10MB in bytes
-    },
-    uploaded_date: {
-      type: Date,
-      default: Date.now
-    } 
-  }], */
-/*  payment_history: [{
-    payment_date: {
-      type: Date,
-      required: true
-    },
-    amount_paid: {
-      type: DECIMAL_TYPE,
-      required: true,
-      validate: {
-        validator: validatePositiveDecimal,
-        message: 'Payment amount must be greater than 0'
-      }
-    },
-    payment_method: {
-      type: String,
-      enum: ['Bank Transfer', 'Check', 'Cash', 'Credit Card', 'Online', 'Other']
-    },
-    reference_number: String,
-    notes: String
-  }], */
   createdBy: { //Middleware
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Employee',
@@ -221,90 +169,7 @@ const liabilitySchema = new Schema({
     required: [true, 'Approval ID field is required']
   },
 }, {
-  timestamps: true,
-//  toJSON: { virtuals: true },
-//  toObject: { virtuals: true }
+  timestamps: true
 });
-
-/*//===================== Virtual fields for liability calculations ================
-//liabilitySchema.virtual('total_paid').get(function() {
-//  if (!this.payment_history || this.payment_history.length === 0) return 0;
-//  return this.payment_history.reduce((total, payment) => {
-//   return total + parseFloat(payment.amount_paid.toString());
-//  }, 0);
-//});
-
-//liabilitySchema.virtual('remaining_balance').get(function() {
-//  const principal = parseFloat(this.principal_amount.toString());
-//  const paid = this.total_paid;
-//  return Math.max(0, principal - paid);
-//});
-
-//liabilitySchema.virtual('days_until_due').get(function() {
-//  if (!this.due_date) return null;
-//  const today = new Date();
-//  const dueDate = new Date(this.due_date);
-//  const timeDiff = dueDate.getTime() - today.getTime();
-//  return Math.ceil(timeDiff / (1000 * 3600 * 24));
-//});
-
-//liabilitySchema.virtual('is_overdue').get(function() {
-//  const daysUntilDue = this.days_until_due;
-//  return daysUntilDue !== null && daysUntilDue < 0;
-//});
-
-// Pre-save middleware
-liabilitySchema.pre('save', function(next) {
-  // Set outstanding amount to principal if not provided
-  if (!this.outstanding_amount) {
-    this.outstanding_amount = this.principal_amount;
-  }
-  
-  // Calculate next payment date based on payment terms
-  if (this.start_date && this.payment_terms && !this.next_payment_date) {
-    const startDate = new Date(this.start_date);
-    switch (this.payment_terms) {
-      case 'Monthly':
-        this.next_payment_date = new Date(startDate.setMonth(startDate.getMonth() + 1));
-        break;
-      case 'Quarterly':
-        this.next_payment_date = new Date(startDate.setMonth(startDate.getMonth() + 3));
-        break;
-      case 'Yearly':
-        this.next_payment_date = new Date(startDate.setFullYear(startDate.getFullYear() + 1));
-        break;
-      default:
-        this.next_payment_date = this.due_date;
-    }
-  }
-  
-  next();
-});
-
-// Indexes for better query performance
-liabilitySchema.index({ liability_id: 1 });
-liabilitySchema.index({ current_status: 1, priority: 1 });
-liabilitySchema.index({ due_date: 1, current_status: 1 });
-liabilitySchema.index({ liability_type: 1, current_status: 1 });
-liabilitySchema.index({ created_by: 1, createdAt: -1 });
-liabilitySchema.index({ reminder_needed: 1, due_date: 1 });
-
-// Static methods
-liabilitySchema.statics.findOverdue = function() {
-  return this.find({
-    due_date: { $lt: new Date() },
-    current_status: { $in: ['Active', 'Pending'] }
-  });
-};
-
-liabilitySchema.statics.findDueSoon = function(days = 30) {
-  const futureDate = new Date();
-  futureDate.setDate(futureDate.getDate() + days);
-  
-  return this.find({
-    due_date: { $lte: futureDate, $gte: new Date() },
-    current_status: { $in: ['Active', 'Pending'] }
-  });
-}; */
 
 export const Liability = model('Liability', liabilitySchema);
