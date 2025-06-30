@@ -136,7 +136,7 @@ const approvalSchema = new Schema({
         },
         required: [true, 'Status is required'],
         default: "Pending",
-        index: true
+        index: true,
     },
     approver_note: {
         type: String,
