@@ -12,10 +12,20 @@ const registerVendor = asyncHandler(async (req, res) => {
         contactPerson,
         vendor_location,
         indianBankDetails,
-        internationalBankDetails
+        internationalBankDetails,
+        createdBy,
+        updatedBy
     } = req.body
 
-    if(!company_Name?.trim() || !company_Address?.trim() || !Array.isArray(vendor_type) || vendor_type.length === 0 || !contactPerson || !vendor_location?.trim()){
+    if(!company_Name?.trim() ||
+    !company_Address?.trim() ||
+    !Array.isArray(vendor_type) ||
+    vendor_type.length === 0 ||
+    !contactPerson ||
+    !contactPerson.name?.trim() ||
+    !contactPerson.email?.trim() ||
+    !contactPerson.number?.trim() ||
+    !vendor_location?.trim()){
         throw new ApiErr(400, "All required fields are required")
     }
 
