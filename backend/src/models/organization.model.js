@@ -5,6 +5,13 @@ import { ApiErr } from "../utils/ApiError.js"
 
 // === Organization Schema ===
 const organizationSchema = new Schema({
+  organization_Id: {
+    type: String,
+    required: true,
+    unique: true,
+    immutable: true,
+    index : true
+  },
   organizationName: {
     type: String,
     required: true,

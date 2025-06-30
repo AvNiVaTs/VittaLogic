@@ -110,7 +110,7 @@ const customerSchema = new Schema({
   
   // Shared Additional Fields
   industry_Sector: { 
-    type: String ,
+    type: String,
   },
   billing_Address: { 
     type: String, 
@@ -143,7 +143,7 @@ const customerSchema = new Schema({
   },
 
   // Indian-only Fields
-  indian_Details: {
+  indianDetails: {
     stateProvince: { 
       type:String,
       required: function () {
