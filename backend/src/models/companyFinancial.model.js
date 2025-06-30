@@ -130,7 +130,7 @@ const financialAccountSchema = new Schema({
       immutable: true
   }
 }, {
-  timestamps: true,
+  timestamps: true
 });
 
 export const FinancialProfile = model('FinancialProfile', financialProfileSchema);
