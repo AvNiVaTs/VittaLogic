@@ -1,4 +1,4 @@
-import {VendorPayments, VendorPayments} from "../models/vendorPayment.model.js"
+import {VendorPayment} from "../models/vendorPayment.model.js"
 import {Vendor} from "../models/vendor.model.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
 import {ApiErr} from "../utils/ApiError.js"
@@ -30,9 +30,10 @@ const createVendorPayment = asyncHandler(async (req, res) => {
     const payment_id = `VEN_PAY-${await getNextSequence("payment_id")}`
     const indianAmount = toNumber(payment_amount_in_vendor_currency)*toNumber(exchangeRate)
 
-    const newPayment = await VendorPayments.create({
+    const newPayment = await VendorPayment.create({
         payment_id: payment_id,
         vendor_id,
+        currency: vendorExists.currency,
         payment_amount_in_vendor_currency,
         exchangeRate,
         payment_amount_in_indian_currency: indianAmount,
@@ -52,8 +53,8 @@ const createVendorPayment = asyncHandler(async (req, res) => {
 })
 
 const getAllVendorPayments = asyncHandler(async (req, res) => {
-    const payment = await VendorPayments.find()
-    .populate("vendor_id", "company_name")
+    const payment = await VendorPayment.find()
+    .populate("vendor_id", "company_Name")
     .sort({createdAt: -1})
 
     return res
@@ -65,7 +66,7 @@ const getAllVendorPayments = asyncHandler(async (req, res) => {
 
 const getVendorPaymentById = asyncHandler(async (req, res) => {
     const {id} = req.params
-    const payment = await VendorPayments.findById(id).populate("vendor_id", "company_name")
+    const payment = await VendorPayment.findById(id).populate("vendor_id", "company_Name vendor_id")
 
     if(!payment){
         throw new ApiErr(400, "Payment not found")
@@ -80,9 +81,9 @@ const getVendorPaymentById = asyncHandler(async (req, res) => {
 
 const updateVendorPayment = asyncHandler(async (req, res) => {
     const {id} = req.params
-    const {due_date, status, updatedBy} = req.body
+    const {due_date, status} = req.body
 
-    const payment = await VendorPayments.findById(id);
+    const payment = await VendorPayment.findById(id);
     if(!payment){
         throw new ApiErr(400, "Payment not found")
     }
@@ -93,7 +94,7 @@ const updateVendorPayment = asyncHandler(async (req, res) => {
     if(status) updates.status = status
     updates.updatedBy = req.body.updatedBy
 
-    const updated = await VendorPayments.findByIdAndUpdate(id, updates, {new: true})
+    const updated = await VendorPayment.findByIdAndUpdate(id, updates, {new: true})
 
     return res
     .status(200)
@@ -104,7 +105,7 @@ const updateVendorPayment = asyncHandler(async (req, res) => {
 
 const deleteVendorPayment = asyncHandler(async (req, res) => {
     const {id} = req.params
-    const deleted = await VendorPayments.findByIdAndDelete(id)
+    const deleted = await VendorPayment.findByIdAndDelete(id)
 
     if(!deleted){
         throw new ApiErr(400, "Something went wrong")
@@ -128,12 +129,12 @@ const searchVendorPayment = asyncHandler(async (req, res)=>{
     if(company_Name){
         const vendors = await Vendor.find(
             {
-                company_Name_: {
+                company_Name: {
                     $regex: company_Name,
                     $option: "i"
                 }
             },
-            "payment_id"
+            "vendor_id"
         )
 
         const vendorIds = vendors.map(v => v.payment_id)
@@ -149,12 +150,27 @@ const searchVendorPayment = asyncHandler(async (req, res)=>{
         }
     }
 
-    const payment = await VendorPayments.find(query).populate("vendor_id", "company_Name")
+    const payment = await VendorPayment.find(query).populate("vendor_id", "company_Name vendor_id")
 
     return res
     .status(200)
     .json(
         new ApiResponse(200, payment, "Vendor Payment details found")
+    )
+})
+
+const getVendorsForDropDown = asyncHandler(async (req, res) => {
+    const vendors = await Vendor.find({}, "vendor_id company_Name")
+
+    const formatted = vendors.map(vendor=>({
+        value: vendor.vendor_id,
+        label: `${vendor.vendor_id}-${vendor.company_Name}`
+    }))
+
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(200, formatted, "Vendor dropdown data fetched")
     )
 })
 
@@ -164,5 +180,6 @@ export {
     getVendorPaymentById,
     updateVendorPayment,
     deleteVendorPayment,
-    searchVendorPayment
+    searchVendorPayment,
+    getVendorsForDropDown
 }
