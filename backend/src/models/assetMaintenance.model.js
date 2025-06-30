@@ -9,15 +9,29 @@ const maintenanceTypes = [
   'Other'
 ];
 
+const allowedMaintenancePeriod = [
+  "15 Days",
+  "30 Days",
+  "45 Days",
+  "60 Days",
+  "90 Days",
+  "180 Days",
+  "365 Days"
+];
+
 const assetMaintenanceSchema = new Schema({
   maintenanceId: {
     type: String,
     unique: true,
     immutable: true,
-    default: () => `MTN-${Date.now()}`,
+    required: true, 
     index : true
   },
-
+    assetType : {
+    type : mongoose.Schema.Types.ObjectId,
+    ref : Asset,
+    required : true
+  },
   assetId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Asset',
@@ -37,28 +51,24 @@ const assetMaintenanceSchema = new Schema({
 
   maintenancePeriod: {
     type: Number,
-    required: [true, 'Maintenance period is required'],
-    min: [0.1, 'Maintenance period must be at least 0.1 month'],
-    validate: {
-      validator: v => /^\d+(\.\d{1,2})?$/.test(v.toString()),
-      message: 'Maintenance period must have up to 2 decimal places'
-    }
+    enum: allowedMaintenancePeriod, 
+    required: [true, 'Maintenance period is required']
   },
 
   nextMaintenanceDate: {
     type: Date // Middleware (automatic)
   },
 
-  amcProviderName: {
+  ServiceProviderName: {
     type: String,
     trim: true
   },
 
-  amcStartDate: {
+  StartDate: {
     type: Date
   },
 
-  amcEndDate: {
+  EndDate: {
     type: Date,
     validate: {
       validator: function (v) {
@@ -94,6 +104,7 @@ const assetMaintenanceSchema = new Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Employee',
       required: true,
+      default: enteredBy,
       immutable: true
   }
 

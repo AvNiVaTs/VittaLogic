@@ -33,30 +33,15 @@ const approvalSchema = new Schema({
         immutable: true,
         index : true
     },
-    approved_to: {                               //Employee id
+    approval_to: {                               //Employee id
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Employee',
         required : true
-    },
-    sender_name: {                              //approval sender name
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Employee',
-
-    },
-    sender_designation: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Employee',
-
     },
     approvalfor: {
         type: String,
         enum: APPROVALFOR,
         required: true
-    },
-    sender_department: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Employee',
-
     },
     approval_created_by: {                    //approval sender employee id
         type: mongoose.Schema.Types.ObjectId,
@@ -136,7 +121,7 @@ const approvalSchema = new Schema({
         },
         required: [true, 'Status is required'],
         default: "Pending",
-        index: true
+        index: true,
     },
     approver_note: {
         type: String,

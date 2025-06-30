@@ -7,7 +7,7 @@ const assetDisposalSchema = new Schema({
     type: String,
     unique: true,
     immutable: true,
-    default: () => `DSP-${Date.now()}`,
+    required: true,
     index : true
   },
 
@@ -42,7 +42,6 @@ const assetDisposalSchema = new Schema({
 
   buyerInformation: {
     type: String,
-    required: true,
     trim: true,
     maxlength: [200, 'Buyer info must be under 200 characters']
   },
@@ -52,7 +51,10 @@ const assetDisposalSchema = new Schema({
     trim: true,
     maxlength: 300
   },
-
+  Attachment: {  //cloudinary url
+    type: String
+  },
+  
   enteredBy: { // middleware
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Employee',
