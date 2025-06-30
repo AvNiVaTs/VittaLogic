@@ -33,25 +33,10 @@ const approvalSchema = new Schema({
         immutable: true,
         index : true
     },
-    approved_to: {                               //Employee id
+    approval_to: {                               //Employee id
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Employee',
         required : true
-    },
-    sender_name: {                              //approval sender name
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Employee',
-
-    },
-    sender_designation: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Employee',
-
-    },
-    sender_department: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Employee',
-
     },
     approvalfor: {
         type: String,

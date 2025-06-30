@@ -16,7 +16,11 @@ const assetDepreciationSchema = new Schema({
     required : true,
     index : true
   },
-
+  assetType : {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Asset',
+    required: true
+  },
   assetId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Asset',
@@ -101,7 +105,6 @@ const assetDepreciationSchema = new Schema({
   updatedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Employee',
-    required: true,
     immutable: true
   },
 

@@ -1,6 +1,5 @@
 import mongoose, { Schema, model } from "mongoose";
 
-// Constants
 const DECIMAL_TYPE = mongoose.Schema.Types.Decimal128;
 
 const ACCOUNT_TYPES = [
@@ -25,19 +24,16 @@ const ACCOUNT_CATEGORY = ["Credit Account", "Debit Account"];
 
 const BOOLEAN_OPTIONS = ["Yes", "No"];
 
-// Helper function to validate decimal values
 const validatePositiveDecimal = function(value) {
   if (!value) return false;
   const numValue = parseFloat(value.toString());
   return numValue > 0;
 };
 
-// Helper function to validate date ranges
 const validateDateRange = function() {
   return this.due_date > this.start_date;
 };
 
-// Company Financial Profile Schema
 const financialProfileSchema = new Schema({
   updated_by: {
     type: mongoose.Schema.Types.ObjectId,
@@ -71,7 +67,6 @@ const financialProfileSchema = new Schema({
   }
 } , {timestamps : true});
 
-// Financial Accounts Schema
 const financialAccountSchema = new Schema({
   account_id: {
     type: String,
@@ -104,13 +99,6 @@ const financialAccountSchema = new Schema({
   parent_account_id: {
     type: String,
     trim: true,
-//  validate: {
-//    validator: function(value) {
-//      if (!value) return true;
-//      return /^ACC-\d{6}$/.test(value);
-//    },
-//    message: 'Parent account ID must follow format ACC-XXXXXX'
-//   }
   },
   description: {
     type: String,
@@ -143,18 +131,8 @@ const financialAccountSchema = new Schema({
   }
 }, {
   timestamps: true,
-//  toJSON: { virtuals: true },         //This enables virtual fields (computed or derived values) to be included when the document is converted to JSON
-//  toObject: { virtuals: true }        //same thing for object
 });
 
-//==================================== Indexes for financial accounts ========================================
-//financialAccountsSchema.index({ account_id: 1 });
-//financialAccountsSchema.index({ account_type: 1, is_active: 1 });
-//financialAccountsSchema.index({ parent_account_id: 1 });
-
-
-
-// Export models
 export const FinancialProfile = model('FinancialProfile', financialProfileSchema);
 
 export const FinancialAccount = model('FinancialAccount', financialAccountSchema);

@@ -163,11 +163,6 @@ const assetSchema = new Schema({
     immutable: true,
     required : true
   },
-  expectedUsefulLife: {
-    type: Number,
-    required: true,
-    min: [0.1, 'Expected useful life must be at least 0.1 year']
-  },
   numberOfAssets: { // quantity
     type : mongoose.Schema.Types.ObjectId,
     ref : 'EnteredAsset',
