@@ -27,7 +27,7 @@ const createVendorPayment = asyncHandler(async (req, res) => {
         throw new ApiErr(404, "Vendor not found");
     }
 
-    const payment_id = `VEN_PAY-${await getNextSequence("payment_id")}`
+    const payment_id = `VEN_PAY-${(await getNextSequence("payment_id")).toString().padStart(5, "0")}`
     const indianAmount = toNumber(payment_amount_in_vendor_currency)*toNumber(exchangeRate)
 
     const newPayment = await VendorPayment.create({
@@ -131,7 +131,7 @@ const searchVendorPayment = asyncHandler(async (req, res)=>{
             {
                 company_Name: {
                     $regex: company_Name,
-                    $option: "i"
+                    $options: "i"
                 }
             },
             "vendor_id"

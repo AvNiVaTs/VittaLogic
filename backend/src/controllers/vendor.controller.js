@@ -12,9 +12,7 @@ const registerVendor = asyncHandler(async (req, res) => {
         contactPerson,
         vendor_location,
         indianBankDetails,
-        internationalBankDetails,
-        createdBy,
-        updatedBy
+        internationalBankDetails
     } = req.body
 
     if(!company_Name?.trim() ||
@@ -36,7 +34,7 @@ const registerVendor = asyncHandler(async (req, res) => {
         throw new ApiErr(400, "All required Bank Details must be filled")
     }
 
-    const venId = `VEN-${await getNextSequence("vendor_id")}`
+    const venId = `VEN-${(await getNextSequence("vendor_id")).toString().padStart(5, "0")}`
 
     const vendor = await Vendor.create({
         vendor_id: venId,

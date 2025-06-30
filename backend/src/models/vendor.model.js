@@ -41,7 +41,7 @@ const vendorSchema = new Schema({
     required: true
   },
   vendor_type: {
-    type: String,
+    type: [String],
     enum: Vendor_types,
     required: true,
     index : true //added others in the enum list

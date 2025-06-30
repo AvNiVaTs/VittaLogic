@@ -3,6 +3,7 @@ import { asyncHandler } from "../utils/asyncHandler.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { Organization } from "../models/organization.model.js"
 import jwt from "jsonwebtoken"
+import { getNextSequence } from "../utils/getNextSequence.js"
 
 const generatorAccessAndRefreshTokens = async(orgId) => {
     try{
@@ -64,8 +65,11 @@ const registerOrg = asyncHandler(async (req, res) => {
         throw new ApiErr(409, "Organization with email already exists")
       }
 
+      const orgId = `ORG-${(await getNextSequence("organization_id")).toString().padStart(5, "0")}`
+
       //create org object - create entry in db
       const org = await Organization.create({
+        organization_id: orgId,
         organizationName,
         panNumber,
         website,
