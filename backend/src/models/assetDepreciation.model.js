@@ -13,7 +13,7 @@ const assetDepreciationSchema = new Schema({
     type: String,
     unique: true,
     immutable: true,
-    default: () => 'DEP-' + Date.now(),
+    required: true,
     index : true
   },
 
