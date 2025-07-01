@@ -55,7 +55,7 @@ const createCustomer = asyncHandler(async (req, res) => {
         address,
         company_Email,
         customer_Types,
-        contactPerson: {
+        contact_Person: {
             name: contact_Person.name,
             email: contact_Person.email,
             number: contact_Person.number
@@ -67,8 +67,8 @@ const createCustomer = asyncHandler(async (req, res) => {
         shipping_Address,
         customerPriority,
         customer_Location,
-        indianDetails: vendor_location==="Indian"? indianBankDetails : undefined,
-        internationalDetails: vendor_location==="International"? internationalBankDetails : undefined,
+        indianDetails: customer_Location==="Indian"? indianDetails : undefined,
+        internationalDetails: customer_Location==="International"? internationalDetails : undefined,
         createdBy: req.body.createdBy,
         updatedBy: req.body.updatedBy
     })
@@ -89,7 +89,7 @@ const getAllCustomer = asyncHandler(async (req, res) => {
     const cust = await Customer.find().sort({createdAt: -1})
 
     if(!cust || cust.length===0){
-        throw new ApiErr(400, "Customer not found")
+        throw new ApiErr(404, "Customer not found")
     }
 
     return res
@@ -104,13 +104,13 @@ const updateCust = asyncHandler(async (req, res) => {
     const updates = req.body
     updates.updatedBy = req.body.updatedBy
 
-    const updatedCustomer = await Customer.findByIdAndUpdate(id, updates, {
+    const updatedCustomer = await Customer.findByIdAndUpdate({customer_Id: id}, updates, {
         new: true,
         runValidator: true
     })
 
-    if(!updateCustomer){
-        throw new ApiErr(400, "Customer not found")
+    if(!updatedCustomer){
+        throw new ApiErr(404, "Customer not found")
     }
 
     return res
@@ -141,7 +141,7 @@ const searchCustomerById = asyncHandler(async (req, res) => {
     const cust = await Customer.findOne({customer_Id: id})
 
     if(!cust){
-        throw new ApiErr(400, "Customer not found")
+        throw new ApiErr(404, "Customer not found")
     }
 
     return res
