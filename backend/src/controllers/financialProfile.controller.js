@@ -9,8 +9,8 @@ const createFinancialProfile = asyncHandler(async (req, res) => {
 
     const finId = `FIN-${(await getNextSequence("finance_id")).toString().padStart(5, "0")}`
     const newProfile = await FinancialProfile.create({
-        created_by: req.body.created_by,
         updated_by: req.body.updated_by,
+        created_by: req.body.created_by,
         finance_id: finId,
         reserve_capital_cash,
         reserve_capital_bank
