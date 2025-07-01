@@ -30,19 +30,15 @@ const validatePositiveDecimal = function(value) {
   return numValue > 0;
 };
 
-const validateDateRange = function() {
-  return this.due_date > this.start_date;
-};
-
 const financialProfileSchema = new Schema({
-  created_by: {
+  updated_by: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Employees',
     required : true,
     index: true,
     immutable: true
   },
-  updated_by: {
+  created_by: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Employees',
     required : true,
@@ -99,7 +95,7 @@ const financialAccountSchema = new Schema({
     type: String,
     required: [true, 'Account name is required'],
     trim: true,
-    maxLength: [100, 'Account name cannot exceed 100 characters'],
+    maxlength: [100, 'Account name cannot exceed 100 characters'],
     minlength: [2, 'Account name must be at least 2 characters'],
     index : true
   },
@@ -109,7 +105,7 @@ const financialAccountSchema = new Schema({
   },
   description: {
     type: String,
-    maxLength: [300, 'Description cannot exceed 300 characters']
+    maxlength: [300, 'Description cannot exceed 300 characters']
   },
   opening_balance: {
     type: DECIMAL_TYPE,
@@ -125,7 +121,7 @@ const financialAccountSchema = new Schema({
     enum : BOOLEAN_OPTIONS,
     default: true
   },
-  createdBy: { //Middleware
+  enteredBy: { //Middleware
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Employee',
       required: true,
@@ -134,8 +130,7 @@ const financialAccountSchema = new Schema({
   updatedBy: { //Middleware
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Employee',
-      immutable: true,
-      required: true,
+      immutable: true
   }
 }, {
   timestamps: true
