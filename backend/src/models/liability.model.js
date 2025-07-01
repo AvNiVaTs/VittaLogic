@@ -60,7 +60,7 @@ const liabilitySchema = new Schema({
     type: String,
     required: [true, 'Liability name is required'],
     trim: true,
-    maxlength: [100, 'Liability name cannot exceed 100 characters'],
+    maxLength: [100, 'Liability name cannot exceed 100 characters'],
     minlength: [2, 'Liability name must be at least 2 characters'],
     index : true
   },
@@ -146,7 +146,7 @@ const liabilitySchema = new Schema({
     ref : 'Vendor',
     required: [true, 'Liability vendor is required'],
     trim: true,
-    maxlength: [100, 'Vendor name cannot exceed 100 characters']
+    maxLength: [100, 'Vendor name cannot exceed 100 characters']
   },
   attachment: {
     type: String,  //cloudinary url
