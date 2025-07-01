@@ -3,6 +3,16 @@ import mongoose, { Schema, model } from "mongoose";
 // Constants
 const DECIMAL_TYPE = mongoose.Schema.Types.Decimal128;
 
+const validatePositiveDecimal = function(value) {
+  if (!value) return false;
+  const numValue = parseFloat(value.toString());
+  return numValue > 0;
+};
+
+const validateDateRange = function() {
+  return this.due_date > this.start_date;
+};
+
 const LIABILITY_TYPES = [
   "Bank Loan", 
   "Equipment Loan", 
