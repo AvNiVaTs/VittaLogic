@@ -32,7 +32,7 @@ const validatePositiveDecimal = function(value) {
 
 const validateDateRange = function() {
   return this.due_date > this.start_date;
-};//No need of this
+};
 
 const financialProfileSchema = new Schema({
   created_by: {
