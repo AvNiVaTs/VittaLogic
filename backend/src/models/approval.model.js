@@ -105,7 +105,7 @@ const approvalSchema = new Schema({
     reason: {
         type: String,
         required: [true, 'Reason is required'],
-        maxlength: [500, 'Reason cannot exceed 500 characters'],
+        maxLength: [500, 'Reason cannot exceed 500 characters'],
         validate: {
             validator: function(v) {
                 return v && v.trim().length > 0;
@@ -125,7 +125,7 @@ const approvalSchema = new Schema({
     },
     approver_note: {
         type: String,
-        maxlength: [300, 'Approver note cannot exceed 300 characters'],
+        maxLength: [300, 'Approver note cannot exceed 300 characters'],
     },
     decision_time: {
         type: Date,
