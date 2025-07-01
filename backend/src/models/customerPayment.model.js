@@ -18,20 +18,8 @@ const RECEIVABLES_AGING = [
   "90+ days"
 ];
 
-const CURRENCIES = [
-  "USD", 
-  "EUR", 
-  "GBP", 
-  "JPY", 
-  "AUD", 
-  "CAD", 
-  "CHF", 
-  "CNY", 
-  "INR"
-];
-
 const customerPaymentSchema = new Schema({
-  payment_id: {
+  customer_payment_id: {
     type: String,
     required: true,
     unique: true,
@@ -54,7 +42,7 @@ const customerPaymentSchema = new Schema({
     type: String,
     required: true,
     trim: true,
-    maxlength: 500
+    maxLength: 500
   },
   
   due_date: {
@@ -112,9 +100,8 @@ const customerPaymentSchema = new Schema({
       ref: 'Employee',
       immutable: true
     }
-}, {
-  timestamps: true
-});
+},
+{timestamps: true});
 
 // Essential indexes for MongoDB Atlas //query optimizations (optional)
 //customerPaymentSchema.index({ customer_id: 1, payment_date: -1 }); 
