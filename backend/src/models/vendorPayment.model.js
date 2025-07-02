@@ -1,4 +1,4 @@
-import mongoose, {Schema} from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
 const decimal = mongoose.Schema.Types.Decimal128;
 
@@ -43,7 +43,7 @@ const vendorPaymentSchema = new Schema({
   payment_amount_in_vendor_currency: {
     type: decimal,
     required: true,
-    min: 0.01
+    min: 0
   },
   exchangeRate: { 
     type: decimal,
@@ -54,7 +54,13 @@ const vendorPaymentSchema = new Schema({
   payment_amount_in_indian_currency: {
     type: decimal,
     required: true,
-    min: 0.01
+    min: 0
+  },
+  paid_amount: {
+    type: decimal,
+    required: true,
+    min: 0,
+    default: 0
   },
   due_date: {
     type: Date,

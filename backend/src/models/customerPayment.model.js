@@ -1,4 +1,4 @@
-import mongoose, {Schema} from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
 const decimal = mongoose.Schema.Types.Decimal128;
 
@@ -32,7 +32,13 @@ const customerPaymentSchema = new Schema({
     required: true,
   },
   
-  payment_amount: {
+  payment_amount_in_customer_currency: {
+    type: decimal,
+    required: true,
+    min: 0
+  },
+
+  payment_amount_in_inr: {
     type: decimal,
     required: true,
     min: 0
@@ -65,10 +71,12 @@ const customerPaymentSchema = new Schema({
     max: 365
   },
   
-  outstanding_amount: {
+  paid_amount: {
     type: decimal,
     required: true,
-    min: 0
+    min: 0,
+    default: 0
+
   },
   
   receivables_aging: {
@@ -80,7 +88,6 @@ const customerPaymentSchema = new Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref : 'Customer',
     required: true,
-    default: "INR"
   },
   
   exchange_rate: {

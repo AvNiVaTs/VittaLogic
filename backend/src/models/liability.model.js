@@ -99,15 +99,11 @@ const liabilitySchema = new Schema({
       message: 'Principal amount must be greater than 0'
     }
   },
-  outstanding_amount: {
+  paid_amount: {
     type: DECIMAL_TYPE,
-    validate: {
-      validator: function(value) {
-        if (!value) return true;
-        return validatePositiveDecimal(value);
-      },
-      message: 'Outstanding amount must be greater than 0'
-    }
+    required: true,
+    min: 0,
+    default: 0
   },
   interest_type: {
     type: String,
