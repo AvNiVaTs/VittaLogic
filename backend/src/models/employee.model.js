@@ -1,15 +1,15 @@
 import mongoose, {Schema} from "mongoose";
 import { formatName } from '../utils/formatName.js';
 const allowedServices = [
-  'Department',
-  'Employee',
-  'Transaction',
-  'Asset',
-  'Company Financials',
-  'Vendor',
-  'Customer',
-  'Dashboard',
-  'Approval'
+  'Department Service',
+  'Employee Service',
+  'Transaction Service',
+  'Asset Service',
+  'Company Financials Service',
+  'VendornService',
+  'Customer Service',
+  'Dashboard Service',
+  'Approval Service'
 ];
 
 const allowedDesignation = [
