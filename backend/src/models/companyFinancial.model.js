@@ -95,7 +95,7 @@ const financialAccountSchema = new Schema({
     type: String,
     required: [true, 'Account name is required'],
     trim: true,
-    maxlength: [100, 'Account name cannot exceed 100 characters'],
+    maxLength: [100, 'Account name cannot exceed 100 characters'],
     minlength: [2, 'Account name must be at least 2 characters'],
     index : true
   },
@@ -105,7 +105,7 @@ const financialAccountSchema = new Schema({
   },
   description: {
     type: String,
-    maxlength: [300, 'Description cannot exceed 300 characters']
+    maxLength: [300, 'Description cannot exceed 300 characters']
   },
   opening_balance: {
     type: DECIMAL_TYPE,

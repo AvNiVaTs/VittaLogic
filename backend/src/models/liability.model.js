@@ -91,7 +91,7 @@ const liabilitySchema = new Schema({
       message: 'Due date must be after start date'
     }
   },
-  principal_amount: {
+  principle_amount: {
     type: DECIMAL_TYPE,
     required: [true, 'Principal amount is required'],
     validate: {

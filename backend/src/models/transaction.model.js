@@ -165,7 +165,7 @@ const transactionSchema = new Schema({
   narration: {
     type: String,
     trim: true,
-    maxlength: 300
+    maxLength: 300
   }
 }, { timestamps: true });
 
