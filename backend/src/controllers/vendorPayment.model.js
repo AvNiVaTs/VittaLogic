@@ -36,7 +36,7 @@ const createVendorPayment = asyncHandler(async (req, res) => {
         currency: vendorExists.currency,
         payment_amount_in_vendor_currency,
         exchangeRate,
-        payment_amount_in_indian_currency: indianAmount,
+        payment_amount_in_indian_currency: payment_amount_in_vendor_currency*exchangeRate,
         due_date,
         purpose,
         payment_method,
