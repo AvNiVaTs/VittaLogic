@@ -16,6 +16,10 @@ const createFinancialProfile = asyncHandler(async (req, res) => {
         reserve_capital_bank
     })
 
+    if(!newProfile){
+        throw new ApiErr(404, "Something went wrong")
+    }
+
     return res
     .status(200)
     .json(

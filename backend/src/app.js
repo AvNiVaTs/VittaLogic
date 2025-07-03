@@ -15,8 +15,33 @@ app.use(express.static("public"))
 app.use(cookieParser())
 
 import orgRouter from "./routes/organization.routes.js"
+import deptRouter from "./routes/department.routes.js"
+import deptBudgetRouter from "./routes/departmentBudget.routes.js"
+import empRouter from "./routes/employee.routes.js"
+import empSalaryRouter from "./routes/employeeSalary.routes.js"
+import profileRouter from "./routes/financialProfile.routes.js"
+import accountRouter from "./routes/financialAccount.routes.js"
+import vendorRouter from "./routes/vendor.routes.js"
+import vendorPayRouter from "./routes/vendorPayment.routes.js"
+import customerRouter from "./routes/customer.routes.js"
+import customerPayRouter from "./routes/customerPayment.routes.js"
+import liabilityRouter from "./routes/liability.routes.js"
+import approvalRouter from "./routes/approval.routes.js"
 
+
+//http://localhost:8000/api/v1/org/....
 app.use("/api/v1/org", orgRouter)
-    //http://localhost:8000/api/v1/org/register
+app.use("/api/v1/dept", deptRouter)
+app.use("/api/v1/deptBudget", deptBudgetRouter)
+app.use("/api/v1/emp", empRouter)
+app.use("/api/v1/empSalary", empSalaryRouter)
+app.use("/api/v1/profile", profileRouter)
+app.use("/api/v1/account", accountRouter)
+app.use("/api/v1/vendor", vendorRouter)
+app.use("/api/v1/vendorPayment", vendorPayRouter)
+app.use("api/v1/customer", customerRouter)
+app.use("/api/v1/customerPay", customerPayRouter)
+app.use("/api/v1/use", liabilityRouter)
+app.use("/api/v1/approval", approvalRouter)
 
 export { app }

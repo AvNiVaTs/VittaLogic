@@ -111,21 +111,7 @@ const registerOrg = asyncHandler(async (req, res) => {
 
 const loginOrg = asyncHandler(async (req, res) => {
     //req.body -> data
-    const {
-        organizationName,
-        panNumber,
-        website,
-        email,
-        contactNumber,
-        gstin,
-        address,
-        country,
-        pincode,
-        authorizedPerson,
-        bankName,
-        ifscCode,
-        bankAccountNumber
-    } = req.body
+    const {email, authorizedPerson} = req.body
 
     //email check
     if(!email){

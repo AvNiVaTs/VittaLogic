@@ -14,5 +14,4 @@ router.route("/change-password").post(verifyJWT, changeCurrPassword)
 router.route("/current-user").get(verifyJWT, getCurrentOrg)
 router.route("/update-account").patch(verifyJWT, updateAccountDetails)
 
-
 export default router

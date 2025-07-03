@@ -24,7 +24,7 @@ const createFinancialAccount = asyncHandler(async (req, res) => {
         description,
         opening_balance,
         current_balance: opening_balance,
-        createdBy: req.body,createdBy,
+        createdBy: req.body.createdBy,
         updatedBy: req.body.updatedBy
     })
 
