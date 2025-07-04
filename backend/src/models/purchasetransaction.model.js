@@ -7,19 +7,11 @@ const REFERENCE_TYPES = [
     "Service"
 ];
 
-const ACCOUNTS = [
-    "N/A", 
-    "Cash Account", 
-    "Bank Account", 
-    "Sales Account", 
-    "Purchase Account",
-    "Office Supplies Account",
-    "Salary Account"
-];
-
 const ALLOWEDSTATUSES = [
+    "Pending",
     "Partially Paid",
-    "Completed"
+    "Completed",
+    "Cancelled"
 ];
 
 const MODES = ["Digital", "Cash", "Cheque"];
@@ -87,6 +79,13 @@ const purchaseSchema = new Schema ({
     purchase_date: {
         type: Date,
         required: true,
+        index: true,
+        validate: {
+            validator: function(v) {
+                return v <= new Date();
+            },
+            message: 'Purchase date cannot be in the future'
+        }
     },
 
     vendor_type: {
@@ -113,7 +112,8 @@ const purchaseSchema = new Schema ({
         type: String,
         required: true,
         unique: true,
-        immutable: true
+        immutable: true,
+        index : true
     },
     AssetDetails: {
         asset_name: {
@@ -145,7 +145,14 @@ const purchaseSchema = new Schema ({
     },
     purchase_amount: {
         type: decimal,
-        required: true
+        required: true,
+        validate: {
+            validator: function(v) {
+                return v && parseFloat(v.toString()) > 0;
+            },
+            message: 'Purchase amount must be greater than 0'
+        },
+        index: true
     },
     transaction_type: {
         type: String,
@@ -163,18 +170,18 @@ const purchaseSchema = new Schema ({
         required: true
     },
     payment_id: {
-        type: mongoose/Schema.Types.ObjectId,
-        ref: 'Vendor',
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'VendorPayment',
         required: true
     },
     debit_account: {
-        type: String,
-        enum: ACCOUNTS,
+        type: mongoose.Schema.Types.ObjectId,
+        ref : FinancialAccount,
         required: true
     },
     credit_account: {
-        type: String,
-        enum: ACCOUNTS,
+        type: mongoose.Schema.Types.ObjectId,
+        ref : FinancialAccount,
         required: true
     },
     status: {
