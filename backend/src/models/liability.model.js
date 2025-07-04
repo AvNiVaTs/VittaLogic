@@ -69,6 +69,7 @@ const liabilitySchema = new Schema({
   liability_name: {
     type: String,
     required: [true, 'Liability name is required'],
+    unique : true,
     trim: true,
     maxLength: [100, 'Liability name cannot exceed 100 characters'],
     minlength: [2, 'Liability name must be at least 2 characters'],
