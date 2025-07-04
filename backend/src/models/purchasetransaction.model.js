@@ -18,11 +18,8 @@ const ACCOUNTS = [
 ];
 
 const ALLOWEDSTATUSES = [
-  "Pending", 
-  "Approved", 
-  "Completed", 
-  "Rejected", 
-  "On Hold"
+    "Partially Paid",
+    "Completed"
 ];
 
 const MODES = ["Digital", "Cash", "Cheque"];
