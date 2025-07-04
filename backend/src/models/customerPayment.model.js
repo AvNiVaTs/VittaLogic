@@ -29,7 +29,7 @@ const customerPaymentSchema = new Schema({
   customer_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Customer',
-    required: true,
+    required: true
   },
   
   payment_amount_in_customer_currency: {
@@ -76,7 +76,6 @@ const customerPaymentSchema = new Schema({
     required: true,
     min: 0,
     default: 0
-
   },
   
   receivables_aging: {

@@ -45,6 +45,11 @@ const assetDepreciationSchema = new Schema({
     required: true
   },
 
+  depreciationStartDate: {
+    type: Date,
+    required: true,
+  },
+
   // Common field across methods
   salvageValue: {
     type: Number,

@@ -1,4 +1,4 @@
-import mongoose ,  {Schema} from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
 const Vendor_types = [
   "Technology", 
@@ -14,7 +14,7 @@ const Vendor_types = [
   "Construction", 
   "Healthcare",
   "Liability",
-  "Others" //added others it was not in the front end
+  "Others" 
 ];
 
 const Vendor_location = [
