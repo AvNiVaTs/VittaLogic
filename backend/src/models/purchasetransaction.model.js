@@ -17,7 +17,7 @@ const ACCOUNTS = [
     "Salary Account"
 ];
 
-const ALLOWEDSTATUSES = [
+const ALLOWED_STATUS = [
     "Partially Paid",
     "Completed"
 ];
@@ -179,7 +179,7 @@ const purchaseSchema = new Schema ({
     },
     status: {
         type: String,
-        enum: ALLOWEDSTATUSES,
+        enum: ALLOWED_STATUS,
         required: true
     },
     department: {
