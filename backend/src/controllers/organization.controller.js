@@ -51,12 +51,24 @@ const registerOrg = asyncHandler(async (req, res) => {
         address,
         country,
         pincode,
-        authorizedPerson,
         bankName,
         ifscCode,
         bankAccountNumber
       ].some((field) => field?.trim()==="")){
         throw new ApiErr(400, "All fields are required")
+      }
+
+      if (!authorizedPerson 
+        || [
+          authorizedPerson.firstName,
+          authorizedPerson.lastName,
+          authorizedPerson.email,
+          authorizedPerson.designation,
+          authorizedPerson.contactNumber,
+          authorizedPerson.password,
+          authorizedPerson.confirmpassword
+        ].some(field => typeof field !== "string" || field.trim() === "")) {
+        throw new ApiErr(400, "All authorized person fields are required");
       }
 
       //check if org already exists: email
@@ -65,11 +77,8 @@ const registerOrg = asyncHandler(async (req, res) => {
         throw new ApiErr(409, "Organization with email already exists")
       }
 
-      const orgId = `ORG-${(await getNextSequence("organization_id")).toString().padStart(5, "0")}`
-
       //create org object - create entry in db
       const org = await Organization.create({
-        organization_id: orgId,
         organizationName,
         panNumber,
         website,
@@ -90,7 +99,9 @@ const registerOrg = asyncHandler(async (req, res) => {
         },
         bankName,
         ifscCode,
-        bankAccountNumber
+        bankAccountNumber,
+        createdBy: null,
+        updatedBy: null
       });
 
       //remove password and refresh token field from response
@@ -105,7 +116,7 @@ const registerOrg = asyncHandler(async (req, res) => {
 
       //return result
       return res.status(201).json(
-        new ApiResponse(200, createdOrg, "User registered successfully")
+        new ApiResponse(200, createdOrg, "Organization registered successfully")
       )
 })
 
@@ -117,9 +128,13 @@ const loginOrg = asyncHandler(async (req, res) => {
     if(!email){
         throw new ApiErr(400, "Email is required")
     }
+
+    if (!authorizedPerson || !authorizedPerson.password) {
+        throw new ApiErr(400, "Password is required");
+    }    
     
     //find org
-    const org = await Organization.findOne({email})
+    const org = await Organization.findOne({ email }).select("+authorizedPerson.password +authorizedPerson.confirmpassword")
     if(!org){
         throw new ApiErr(404, "Organization does not exists")
     }
@@ -166,7 +181,7 @@ const logoutOrg = asyncHandler(async (req, res) => {
     )
 
     const options = {
-        httpsOnly: true,
+        httpOnly: true,
         secure: true
     }
 
@@ -221,7 +236,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 const changeCurrPassword = asyncHandler(async (req, res) => {
     const {oldPassword, newPassword} = req.body
 
-    const org = await Organization.findById(req.org?._id)
+    const org = await Organization.findById(req.org?._id).select('authorizedPerson.password')
 
     const isPasswordCorrect = await org.isPasswordCorrect(oldPassword)
     if(!isPasswordCorrect){
@@ -260,6 +275,10 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
             "authorizedPerson.mobileNumber": mobileNumber
         }
     }, {new: true}).select("-authorizedPerson.password -authorizedPerson.confirmpassword -refreshToken")
+
+    org.updatedBy = req.employee?._id || req.org?._id || "System";
+
+    await org.save();
 
     return res
     .status(200)
