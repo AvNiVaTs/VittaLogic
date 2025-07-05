@@ -27,7 +27,7 @@ import customerRouter from "./routes/customer.routes.js"
 import customerPayRouter from "./routes/customerPayment.routes.js"
 import liabilityRouter from "./routes/liability.routes.js"
 import approvalRouter from "./routes/approval.routes.js"
-
+import assetRouter from "./routes/assets.routes.js"
 
 //http://localhost:8000/api/v1/org/....
 app.use("/api/v1/org", orgRouter)
@@ -43,5 +43,6 @@ app.use("api/v1/customer", customerRouter)
 app.use("/api/v1/customerPay", customerPayRouter)
 app.use("/api/v1/use", liabilityRouter)
 app.use("/api/v1/approval", approvalRouter)
+app.use("/api/v1/assetEntered", assetRouter)
 
 export { app }
