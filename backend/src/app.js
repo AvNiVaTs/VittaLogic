@@ -43,6 +43,6 @@ app.use("api/v1/customer", customerRouter)
 app.use("/api/v1/customerPay", customerPayRouter)
 app.use("/api/v1/use", liabilityRouter)
 app.use("/api/v1/approval", approvalRouter)
-app.use("/api/v1/assetEntered", assetRouter)
+app.use("/api/v1/asset", assetRouter)
 
 export { app }
