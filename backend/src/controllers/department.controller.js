@@ -26,11 +26,11 @@ const registerDepartment = asyncHandler(async (req, res) => {
         department_id: departmentId,
         departmentName,
         description,
-        createdBy: req.body.createdBy
+        createdBy: req.employee?._id || req.org?._id || "System"
     })
 
     //check for creation
-    const createdDept = await Department.findById(dept.department_id)
+    const createdDept = await Department.findOne({department_id: dept.department_id})
     if(!createdDept){
         throw new ApiErr(500, "Something went wrong")
     }
@@ -46,18 +46,20 @@ const registerDepartment = asyncHandler(async (req, res) => {
 const getDeptEntry = asyncHandler(async (req, res) => {
     return res
     .status(200)
-    .json(200, req.dept, "Current Department fetched")
+    .json(
+        new ApiResponse(200, req.dept, "Current Department fetched")
+    )
 })
 
-const editDeptEntry = asyncHandler(async (res, reg) => {
+const editDeptEntry = asyncHandler(async (req, res) => {
     const {departmentName, description} = req.body
 
     if(!departmentName){
         throw new ApiErr(400, "Department name required")
     }
 
-    const dept = await Department.findByIdAndUpdate(
-        req.dept?.department_id,
+    const dept = await Department.findOneAndUpdate(
+        {department_id: req.dept.department_id},
         {
             $set: {
                 departmentName,
@@ -69,7 +71,7 @@ const editDeptEntry = asyncHandler(async (res, reg) => {
 
     return res
     .status(200)
-    .json(new ApiErr(200, dept, "Department details updated"))
+    .json(new ApiResponse(200, dept, "Department details updated"))
 })
 
 const searchDeptByName = asyncHandler(async (req, res) => {
@@ -92,7 +94,9 @@ const searchDeptByName = asyncHandler(async (req, res) => {
 
     return res
     .status(200)
-    .json(200, departments, "Department details fetched Successfully")
+    .json(
+        new ApiResponse(200, departments, "Department details fetched Successfully")
+    )
 })
 
 const getDeptOptions = asyncHandler(async (req, res) => {
