@@ -241,7 +241,7 @@ const customerSchema = new Schema({
       }
     },
     bankName: {
-      tpye: String,
+      type: String,
       required: function () {
         return this.customer_Location === "International";
       }

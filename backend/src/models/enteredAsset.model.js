@@ -1,5 +1,7 @@
 import mongoose , {Schema} from 'mongoose';
 
+const decimal = mongoose.Schema.Types.Decimal128;
+
 const enteredAssetSchema = new Schema({
     asset_name : {
         type: mongoose.Schema.Types.ObjectId,

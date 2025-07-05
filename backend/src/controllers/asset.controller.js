@@ -1,7 +1,7 @@
 import { Asset } from "../models/assets.model.js"
 import { EnteredAsset } from "../models/enteredAsset.model.js"
 import { Department } from "../models/department.model.js"
-import { Employee } from "../controllers/employee.model.js"
+import { Employee } from "../models/employee.model.js"
 import { getNextSequence } from "../utils/getNextSequence.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
 import { ApiErr } from "../utils/ApiError.js"

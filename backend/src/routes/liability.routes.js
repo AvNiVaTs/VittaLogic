@@ -12,6 +12,7 @@ import {
 } from "../controllers/liability.controller.js"
 import { verifyJWT } from "../middleware/auth.middleware.js"
 import { populateCreatedByUpdatedBy } from "../middleware/populateEmpInfo.middleware.js"
+import { upload } from "../middleware/multer.middleware.js"
 
 const router = Router()
 
