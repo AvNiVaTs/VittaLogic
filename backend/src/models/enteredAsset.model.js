@@ -1,31 +1,42 @@
 import mongoose , {Schema} from 'mongoose';
 
 const enteredAssetSchema = new Schema({
-    linked_asset_id : {
-        type : mongoose.Schema.Types.objectId,
+    asset_name : {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'PurchaseTransaction'
+    },
+    linked_reference_id : {
+        type : mongoose.Schema.Types.ObjectId,
         ref : 'PurchaseTransaction',
         required :true
     },
     quantity : {
-        type : mongoose.Schema.Types.objectId,
+        type : mongoose.Schema.Types.ObjectId,
         ref : 'PurchaseTransaction',
         required :true
     },
     transaction_id : {
-        type : mongoose.Schema.Types.objectId,
+        type : mongoose.Schema.Types.ObjectId,
         ref : 'PurchaseTransaction',
         required :true
     }, 
     total_amount : {
-        type : mongoose.Schema.Types.objectId,
+        type : mongoose.Schema.Types.ObjectId,
         ref : 'PurchaseTransaction',
         required :true
     },
     cost_per_unit : { // automatically computed by dividing total amount by quantity
-        type : decimal
+        type : decimal,
+        required: true,
+        immutable: true
+    },
+    purchase_date: {
+        type : mongoose.Schema.Types.ObjectId,
+        ref : 'PurchaseTransaction',
+        required :true
     },
     vendor : {
-        type : mongoose.Schema.Types.objectId,
+        type : mongoose.Schema.Types.ObjectId,
         ref : 'PurchaseTransaction',
         required :true
     } // created on is entered from timestamps 
