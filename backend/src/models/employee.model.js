@@ -88,7 +88,8 @@ const employeeSchema = new Schema({
   },
   dateOfJoining: {
     type: Date,
-    required: true
+    required: true,
+    immutable : true
   },
   department: {
     type: mongoose.Schema.Types.ObjectId,
