@@ -27,7 +27,8 @@ const allowedDesignation = [
   "Product & Project Management",
   "Legal & Compliance",
   "Design & User Experience",
-  "Support Staff / Interns"
+  "Support Staff / Interns",
+  "Others"
 ];
 
 const allowedLevel = [
