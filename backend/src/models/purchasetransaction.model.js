@@ -257,4 +257,4 @@ const purchaseSchema = new Schema(
   }
 );
 
-export const PurchaseTransaction = mongoose.model("Purchase", purchaseSchema);
+export const PurchaseTransaction = mongoose.model("PurchaseTransaction", purchaseSchema);

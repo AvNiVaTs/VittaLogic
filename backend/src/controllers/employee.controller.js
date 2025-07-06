@@ -3,7 +3,7 @@ import {ApiErr} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import {Employee} from "../models/employee.model.js"
 import {Department} from "../models/department.model.js"
-import { getNextSequence } from "../utils/generateEmployeeId.js"
+import { getNextSequence } from "../utils/getNextSequence.js"
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 

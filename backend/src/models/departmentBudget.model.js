@@ -42,7 +42,7 @@ const departmentBudgetSchema = new Schema({
   approvalId : {
     type : mongoose.Schema.Types.ObjectId,
     ref : 'Approval',
-    required : True
+    required : true
   },
   budgetNote: {
     type: String,

@@ -5,13 +5,6 @@ import { ApiErr } from "../utils/ApiError.js"
 
 // === Organization Schema ===
 const organizationSchema = new Schema({
-  organization_Id: {
-    type: String,
-    required: true,
-    unique: true,
-    immutable: true,
-    index : true
-  },
   organizationName: {
     type: String,
     required: true,
@@ -124,13 +117,11 @@ const organizationSchema = new Schema({
   createdBy: { //Middleware
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Employee',
-      required: true,
       immutable: true
   },
   updatedBy: { //Middleware
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Employee',
-      required: true,
       immutable: true
   }
 }, {timestamps: true});
@@ -151,8 +142,12 @@ organizationSchema.pre("save", async function (next) {
 })
 
 // ====== Check Password ======
-organizationSchema.methods.isPasswordCorrect = async function(password){
-  return await bcrypt.compare(password, this.authorizedPerson.password)
+organizationSchema.methods.isPasswordCorrect = async function(enteredPassword) {
+  if (!enteredPassword || !this?.authorizedPerson?.password) {
+    throw new Error("Missing data or hash for password comparison");
+  }
+
+  return await bcrypt.compare(enteredPassword, this.authorizedPerson.password);
 }
 
 organizationSchema.methods.generateAccessToken = function(){

@@ -87,7 +87,7 @@ const allowedStatus = [
   "Unoperational"
 ];
 
-const assetAssign = ['Assigned' , 'Unassigned'];
+const assetAssign = ['Assigned' , 'Unassigned', 'NA'];
 
 
 const assetSchema = new Schema({
@@ -98,7 +98,7 @@ const assetSchema = new Schema({
     required : true,
     index : true
   },
-  linked_asset_id : {
+  linked_reference_id : {
     type : mongoose.Schema.Types.ObjectId,
     ref : 'EnteredAsset',
     immutable: true,
@@ -172,11 +172,11 @@ const assetSchema = new Schema({
   description: {
     type: String,
     trim: true,
-    maxlength: 300
+    maxLength: 300
   },
-  documents: [{
+  documents: {
     type: String // URL or filename
-  }],
+  },
   enteredBy: { //Middleware
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Employee',
