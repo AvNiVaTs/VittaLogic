@@ -195,6 +195,80 @@ const mockAssetsAwaitingDisposal = [
 
 const assetTypes = ["IT Equipment", "Office Supplies", "Vehicles", "Machinery", "Raw Material", "Others"]
 
+// Mock assets data for maintenance/repair transactions
+const mockAssets = [
+  {
+    id: "AST-1703123456789",
+    name: "Dell Laptop",
+    type: "IT Equipment",
+    status: "maintenance_needed",
+  },
+  {
+    id: "AST-1703123456790",
+    name: "Office Chair",
+    type: "Furniture",
+    status: "repair_needed",
+  },
+  {
+    id: "AST-1703123456791",
+    name: "HP Printer",
+    type: "IT Equipment",
+    status: "under_maintenance",
+  },
+  {
+    id: "AST-1703123456792",
+    name: "Conference Table",
+    type: "Furniture",
+    status: "under_repair",
+  },
+  {
+    id: "AST-1703123456793",
+    name: "Server Rack",
+    type: "IT Equipment",
+    status: "maintenance_needed",
+  },
+  {
+    id: "AST-1703123456794",
+    name: "Air Conditioner",
+    type: "Other",
+    status: "repair_needed",
+  },
+]
+
+// Mock maintenance records
+const mockMaintenanceRecords = [
+  {
+    id: "MNT-1703123456789",
+    assetId: "AST-1703123456789",
+    status: "requested",
+  },
+  {
+    id: "MNT-1703123456790",
+    assetId: "AST-1703123456790",
+    status: "requested",
+  },
+  {
+    id: "MNT-1703123456791",
+    assetId: "AST-1703123456791",
+    status: "in_progress",
+  },
+  {
+    id: "MNT-1703123456792",
+    assetId: "AST-1703123456792",
+    status: "in_progress",
+  },
+  {
+    id: "MNT-1703123456793",
+    assetId: "AST-1703123456793",
+    status: "requested",
+  },
+  {
+    id: "MNT-1703123456794",
+    assetId: "AST-1703123456794",
+    status: "requested",
+  },
+]
+
 // Purchase Tab Component
 function PurchaseTab() {
   const [formData, setFormData] = useState({
@@ -698,6 +772,9 @@ function InternalTransactionTab() {
     liabilityName: "",
     liabilityAmount: "",
     expenseName: "",
+    maintenanceAssetType: "",
+    maintenanceAssetId: "",
+    maintenanceId: "",
     referenceId: "",
     amount: "",
     transactionType: "",
@@ -738,10 +815,18 @@ function InternalTransactionTab() {
       }
     } else if (formData.referenceType === "Refund/Investment") {
       setFormData((prev) => ({ ...prev, referenceId: `REF-${Date.now()}` }))
+    } else if (formData.referenceType === "Maintenance / Repair" && formData.maintenanceAssetId) {
+      const maintenanceRecord = mockMaintenanceRecords.find(
+        (record) => record.assetId === formData.maintenanceAssetId && record.status !== "completed",
+      )
+      setFormData((prev) => ({
+        ...prev,
+        referenceId: maintenanceRecord ? maintenanceRecord.id : "",
+      }))
     } else {
       setFormData((prev) => ({ ...prev, referenceId: "", amount: "" }))
     }
-  }, [formData.referenceType, formData.employeeId, formData.liabilityId])
+  }, [formData.referenceType, formData.employeeId, formData.liabilityId, formData.maintenanceAssetId])
 
   useEffect(() => {
     if (formData.liabilityType) {
@@ -765,6 +850,9 @@ function InternalTransactionTab() {
       liabilityName: "",
       liabilityAmount: "",
       expenseName: "",
+      maintenanceAssetType: "",
+      maintenanceAssetId: "",
+      maintenanceId: "",
       referenceId: "",
       amount: "",
       transactionType: "",
@@ -835,6 +923,7 @@ function InternalTransactionTab() {
               <SelectItem value="Salary">Salary</SelectItem>
               <SelectItem value="Liability">Liability</SelectItem>
               <SelectItem value="Refund/Investment">Refund/Investment</SelectItem>
+              <SelectItem value="Maintenance / Repair">Maintenance / Repair</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -965,6 +1054,79 @@ function InternalTransactionTab() {
               required
             />
           </div>
+        )}
+
+        {formData.referenceType === "Maintenance / Repair" && (
+          <>
+            <div className="space-y-2">
+              <Label htmlFor="maintenanceAssetType">Asset Type *</Label>
+              <Select
+                value={formData.maintenanceAssetType || ""}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    maintenanceAssetType: value,
+                    maintenanceAssetId: "",
+                    maintenanceId: "",
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select asset type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="IT Equipment">IT Equipment</SelectItem>
+                  <SelectItem value="Furniture">Furniture</SelectItem>
+                  <SelectItem value="Machinery">Machinery</SelectItem>
+                  <SelectItem value="Vehicle">Vehicle</SelectItem>
+                  <SelectItem value="Building">Building</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="maintenanceAssetId">Asset ID *</Label>
+              <Select
+                value={formData.maintenanceAssetId || ""}
+                onValueChange={(value) => {
+                  setFormData((prev) => ({
+                    ...prev,
+                    maintenanceAssetId: value,
+                  }))
+                }}
+                disabled={!formData.maintenanceAssetType}
+              >
+                <SelectTrigger>
+                  <SelectValue
+                    placeholder={formData.maintenanceAssetType ? "Select asset" : "Select asset type first"}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {mockAssets
+                    .filter(
+                      (asset) =>
+                        asset.type === formData.maintenanceAssetType &&
+                        ["maintenance_needed", "repair_needed", "under_maintenance", "under_repair"].includes(
+                          asset.status,
+                        ),
+                    )
+                    .map((asset) => (
+                      <SelectItem key={asset.id} value={asset.id}>
+                        {asset.id} - {asset.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              {formData.maintenanceAssetType &&
+                mockAssets.filter(
+                  (asset) =>
+                    asset.type === formData.maintenanceAssetType &&
+                    ["maintenance_needed", "repair_needed", "under_maintenance", "under_repair"].includes(asset.status),
+                ).length === 0 && (
+                  <p className="text-xs text-amber-600">No assets requiring maintenance/repair found for this type</p>
+                )}
+            </div>
+          </>
         )}
 
         <div className="space-y-2">
