@@ -17,7 +17,7 @@ const ACCOUNTS = [
     "Salary Account"
 ];
 
-const ALLOWEDSTATUSES = [
+const ALLOWED_STATUS = [
   "Pending", 
   "Approved", 
   "Completed", 
@@ -94,7 +94,7 @@ const saleSchema = new Schema ({
 
     customer_type: {
         type: mongoose.Schema.Types.ObjectId, ///////NEED HELP HERE////////
-        ref: 'Customerr',           //////////DOUBT//////////
+        ref: 'Customer',           //////////DOUBT//////////
         required: true,
     },
 
@@ -151,7 +151,7 @@ const saleSchema = new Schema ({
     },
     status: {
         type: String,
-        enum: ALLOWEDSTATUSES,
+        enum: ALLOWED_STATUS,
         required: true
     },
     department: {
