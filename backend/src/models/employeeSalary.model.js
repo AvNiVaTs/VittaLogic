@@ -45,7 +45,7 @@ const employeeSalarySchema = new Schema({
     },
     netSalary: { //Middleware
         type: Number,
-        required: true 
+        required: true
     },
     paymentDate: {
         type: Date,

@@ -17,8 +17,8 @@ router.route("/registerVendor").post(verifyJWT, populateCreatedByUpdatedBy, regi
 router.route("/").get(verifyJWT, getAllVendor)
 router.route("/update/:id").patch(verifyJWT, populateCreatedByUpdatedBy, updateVendor)
 router.route("/delete/:id").delete(verifyJWT, deleteVendor)
-router.route("/search/by-id/:id").get(verifyJWT, searchVendorById)
-router.route("/search/by-name/:id").get(verifyJWT, searchVendorByName)
+router.route("/search-by-id/:id").get(verifyJWT, searchVendorById)
+router.route("/search-by-name/:id").get(verifyJWT, searchVendorByName)
 router.route("/filter").get(verifyJWT, filterVendorByType)
 
 export default router

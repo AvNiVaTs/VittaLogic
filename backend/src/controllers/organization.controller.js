@@ -1,9 +1,12 @@
-import { ApiErr } from "../utils/ApiError.js"
-import { asyncHandler } from "../utils/asyncHandler.js"
-import { ApiResponse } from "../utils/ApiResponse.js"
-import { Organization } from "../models/organization.model.js"
+import { Organization } from "../models/organization.model.js";
+import { Department } from "../models/department.model.js";
+import { Employee } from "../models/employee.model.js";
+import { getNextSequence } from "../utils/getNextSequence.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
+import { ApiErr } from "../utils/ApiError.js";
 import jwt from "jsonwebtoken"
-import { getNextSequence } from "../utils/getNextSequence.js"
+import bcrypt from "bcrypt"
 
 const generatorAccessAndRefreshTokens = async(orgId) => {
     try{
@@ -23,7 +26,6 @@ const generatorAccessAndRefreshTokens = async(orgId) => {
 }
 
 const registerOrg = asyncHandler(async (req, res) => {
-    //get org details
     const {
         organizationName,
         panNumber,
@@ -38,10 +40,10 @@ const registerOrg = asyncHandler(async (req, res) => {
         bankName,
         ifscCode,
         bankAccountNumber
-      } = req.body;
+    } = req.body;
 
-      //validation - not empty
-      if([
+    // Field validation remains the same
+    if ([
         organizationName,
         panNumber,
         website,
@@ -54,31 +56,31 @@ const registerOrg = asyncHandler(async (req, res) => {
         bankName,
         ifscCode,
         bankAccountNumber
-      ].some((field) => field?.trim()==="")){
-        throw new ApiErr(400, "All fields are required")
-      }
+    ].some((field) => field?.trim() === "")) {
+        throw new ApiErr(400, "All fields are required");
+    }
 
-      if (!authorizedPerson 
-        || [
-          authorizedPerson.firstName,
-          authorizedPerson.lastName,
-          authorizedPerson.email,
-          authorizedPerson.designation,
-          authorizedPerson.contactNumber,
-          authorizedPerson.password,
-          authorizedPerson.confirmpassword
+    if (!authorizedPerson ||
+        [
+            authorizedPerson.firstName,
+            authorizedPerson.lastName,
+            authorizedPerson.email,
+            authorizedPerson.designation,
+            authorizedPerson.contactNumber,
+            authorizedPerson.password,
+            authorizedPerson.confirmpassword
         ].some(field => typeof field !== "string" || field.trim() === "")) {
         throw new ApiErr(400, "All authorized person fields are required");
-      }
+    }
 
-      //check if org already exists: email
-      const existedOrg = await Organization.findOne({email})
-      if(existedOrg){
-        throw new ApiErr(409, "Organization with email already exists")
-      }
+    // Check for existing org
+    const existedOrg = await Organization.findOne({ email });
+    if (existedOrg) {
+        throw new ApiErr(409, "Organization with email already exists");
+    }
 
-      //create org object - create entry in db
-      const org = await Organization.create({
+    // Create org
+    const org = await Organization.create({
         organizationName,
         panNumber,
         website,
@@ -89,35 +91,87 @@ const registerOrg = asyncHandler(async (req, res) => {
         country,
         pincode,
         authorizedPerson: {
-          firstName: authorizedPerson.firstName,
-          lastName: authorizedPerson.lastName,
-          email: authorizedPerson.email,
-          designation: authorizedPerson.designation,
-          contactNumber: authorizedPerson.contactNumber,
-          password: authorizedPerson.password,
-          confirmpassword: authorizedPerson.confirmpassword
+            firstName: authorizedPerson.firstName,
+            lastName: authorizedPerson.lastName,
+            email: authorizedPerson.email,
+            designation: authorizedPerson.designation,
+            contactNumber: authorizedPerson.contactNumber,
+            password: authorizedPerson.password,
+            confirmpassword: authorizedPerson.confirmpassword
         },
         bankName,
         ifscCode,
         bankAccountNumber,
         createdBy: null,
         updatedBy: null
-      });
+    });
 
-      //remove password and refresh token field from response
-      const createdOrg = await Organization.findById(org._id).select(
+    const createdOrg = await Organization.findById(org._id).select(
         "-authorizedPerson.password -authorizedPerson.confirmpassword -refreshToken"
-      )
+    );
 
-      //check for org creation
-      if(!createdOrg){
-        throw new ApiErr(500, "Something went wrong while registering the organization")
-      }
+    if (!createdOrg) {
+        throw new ApiErr(500, "Something went wrong while registering the organization");
+    }
 
-      //return result
-      return res.status(201).json(
+    //register authorized person department
+    let financeDepartment = await Department.findOne({ departmentName: "Finance" });
+
+    if (!financeDepartment) {
+
+        const deptId = `DEPT-${(await getNextSequence("department")).toString().padStart(5, "0")}`;
+        
+        financeDepartment = await Department.create({
+            department_id: deptId,
+            departmentName: "Finance",
+            departmentDescription: "Auto-created default department during organization setup",
+            createdBy: null,
+            updatedBy: null
+        })
+    }
+
+    // Now create authorized person as an employee
+    const fullName = `${authorizedPerson.firstName} ${authorizedPerson.lastName}`;
+    const empId = `EMP-${(await getNextSequence("employee")).toString().padStart(5, "0")}`;
+    const hashedPassword = await bcrypt.hash(authorizedPerson.password, 10);
+    const employee = await Employee.create({
+        employeeId: empId,
+        employeeName: fullName,
+        emailAddress: authorizedPerson.email,
+        contactNumber: authorizedPerson.contactNumber,
+        password: hashedPassword,
+        designation: authorizedPerson.designation,
+        dateOfJoining: org.createdAt,
+        role: "Application Manager",
+        department: financeDepartment._id,
+        level: 4,
+        servicePermissions: [
+            'Department Service',
+            'Employee Service',
+            'Transaction Service',
+            'Asset Service',
+            'Company Financials Service',
+            'Vendor Service',
+            'Customer Service',
+            'Dashboard Service',
+            'Approval Service'
+        ]
+    });
+
+    // Update createdBy and updatedBy with own ID
+    employee.createdBy = employee._id;
+    employee.updatedBy = employee._id;
+    await employee.save();
+
+    if (!financeDepartment.createdBy) {
+        financeDepartment.createdBy = employee._id;
+        financeDepartment.updatedBy = employee._id;
+        await financeDepartment.save();
+    }
+
+    return res.status(201).json(
         new ApiResponse(200, createdOrg, "Organization registered successfully")
-      )
+    );
 })
 
 const loginOrg = asyncHandler(async (req, res) => {

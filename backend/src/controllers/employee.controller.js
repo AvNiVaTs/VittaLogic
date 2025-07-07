@@ -1,3 +1,4 @@
+import mongoose from "mongoose"
 import {asyncHandler} from "../utils/asyncHandler.js"
 import {ApiErr} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
@@ -43,14 +44,15 @@ const registerEmployee = asyncHandler(async (req, res) => {
         throw new ApiErr(409, "Employee with given or contact already exists")
     }
 
-    const existingDept = await Department.findById(department)
+    const existingDept = await Department.findOne({departmentName: department})
     if(!existingDept){
         throw new ApiErr(404, "Selected department does not exists")
     }
+    const deptId = existingDept._id;
 
     const hashedPassword = await bcrypt.hash(password, 10)
 
-    const empId = `EMP-${await getNextSequence("employeeId")}`
+    const empId = `EMP-${await getNextSequence("employee")}`
 
     const newEmp = await Employee.create({
         employeeId: empId,
@@ -60,7 +62,7 @@ const registerEmployee = asyncHandler(async (req, res) => {
         password: hashedPassword,
         designation,
         dateOfJoining,
-        department,
+        department: deptId,
         role,
         level,
         servicePermissions,
@@ -129,12 +131,27 @@ const changeCurrPassword = asyncHandler(async (req, res) => {
 })
 
 const updatedEmpDetails = asyncHandler(async (req, res) => {
-    const {id} = req.params
+    const {employee_id} = req.params
 
     const updates = req.body
+
+    if (typeof updates.department === "string" && !mongoose.Types.ObjectId.isValid(updates.department)) {
+        const departmentDoc = await Department.findOne({ departmentName: updates.department });
+    
+        if (!departmentDoc) {
+          throw new ApiErr(400, "Invalid department name: No such department found");
+        }
+    
+        updates.department = departmentDoc._id;
+    }
+
+    if (updates.password) {
+        throw new ApiErr(400, "Not allowed to update password");
+    }
+
     updates.updatedBy = req.body.updatedBy
 
-    const updatedEmp = await Employee.findByIdAndUpdate(id, updates, {
+    const updatedEmp = await Employee.findByIdAndUpdate(employee_id, updates, {
         new: true,
         runValidators: true
     })
@@ -152,7 +169,7 @@ const updatedEmpDetails = asyncHandler(async (req, res) => {
 const deleteEmp = asyncHandler(async (req, res) => {
     const {id} = req.params
 
-    const deleted = await Employee.findByIdAndDelete(id)
+    const deleted = await Employee.findOneAndDelete({employeeId: {$regex: `^${id}$`, $options: 'i'}})
     if(!deleted){
         throw new ApiErr(404, "Employee not able deleted")
     }
@@ -168,7 +185,7 @@ const assignPermissions = asyncHandler(async (req, res) => {
     const {id} = req.params
     const {servicePermissions} = req.body
 
-    const emp = await Employee.findById(id)
+    const emp = await Employee.findOne({employeeId: {$regex: `^${id}$`, $options: 'i'}})
     if(!emp){
         throw new ApiErr(404, "Employee not found")
     }
@@ -185,11 +202,22 @@ const assignPermissions = asyncHandler(async (req, res) => {
 })
 
 const searchEmpDept = asyncHandler(async (req, res) => {
-    const {departmentId} = req.params
+    const {departmentName} = req.params
+    console.log("Searching for department name:", departmentName);
 
-    const employees = await Employee.find({department: departmentId}).select(
-        "employeeId employeeName designation level"
-    )
+    const deptDoc = await Department.findOne({
+        departmentName: { $regex: `^${departmentName}$`, $options: "i" },
+    });
+    console.log("Department found:", deptDoc);
+    
+    if (!deptDoc) {
+    throw new ApiErr(404, "Department not found with given name");
+    }
+
+    // Find all employees in this department
+    const employees = await Employee.find({ department: deptDoc._id }).select(
+    "employeeId employeeName department designation level"
+    );
 
     if(!employees){
         throw new ApiErr(400, "No employee found")
@@ -200,14 +228,6 @@ const searchEmpDept = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, employees, "Employees in department fetched"))
 })
 
-const getEmpActivityLog = asyncHandler(async (req, res) => {
-    return res
-    .status(200)
-    .json(
-        new ApiResponse(200, [], "Activity log fetched (not implemented)")
-    )
-})
-
 export {
     registerEmployee,
     loginEmp,
@@ -216,6 +236,5 @@ export {
     updatedEmpDetails,
     deleteEmp,
     assignPermissions,
-    searchEmpDept,
-    getEmpActivityLog
+    searchEmpDept
 }

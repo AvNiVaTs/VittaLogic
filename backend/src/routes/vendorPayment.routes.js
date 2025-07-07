@@ -13,7 +13,7 @@ import { populateCreatedByUpdatedBy } from "../middleware/populateEmpInfo.middle
 
 const router = Router()
 
-router.route("/registerVendor").post(verifyJWT, populateCreatedByUpdatedBy, createVendorPayment)
+router.route("/registerVendorPay").post(verifyJWT, populateCreatedByUpdatedBy, createVendorPayment)
 router.route("/").get(verifyJWT, getAllVendorPayments)
 router.route("/by-id/:id").get(verifyJWT, getVendorPaymentById)
 router.route("/update/:id").patch(verifyJWT, populateCreatedByUpdatedBy, updateVendorPayment)

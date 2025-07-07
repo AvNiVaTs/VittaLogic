@@ -6,7 +6,7 @@ const allowedServices = [
   'Transaction Service',
   'Asset Service',
   'Company Financials Service',
-  'VendornService',
+  'Vendor Service',
   'Customer Service',
   'Dashboard Service',
   'Approval Service'
@@ -110,7 +110,6 @@ const employeeSchema = new Schema({
   createdBy: { // Middleware
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Employee',
-    required: true,
     immutable: true
   },
   updatedBy: { // Middleware

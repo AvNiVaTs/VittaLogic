@@ -4,6 +4,7 @@ import { ApiResponse } from "../utils/ApiResponse.js"
 import { Department } from "../models/department.model.js"
 import { getNextSequence } from "../utils/getNextSequence.js"
 import { DepartmentBudget } from "../models/departmentBudget.model.js"
+import { Approval } from "../models/approval.model.js"
 
 const registerBudget = asyncHandler(async (req, res) => {
     const {
@@ -11,19 +12,25 @@ const registerBudget = asyncHandler(async (req, res) => {
         timePeriodFrom,
         timePeriodTo,
         allocatedAmount,
-        budgetNote
+        budgetNote,
+        approval_id
     } = req.body
 
-    if(!departmentId || !timePeriodFrom || !timePeriodTo || allocatedAmount===undefined){
+    if(!departmentId || !timePeriodFrom || !timePeriodTo || allocatedAmount===undefined || !approval_id){
         throw new ApiErr(400, "Please fill all required fields")
     }
 
-    const dept = await Department.findById(departmentId)
+    const dept = await Department.findOne({department_id: departmentId})
     if(!dept){
         throw new ApiErr(404, "Department not found")
     }
 
-    const budgetId = `BUDG-${(await getNextSequence("budget")).toString().padString(5, "0")}`
+    const approval = await Approval.findOne({approval_id: approval_id, approvalfor: "Department Budget", status: "Approved"})
+    if(!approval){
+        throw new ApiErr(400, "Invalid approval_id")
+    }
+
+    const budgetId = `BUDG-${(await getNextSequence("budget")).toString().padStart(5, "0")}`
 
     const budget = await DepartmentBudget.create({
         createdBy: req.body.createdBy,
@@ -32,7 +39,9 @@ const registerBudget = asyncHandler(async (req, res) => {
         timePeriodFrom,
         timePeriodTo,
         allocatedAmount,
-        budgetNote
+        budgetNote,
+        approvalId: approval.approval_id,
+        updatedBy: req.body.updatedBy
     })
 
     if(!budget){
@@ -68,7 +77,23 @@ const getDeptBudget = asyncHandler(async (req, res) => {
     )
 })
 
+const getApprovalDropdownForBudget = asyncHandler(async (req, res) => {
+    const approvals = await Approval.find({approvalfor: "Department Budget"}).select("approval_id reason min_expense max_expense")
+    
+    const formattedApprovals = approvals.map(a => ({
+        approval_id: a.approval_id,
+        displayText: `${a.approval_id} - ${a.reason}\n₹${parseFloat(a.min_expense.toString())} - ₹${parseFloat(a.max_expense.toString())}`
+    }));
+
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(200, formattedApprovals, "Approval dropdown options fetched")
+    );
+})
+
 export {
     registerBudget,
-    getDeptBudget
+    getDeptBudget,
+    getApprovalDropdownForBudget
 }
