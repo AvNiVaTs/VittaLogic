@@ -21,7 +21,8 @@ const allowedAssetSubtypes = {
     "Router",
     "Server",
     "Tablet",
-    "Projector"
+    "Projector",
+    "Other"
   ],
   'Office Furniture' : [
     "Chair",
@@ -30,7 +31,8 @@ const allowedAssetSubtypes = {
     "Cabinet",
     "Bookshelf",
     "Partition",
-    "Reception Desk"
+    "Reception Desk",
+    "Other"
   ],
   'Machinery' : [
     "CNC Machine",
@@ -38,28 +40,32 @@ const allowedAssetSubtypes = {
     "Compressor",
     "Drill Press",
     "Packaging Machine",
-    "3D Printer"
+    "3D Printer",
+    "Other"
   ],
   'Vehicles' : [
     "Car",
     "Motorcycle",
     "Truck",
     "Forklift",
-    "Electric Scooter"
+    "Electric Scooter",
+    "Other"
   ],
   'Real Estate' : [
     "Office Building",
     "Warehouse",
     "Factory",
     "Retail Space",
-    "Land"
+    "Land",
+    "Other"
   ],
   'Electrical Appliances' : [
     "Air Conditioner",
     "Refrigerator",
     "Microwave",
     "Water Purifier",
-    "Heater"
+    "Heater",
+    "Other"
   ],
   'Software Licenses' : [
     "Operating System License",
@@ -67,7 +73,8 @@ const allowedAssetSubtypes = {
     "Design Software",
     "Productivity Suite",
     "ERP License",
-    "Antivirus Subscription"
+    "Antivirus Subscription",
+    "Other"
   ],
   'Miscellaneous' : [
     "Security Camera",
