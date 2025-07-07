@@ -223,13 +223,15 @@ const purchaseSchema = new Schema(
     debit_account: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'FinancialAccount',
-      required: true
+      required: true,
+      default : "N/A"
     },
 
     credit_account: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'FinancialAccount',
-      required: true
+      required: true,
+      default : "N/A"
     },
 
     status: {

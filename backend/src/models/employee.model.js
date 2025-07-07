@@ -27,7 +27,8 @@ const allowedDesignation = [
   "Product & Project Management",
   "Legal & Compliance",
   "Design & User Experience",
-  "Support Staff / Interns"
+  "Support Staff / Interns",
+  "Others"
 ];
 
 const allowedLevel = [
@@ -88,7 +89,8 @@ const employeeSchema = new Schema({
   },
   dateOfJoining: {
     type: Date,
-    required: true
+    required: true,
+    immutable : true
   },
   department: {
     type: mongoose.Schema.Types.ObjectId,
