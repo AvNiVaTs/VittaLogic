@@ -101,9 +101,7 @@ const registerOrg = asyncHandler(async (req, res) => {
         },
         bankName,
         ifscCode,
-        bankAccountNumber,
-        createdBy: null,
-        updatedBy: null
+        bankAccountNumber
     });
 
     const createdOrg = await Organization.findById(org._id).select(
@@ -125,8 +123,6 @@ const registerOrg = asyncHandler(async (req, res) => {
             department_id: deptId,
             departmentName: "Finance",
             departmentDescription: "Auto-created default department during organization setup",
-            createdBy: null,
-            updatedBy: null
         })
     }
 
@@ -143,7 +139,7 @@ const registerOrg = asyncHandler(async (req, res) => {
         designation: authorizedPerson.designation,
         dateOfJoining: org.createdAt,
         role: "Application Manager",
-        department: financeDepartment._id,
+        department: financeDepartment.department_id,
         level: 4,
         servicePermissions: [
             'Department Service',
@@ -155,19 +151,16 @@ const registerOrg = asyncHandler(async (req, res) => {
             'Customer Service',
             'Dashboard Service',
             'Approval Service'
-        ]
+        ],
+        createdBy: empId,
+        updatedBy: empId
     });
 
-    // Update createdBy and updatedBy with own ID
-    employee.createdBy = employee._id;
-    employee.updatedBy = employee._id;
-    await employee.save();
-
-    if (!financeDepartment.createdBy) {
-        financeDepartment.createdBy = employee._id;
-        financeDepartment.updatedBy = employee._id;
-        await financeDepartment.save();
-    }
+    await Department.findOneAndUpdate({departmentName: "Finance"}, {
+        createdBy: empId,
+        updatedBy: empId
+    }, {new: true});
+      
 
     return res.status(201).json(
         new ApiResponse(200, createdOrg, "Organization registered successfully")
@@ -316,21 +309,20 @@ const getCurrentOrg = asyncHandler(async (req, res) => {
 })
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
-    const { fullName, email, mobileNumber } = req.body
+    const { firstName, lastName, email, mobileNumber } = req.body
 
-    if(!fullName || !email || !mobileNumber){
+    if(!firstName || !lastName || !email || !mobileNumber){
         throw new ApiErr(400, "All fields are required")
     }
 
     const org = await Organization.findByIdAndUpdate(req.org?._id, {
         $set: {
-            "authorizedPerson.fullName": fullName,
+            "authorizedPerson.firstName": firstName,
+            "authorizedPerson.lastName": lastName,
             "authorizedPerson.email": email,
             "authorizedPerson.mobileNumber": mobileNumber
         }
     }, {new: true}).select("-authorizedPerson.password -authorizedPerson.confirmpassword -refreshToken")
-
-    org.updatedBy = req.employee?._id || req.org?._id || "System";
 
     await org.save();
 

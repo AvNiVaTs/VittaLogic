@@ -106,13 +106,13 @@ const assetSchema = new Schema({
     index : true
   },
   linked_reference_id : {
-    type : mongoose.Schema.Types.ObjectId,
+    type : String,
     ref : 'EnteredAsset',
     immutable: true,
     required : true
   },
   assetName: {
-    type : mongoose.Schema.Types.ObjectId,
+    type : String,
     ref : 'EnteredAsset',
     immutable: true,
     required : true
@@ -139,11 +139,11 @@ const assetSchema = new Schema({
     default: 'Unassigned'
   },
   assignedTo: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'Employee'
   },
   assignedToDepartment: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'Department'
   },
   status: {
@@ -153,25 +153,25 @@ const assetSchema = new Schema({
     default: "Active"
   },
   purchaseFrom: {
-    type : mongoose.Schema.Types.ObjectId,
+    type : String,
     ref : 'EnteredAsset',
     immutable: true,
     required : true
   },
   purchaseDate: { // from created on field
-    type : mongoose.Schema.Types.ObjectId,
+    type : String,
     ref : 'EnteredAsset',
     immutable: true,
     required : true
   },
   purchaseCost: { // cost_per_unit
-    type : mongoose.Schema.Types.ObjectId,
+    type : String,
     ref : 'EnteredAsset',
     immutable: true,
     required : true
   },
   numberOfAssets: { // quantity
-    type : mongoose.Schema.Types.ObjectId,
+    type : String,
     ref : 'EnteredAsset',
     immutable: true,
     required : true
@@ -185,13 +185,13 @@ const assetSchema = new Schema({
     type: String // URL or filename
   },
   enteredBy: { //Middleware
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: 'Employee',
       required: true,
       immutable: true
   },
   updatedBy: { //Middleware
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: 'Employee',
       immutable: true
   }

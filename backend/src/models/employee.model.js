@@ -93,7 +93,7 @@ const employeeSchema = new Schema({
     immutable : true
   },
   department: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'Department',
     required: true
   },
@@ -110,12 +110,12 @@ const employeeSchema = new Schema({
     index : true
   },
   createdBy: { // Middleware
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'Employee',
     immutable: true
   },
   updatedBy: { // Middleware
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'Employee',
     immutable: true
   },

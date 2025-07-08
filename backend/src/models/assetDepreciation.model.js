@@ -17,24 +17,24 @@ const assetDepreciationSchema = new Schema({
     index : true
   },
   assetType : {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'Asset',
     required: true
   },
   assetId: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'Asset',
     required: true
   },
 
   purchaseCost: { // Hooks and JWT auto Fetch from Asset
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'Asset',
     required: true
   },
 
   purchaseDate: { // Hooks and JWT auto Fetch
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'Asset',
     required: true
   },
@@ -101,14 +101,14 @@ const assetDepreciationSchema = new Schema({
 
   // You can now extend it to include other common fields
   createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'Employee',
     required: true,
     immutable: true
   },
 
   updatedBy: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'Employee',
     immutable: true
   },
@@ -130,13 +130,13 @@ const assetDepreciationSchema = new Schema({
   },
 
   enteredBy: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'Employee',
     required: true,
     immutable: true
   },
   updatedBy: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'Employee',
     required: true,
     immutable: true

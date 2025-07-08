@@ -12,7 +12,7 @@ const assetDisposalSchema = new Schema({
   },
 
   assetId: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'Asset',
     required: [true, 'Asset is required for disposal']
   },
@@ -56,7 +56,7 @@ const assetDisposalSchema = new Schema({
   },
   
   enteredBy: { // middleware
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'Employee',
     required: true,
     immutable: true

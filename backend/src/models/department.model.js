@@ -11,6 +11,7 @@ const departmentSchema = new Schema({
   departmentName: {
     type: String,
     required: true,
+    unique: true,
     trim: true,
     set: v => v.trim().replace(/\s+/g, ' '),
     validate: {
@@ -24,14 +25,12 @@ const departmentSchema = new Schema({
     trim: true
   },
   createdBy: { //Middleware
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: 'Employee',
-      immutable: true
   },
   updatedBy: { //Middleware
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: 'Employee',
-      immutable: true
   }
 }, {timestamps : true});
 

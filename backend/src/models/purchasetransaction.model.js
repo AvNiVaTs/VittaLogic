@@ -93,7 +93,7 @@ const purchaseSchema = new Schema(
     },
 
     enteredBy: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: 'Employee',
       required: true
     },
@@ -117,13 +117,13 @@ const purchaseSchema = new Schema(
     },
 
     vendor_id: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: 'Vendor',
       required: true
     },
 
     approval_id: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: 'Approval',
       required: true
     },
@@ -215,20 +215,20 @@ const purchaseSchema = new Schema(
     },
 
     payment_id: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: 'VendorPayment',
       required: true
     },
 
     debit_account: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: 'FinancialAccount',
       required: true,
       default : "N/A"
     },
 
     credit_account: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: 'FinancialAccount',
       required: true,
       default : "N/A"
@@ -241,7 +241,7 @@ const purchaseSchema = new Schema(
     },
 
     department: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: 'Department',
       required: true
     },

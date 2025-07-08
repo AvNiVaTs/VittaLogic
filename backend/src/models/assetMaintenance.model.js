@@ -28,12 +28,12 @@ const assetMaintenanceSchema = new Schema({
     index : true
   },
     assetType : {
-    type : mongoose.Schema.Types.ObjectId,
+    type : String,
     ref : Asset,
     required : true
   },
   assetId: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'Asset',
     required: [true, 'Asset reference is required']
   },
@@ -95,13 +95,13 @@ const assetMaintenanceSchema = new Schema({
   }],
 
   enteredBy: { //Middleware
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: 'Employee',
       required: true,
       immutable: true
   },
   updatedBy: { //Middleware
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: 'Employee',
       required: true,
       default: enteredBy,

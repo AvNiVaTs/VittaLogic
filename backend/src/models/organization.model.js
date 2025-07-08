@@ -114,16 +114,6 @@ const organizationSchema = new Schema({
   refreshToken: {
     type: String
   },
-  createdBy: { //Middleware
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Employee',
-      immutable: true
-  },
-  updatedBy: { //Middleware
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Employee',
-      immutable: true
-  }
 }, {timestamps: true});
 
 // ====== Password Encryption ======

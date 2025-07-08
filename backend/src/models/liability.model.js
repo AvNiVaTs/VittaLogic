@@ -144,12 +144,12 @@ const liabilitySchema = new Schema({
     default: 'Medium'
   },
   liability_account: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref : 'FinancialAccount',
     required: [true, 'Liability account is required'],
   },
   liability_vendor: {         //how this works?
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref : 'Vendor',
     required: [true, 'Liability vendor is required'],
     trim: true,
@@ -160,18 +160,18 @@ const liabilitySchema = new Schema({
     required: true
   },
   createdBy: { //Middleware
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: 'Employee',
       required: true,
       immutable: true
   },
   updatedBy: { //Middleware
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: 'Employee',
       immutable: true
   },
   approval_id: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'Approval',
     required: [true, 'Approval ID field is required']
   },

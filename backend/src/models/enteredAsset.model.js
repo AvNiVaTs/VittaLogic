@@ -4,26 +4,26 @@ const decimal = mongoose.Schema.Types.Decimal128;
 
 const enteredAssetSchema = new Schema({
     asset_name : {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: 'PurchaseTransaction'
     },
     linked_reference_id : {
-        type : mongoose.Schema.Types.ObjectId,
+        type : String,
         ref : 'PurchaseTransaction',
         required :true
     },
     quantity : {
-        type : mongoose.Schema.Types.ObjectId,
+        type : String,
         ref : 'PurchaseTransaction',
         required :true
     },
     transaction_id : {
-        type : mongoose.Schema.Types.ObjectId,
+        type : String,
         ref : 'PurchaseTransaction',
         required :true
     }, 
     total_amount : {
-        type : mongoose.Schema.Types.ObjectId,
+        type : String,
         ref : 'PurchaseTransaction',
         required :true
     },
@@ -33,12 +33,12 @@ const enteredAssetSchema = new Schema({
         immutable: true
     },
     purchase_date: {
-        type : mongoose.Schema.Types.ObjectId,
+        type : String,
         ref : 'PurchaseTransaction',
         required :true
     },
     vendor : {
-        type : mongoose.Schema.Types.ObjectId,
+        type : String,
         ref : 'PurchaseTransaction',
         required :true
     } // created on is entered from timestamps 

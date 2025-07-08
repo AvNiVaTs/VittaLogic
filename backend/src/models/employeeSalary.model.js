@@ -9,17 +9,17 @@ const employeeSalarySchema = new Schema({
         index : true 
     },
     department: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: 'Department',
         required: true
     },
     role: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: 'Employee',
         required: true
     },
     employee: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: 'Employee',
         required: true
     },
@@ -52,13 +52,13 @@ const employeeSalarySchema = new Schema({
         required: true
     },
     createdBy: { //Middleware
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: 'Employee',
         required: true,
         immutable: true
     },
     updatedBy: { //Middleware
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: 'Employee',
         immutable: true
     }

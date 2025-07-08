@@ -34,7 +34,7 @@ const approvalSchema = new Schema({
         index : true
     },
     approval_to: {                               //Employee id
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: 'Employee',
         required : true
     },

@@ -31,12 +31,12 @@ const vendorPaymentSchema = new Schema({
     index : true
   },
   vendor_id: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'Vendor',
     required: true,
   },
   currency : {
-    type : mongoose.Schema.Types.ObjectId,
+    type : String,
     ref : 'Vendor',
     required : true 
   },
@@ -90,13 +90,13 @@ const vendorPaymentSchema = new Schema({
     index : true
   },
   createdBy: { //Middleware
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: 'Employee',
       required: true,
       immutable: true
   },
   updatedBy: { //Middleware
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: 'Employee',
       immutable: true
   }

@@ -2,11 +2,6 @@ import mongoose, { Schema } from "mongoose";
 
 const decimal = mongoose.Schema.Types.Decimal128;
 
-const REFERENCE_TYPES = [
-    "Asset", 
-    "Service"
-];
-
 const ACCOUNTS = [
     "N/A", 
     "Cash Account", 
@@ -82,7 +77,7 @@ const saleSchema = new Schema ({
     },
 
     enteredBy: { // Middleware
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'Employee',
     required: true
     },
@@ -93,19 +88,19 @@ const saleSchema = new Schema ({
     },
 
     customer_type: {
-        type: mongoose.Schema.Types.ObjectId, ///////NEED HELP HERE////////
+        type: String, ///////NEED HELP HERE////////
         ref: 'Customer',           //////////DOUBT//////////
         required: true,
     },
 
     customer_id: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: 'Customer',
         required: true
     },
 
     approval_id: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: 'Approval',
     },
 
@@ -135,7 +130,7 @@ const saleSchema = new Schema ({
         required: true
     },
     payment_id: {
-        type: mongoose/Schema.Types.ObjectId,
+        type: String,
         ref: 'Vendor',
         required: true
     },
@@ -155,7 +150,7 @@ const saleSchema = new Schema ({
         required: true
     },
     department: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: 'Department',
         required: true,
     },

@@ -89,12 +89,12 @@ const transactionSchema = new Schema({
     immutable: true
   },
   enteredBy: { // Middleware
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'Employee',
     required: true
   },
   approvedBy: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'Employee',
     require: true
   },
@@ -137,7 +137,7 @@ const transactionSchema = new Schema({
     }
   },
   transactionFor: [{
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     required: true
     // No ref here as it links to multiple models
   }],
@@ -148,12 +148,12 @@ const transactionSchema = new Schema({
     // Populate this server-side using logic
   },
   debitAccount: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'Account',
     required: true
   },
   creditAccount: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'Account',
     required: true
   },

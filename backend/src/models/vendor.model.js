@@ -167,13 +167,13 @@ const vendorSchema = new Schema({
     }
   },
   createdBy: { //Middleware
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'Employee',
     required: true,
     immutable: true
   },
   updatedBy: { //Middleware
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: 'Employee',
       immutable: true
   }

@@ -52,7 +52,7 @@ const registerEmployee = asyncHandler(async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10)
 
-    const empId = `EMP-${await getNextSequence("employee")}`
+    const empId = `EMP-${(await getNextSequence("employee")).toString().padStart(5, "0")}`
 
     const newEmp = await Employee.create({
         employeeId: empId,

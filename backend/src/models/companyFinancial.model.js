@@ -32,14 +32,14 @@ const validatePositiveDecimal = function(value) {
 
 const financialProfileSchema = new Schema({
   updated_by: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'Employees',
     required : true,
     index: true,
     immutable: true
   },
   created_by: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'Employees',
     required : true,
     index: true,
@@ -122,13 +122,13 @@ const financialAccountSchema = new Schema({
     default: true
   },
   enteredBy: { //Middleware
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: 'Employee',
       required: true,
       immutable: true
   },
   updatedBy: { //Middleware
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: 'Employee',
       immutable: true
   }
