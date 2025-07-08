@@ -58,22 +58,36 @@ const registerBudget = asyncHandler(async (req, res) => {
 const getDeptBudget = asyncHandler(async (req, res) => {
     const { departmentId } = req.query
 
-    if(!departmentId){
-        throw new ApiErr(400, "Department ID is required")
+    if (!departmentId) {
+        throw new ApiErr(400, "Department ID is required");
     }
 
-    const budget = await Department.find({departmentId})
-    .populate("departmentId", "departmentName department_id")
-    .populate("createdBy", "fullname email")
+    const budget = await DepartmentBudget.find({departmentId})
+    .populate("createdBy", "employeeId")
+    .populate("updatedBy", "employeeId")
 
-    if(budget.length==0){
+    if(!budget || budget.length==0){
         throw new ApiErr(404, "No budget found for the given department")
     }
+
+    const department = await Department.findOne({ department_id: departmentId });
+
+    if (!department){
+        throw new ApiErr(404, "Department not found");
+    }
+
+    const enrichedBudgets = budget.map((b) => ({
+        ...b.toObject(),
+        department: {
+          department_id: department.department_id,
+          departmentName: department.departmentName,
+        },
+      }));
 
     return res
     .status(200)
     .json(
-        new ApiResponse(200, budget, "Department budgets fetched successfully")
+        new ApiResponse(200, enrichedBudgets, "Department budgets fetched successfully")
     )
 })
 

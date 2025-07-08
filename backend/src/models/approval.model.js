@@ -44,10 +44,8 @@ const approvalSchema = new Schema({
         required: true
     },
     approval_created_by: {                    //approval sender employee id
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Employee',
-        required: [true, 'Approval creator is required'],
-
+        type: String, // not ObjectId
+        ref: "Employee"
     },
     min_expense: {
         type: decimal,

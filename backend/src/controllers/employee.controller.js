@@ -93,7 +93,11 @@ const loginEmp = asyncHandler(async (req, res) => {
         throw new ApiErr(401, "Invalid credentials")
     }
 
-    const token = jwt.sign({id: emp._id}, jwtSecret, {expiresIn: "1h"})
+    const token = jwt.sign(
+        { id: emp._id, role: emp.role, services: emp.services },
+        jwtSecret,
+        { expiresIn: "1h" }
+    )
 
     return res
     .status(200)

@@ -2,13 +2,13 @@ import  mongoose, {Schema} from "mongoose";
 
 const departmentBudgetSchema = new Schema({
   createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'Employee',
     required: true,
     immutable: true // Middleware
   },
   departmentId: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'Department',
     required: true
   },
@@ -40,7 +40,7 @@ const departmentBudgetSchema = new Schema({
     min: [0, 'Allocated amount must be a positive number']
   },
   approvalId : {
-    type : mongoose.Schema.Types.ObjectId,
+    type : String,
     ref : 'Approval',
     required : true
   },
@@ -50,7 +50,7 @@ const departmentBudgetSchema = new Schema({
     maxLength: 300
   },
   updatedBy: { //Middleware
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: 'Employee',
       immutable: true
   }
