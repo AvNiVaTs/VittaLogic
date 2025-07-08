@@ -192,8 +192,7 @@ const assetSchema = new Schema({
   },
   updatedBy: { //Middleware
       type: String,
-      ref: 'Employee',
-      immutable: true
+      ref: 'Employee'
   }
 }, { timestamps: true });
 

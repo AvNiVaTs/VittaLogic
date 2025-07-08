@@ -95,7 +95,8 @@ const purchaseSchema = new Schema(
     enteredBy: {
       type: String,
       ref: 'Employee',
-      required: true
+      required: true,
+      immutable: true
     },
 
     purchase_date: {

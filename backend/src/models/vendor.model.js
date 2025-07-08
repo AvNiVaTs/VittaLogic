@@ -173,9 +173,9 @@ const vendorSchema = new Schema({
     immutable: true
   },
   updatedBy: { //Middleware
-      type: String,
-      ref: 'Employee',
-      immutable: true
+    type: String,
+    ref: 'Employee',
+    required: true
   }
 }, {timestamps: true});
 

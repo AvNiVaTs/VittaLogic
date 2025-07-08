@@ -13,12 +13,12 @@ import { populateCreatedByUpdatedBy } from "../middleware/populateEmpInfo.middle
 
 const router = Router()
 
-router.route("/registerVendorPay").post(verifyJWT, populateCreatedByUpdatedBy, createVendorPayment)
-router.route("/").get(verifyJWT, getAllVendorPayments)
-router.route("/by-id/:id").get(verifyJWT, getVendorPaymentById)
-router.route("/update/:id").patch(verifyJWT, populateCreatedByUpdatedBy, updateVendorPayment)
-router.route("/delete/:id").delete(verifyJWT, deleteVendorPayment)
-router.route("/search").get(verifyJWT, searchVendorPayment)
-router.route("/vendors/dropdown").get(verifyJWT, getVendorsForDropDown)
+router.route("/registerVendorPay").post(populateCreatedByUpdatedBy, createVendorPayment)
+router.route("/").get(getAllVendorPayments)
+router.route("/by-id/:id").get(getVendorPaymentById)
+router.route("/update/:id").patch(populateCreatedByUpdatedBy, updateVendorPayment)
+router.route("/delete/:id").delete(deleteVendorPayment)
+router.route("/search").get(searchVendorPayment)
+router.route("/vendors/dropdown").get(getVendorsForDropDown)
 
 export default router

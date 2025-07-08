@@ -77,9 +77,10 @@ const saleSchema = new Schema ({
     },
 
     enteredBy: { // Middleware
-    type: String,
-    ref: 'Employee',
-    required: true
+        type: String,
+        ref: 'Employee',
+        required: true,
+        immutable: true
     },
 
     sale_date: {

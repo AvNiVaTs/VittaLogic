@@ -26,7 +26,7 @@ const registerDepartment = asyncHandler(async (req, res) => {
         department_id: departmentId,
         departmentName,
         description,
-        createdBy: req.employee?._id || req.org?._id || "System"
+        createdBy: req.body.createdBy
     })
 
     //check for creation

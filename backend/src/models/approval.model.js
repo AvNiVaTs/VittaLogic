@@ -33,7 +33,7 @@ const approvalSchema = new Schema({
         immutable: true,
         index : true
     },
-    approval_to: {                               //Employee id
+    approval_to: { //Employee id
         type: String,
         ref: 'Employee',
         required : true
@@ -43,9 +43,10 @@ const approvalSchema = new Schema({
         enum: APPROVALFOR,
         required: true
     },
-    approval_created_by: {                    //approval sender employee id
-        type: String, // not ObjectId
-        ref: "Employee"
+    approval_created_by: {//approval sender employee id
+        type: String,
+        ref: "Employee",
+        immutable: true
     },
     min_expense: {
         type: decimal,

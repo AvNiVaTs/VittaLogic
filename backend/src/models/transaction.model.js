@@ -91,7 +91,8 @@ const transactionSchema = new Schema({
   enteredBy: { // Middleware
     type: String,
     ref: 'Employee',
-    required: true
+    required: true,
+    immutable: true
   },
   approvedBy: {
     type: String,

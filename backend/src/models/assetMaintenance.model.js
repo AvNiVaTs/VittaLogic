@@ -103,9 +103,7 @@ const assetMaintenanceSchema = new Schema({
   updatedBy: { //Middleware
       type: String,
       ref: 'Employee',
-      required: true,
-      default: enteredBy,
-      immutable: true
+      required: true
   }
 
 }, { timestamps: true });

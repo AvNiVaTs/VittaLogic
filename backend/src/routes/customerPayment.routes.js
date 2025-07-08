@@ -7,16 +7,15 @@ import {
     filterPaymentByStatus,
     getCustomerDropDownOptions
 } from "../controllers/customerPayment.controller.js"
-import { verifyJWT } from "../middleware/auth.middleware.js"
 import { populateCreatedByUpdatedBy } from "../middleware/populateEmpInfo.middleware.js"
 
 const router = Router()
 
-router.route("/create").post(verifyJWT, populateCreatedByUpdatedBy, createCustomerPayment)
-router.route("/").get(verifyJWT, getAllCustomerPayments)
-router.route("/update/:id").patch(verifyJWT, populateCreatedByUpdatedBy, updateCustomerPayment)
-router.route("/delete/:id").delete(verifyJWT, deleteCustomerPayment)
-router.route("/filter").get(verifyJWT, filterPaymentByStatus)
-router.route("/dropdown/customers").get(verifyJWT, getCustomerDropDownOptions)
+router.route("/create").post(populateCreatedByUpdatedBy, createCustomerPayment)
+router.route("/").get(getAllCustomerPayments)
+router.route("/update/:id").patch(populateCreatedByUpdatedBy, updateCustomerPayment)
+router.route("/delete/:id").delete(deleteCustomerPayment)
+router.route("/filter").get(filterPaymentByStatus)
+router.route("/dropdown/customers").get(getCustomerDropDownOptions)
 
 export default router

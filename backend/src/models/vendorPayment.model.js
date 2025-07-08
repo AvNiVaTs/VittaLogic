@@ -90,15 +90,15 @@ const vendorPaymentSchema = new Schema({
     index : true
   },
   createdBy: { //Middleware
-      type: String,
-      ref: 'Employee',
-      required: true,
-      immutable: true
+    type: String,
+    ref: 'Employee',
+    required: true,
+    immutable: true
   },
   updatedBy: { //Middleware
-      type: String,
-      ref: 'Employee',
-      immutable: true
+    type: String,
+    ref: 'Employee',
+    required: true
   }
 } , {timestamps : true});
 

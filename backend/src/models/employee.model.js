@@ -117,7 +117,6 @@ const employeeSchema = new Schema({
   updatedBy: { // Middleware
     type: String,
     ref: 'Employee',
-    immutable: true
   },
   servicePermissions: {
     type: [String],

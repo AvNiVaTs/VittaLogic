@@ -288,7 +288,7 @@ const customerSchema = new Schema({
   updatedBy: { //Middleware
       type: String,
       ref: 'Employee',
-      immutable: true
+      required: true
   }
 
 } , {timestamps : true});

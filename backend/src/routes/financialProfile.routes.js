@@ -3,12 +3,11 @@ import {
     createFinancialProfile,
     getAllFinancialProfiles
 } from "../controllers/financialProfile.controller.js"
-import { verifyJWT } from "../middleware/auth.middleware.js"
 import { populateCreatedByUpdatedBy } from "../middleware/populateEmpInfo.middleware.js"
 
 const router = Router()
 
-router.route("/createProfile").post(verifyJWT, populateCreatedByUpdatedBy, createFinancialProfile)
-router.route("/").get(verifyJWT, getAllFinancialProfiles)
+router.route("/createProfile").post(populateCreatedByUpdatedBy, createFinancialProfile)
+router.route("/").get(getAllFinancialProfiles)
 
 export default router

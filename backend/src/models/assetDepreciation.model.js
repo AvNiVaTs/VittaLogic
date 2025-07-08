@@ -138,8 +138,7 @@ const assetDepreciationSchema = new Schema({
   updatedBy: {
     type: String,
     ref: 'Employee',
-    required: true,
-    immutable: true
+    required: true
   }
 
 }, { timestamps: true });

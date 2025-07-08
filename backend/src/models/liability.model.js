@@ -160,15 +160,15 @@ const liabilitySchema = new Schema({
     required: true
   },
   createdBy: { //Middleware
-      type: String,
-      ref: 'Employee',
-      required: true,
-      immutable: true
+    type: String,
+    ref: 'Employee',
+    required: true,
+    immutable: true
   },
   updatedBy: { //Middleware
-      type: String,
-      ref: 'Employee',
-      immutable: true
+    type: String,
+    ref: 'Employee',
+    required: true
   },
   approval_id: {
     type: String,
