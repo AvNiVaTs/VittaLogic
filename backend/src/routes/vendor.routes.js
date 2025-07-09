@@ -8,6 +8,15 @@ import {
     searchVendorByName,
     filterVendorByType
 } from "../controllers/vendor.controller.js"
+import {
+    createVendorPayment,
+    getAllVendorPayments,
+    getVendorPaymentById,
+    updateVendorPayment,
+    deleteVendorPayment,
+    searchVendorPayment,
+    getVendorsForDropDown
+} from "../controllers/vendorPayment.controller.js"
 import { populateCreatedByUpdatedBy } from "../middleware/populateEmpInfo.middleware.js"
 
 const router = Router()
@@ -19,5 +28,13 @@ router.route("/delete/:id").delete(deleteVendor)
 router.route("/search-by-id/:id").get(searchVendorById)
 router.route("/search-by-name/:id").get(searchVendorByName)
 router.route("/filter").get(filterVendorByType)
+
+router.route("/payment/registerVendorPay").post(populateCreatedByUpdatedBy, createVendorPayment)
+router.route("/payment/").get(getAllVendorPayments)
+router.route("/payment/by-id/:id").get(getVendorPaymentById)
+router.route("/payment/update/:id").patch(populateCreatedByUpdatedBy, updateVendorPayment)
+router.route("/payment/delete/:id").delete(deleteVendorPayment)
+router.route("/payment/search").get(searchVendorPayment)
+router.route("/payment/dropdown").get(getVendorsForDropDown)
 
 export default router
