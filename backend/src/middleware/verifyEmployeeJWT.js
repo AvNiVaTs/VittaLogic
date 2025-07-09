@@ -1,8 +1,13 @@
 // middlewares/verifyEmployeeJWT.js
 import jwt from "jsonwebtoken";
+import dotenv from "dotenv"
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiErr } from "../utils/ApiError.js";
 import { Employee } from "../models/employee.model.js";
+
+dotenv.config({
+    path: './env'
+})
 
 export const verifyEmployeeJWT = asyncHandler(async (req, res, next) => {
     // Get token from cookie or header
@@ -14,10 +19,10 @@ export const verifyEmployeeJWT = asyncHandler(async (req, res, next) => {
 
     try {
         // Verify token
-        const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+        const decodedToken = jwt.verify(token, process.env.EMP_JWT_SECRET);
 
         // Find employee using decoded ID
-        const employee = await Employee.findById(decodedToken._id).select("-password");
+        const employee = await Employee.findById(decodedToken._id);
 
         if (!employee) {
             throw new ApiErr(401, "Unauthorized - Invalid employee token");

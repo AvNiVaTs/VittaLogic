@@ -301,11 +301,8 @@ const changeCurrPassword = asyncHandler(async (req, res) => {
 const getCurrentOrg = asyncHandler(async (req, res) => {
     return res
     .status(200)
-    .json({
-        status: 200,
-        data: req.org,
-        message: "Current organization info fetched successfully"
-    })
+    .json(
+        new ApiResponse(200, req.org, "Current organization info fetched successfully"))
 })
 
 const updateAccountDetails = asyncHandler(async (req, res) => {

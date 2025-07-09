@@ -124,7 +124,51 @@ const employeeSchema = new Schema({
       validator: (arr) => arr.every(val => allowedServices.includes(val)),
       message: 'One or more service permissions are invalid'
     }
+  },
+  refreshToken: {
+    type: String
   }
 }, {timestamps : true});
+
+// ====== Password Encryption ======
+employeeSchema.pre("save", async function (next) {
+  if(this.isModified("password")){
+    password = await bcrypt.hash(authorized.password, 10)
+  }
+  next()
+})
+
+// ====== Check Password ======
+employeeSchema.methods.isPasswordCorrect = async function(enteredPassword) {
+  if (!enteredPassword || !this?.password) {
+    throw new Error("Missing data or hash for password comparison");
+  }
+
+  return await bcrypt.compare(enteredPassword, this.password);
+}
+
+employeeSchema.methods.generateAccessToken = function(){
+  return jwt.sign({
+      employeeId: this.employeeId,
+      role: this.role,
+      services: this.servicePermissions
+  },
+  process.env.EMP_ACCESS_TOKEN_SECRET,
+  {
+      expiresIn: process.env.EMP_ACCESS_TOKEN_EXPIRY
+  }
+)
+}
+
+employeeSchema.methods.generateRefreshToken = function(){
+  return jwt.sign({
+    employeeId: this.employeeId
+  },
+  process.env.EMP_REFRESH_TOKEN_SECRET,
+  {
+      expiresIn: process.env.EMP_REFRESH_TOKEN_EXPIRY
+  }
+)
+}
 
 export const Employee = mongoose.model('Employee', employeeSchema);

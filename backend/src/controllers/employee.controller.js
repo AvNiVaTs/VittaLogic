@@ -8,7 +8,22 @@ import { getNextSequence } from "../utils/getNextSequence.js"
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 
-const jwtSecret = process.env.JWT_SECRET
+const generatorAccessAndRefreshTokens = async(empId) => {
+    try{
+        const org = await Organization.findById(empId)
+
+        const accessToken = emp.generateAccessToken()
+        const refreshToken = emp.generateRefreshToken()
+
+        emp.refreshToken = refreshToken
+        await emp.save({validateBeforeSave: false})
+
+        return {accessToken, refreshToken}
+    }
+    catch(err){
+        throw new ApiErr(500, "Something went wrong while generating refresh and access token")
+    }
+}
 
 const registerEmployee = asyncHandler(async (req, res) => {
     const {
@@ -83,31 +98,93 @@ const loginEmp = asyncHandler(async (req, res) => {
         throw new ApiErr(400, "Email and password are required")
     }
 
-    const emp = await Employee.findOne({emailAddress})
+    const emp = await Employee.findOne({emailAddress}).select("+password")
     if(!emp){
         throw new ApiErr(404, "Employee not found")
     }
 
-    const validPassword = await bcrypt.compare(password, emp.password)
+    const validPassword = await emp.isPasswordCorrect(password)
     if(!validPassword){
-        throw new ApiErr(401, "Invalid credentials")
+        throw new ApiErr(401, "Invalid employee credentials")
     }
 
-    const token = jwt.sign(
-        { id: emp._id, role: emp.role, services: emp.services },
-        jwtSecret,
-        { expiresIn: "1h" }
-    )
+    const {accessToken, refreshToken} = await generatorAccessAndRefreshTokens(emp.employeeId)
+    const loggedInEmp = await Employee.findOne(emp.employeeId).select("-password -refreshToken")
+
+    const options = {
+        httpOnly: true,
+        secure: true
+    }
 
     return res
     .status(200)
-    .json(new ApiResponse(200, {token, servicePermissions: emp.servicePermissions}, "Login successful"))
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json(new ApiResponse(200, {emp, servicePermissions: emp.servicePermissions, accessToken, refreshToken}, "Login successful"))
 })
 
 const logoutEmp = asyncHandler(async (req, res) => {
+    await Employee.findOneAndUpdate(
+        req.emp.employeeId,
+        {
+            $set: {
+                refreshToken: undefined
+            }
+        },
+        {new: true}
+    )
+
+    const options = {
+        httpOnly: true,
+        secure: true
+    }
+
     return res
     .status(200)
-    .json(new ApiResponse(200, null, "Logged out successfully"))
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json(new ApiResponse(200, "Logged out successfully"))
+})
+
+const refreshAccessToken = asyncHandler(async (req, res) => {
+    const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
+
+    if(!refreshToken){
+        throw new ApiErr(401, "Unauthorized Access")
+    }
+
+    try{
+        const decodedToken = jwt.verify(incomingRefreshToken, process.env.EMP_REFRESH_TOKEN_SECRET)
+
+        const emp = await Employee.findOne(decodedToken?.employeeId)
+
+        if(!emp){
+            throw new ApiErr(401, "Invalid Refresh Token")
+        }
+
+        if(incomingRefreshToken!==emp?.refreshToken){
+            throw new ApiErr(401, "Invalid refresh token")
+        }
+
+        const options = {
+            httpOnly: true,
+            secure: true
+        }
+
+        const {accessToken, newRefreshToken} = await generatorAccessAndRefreshTokens(emp.employeeId)
+        
+        return res
+        .status(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", newRefreshToken, options)
+        .json(
+            new ApiResponse(200, {
+                accessToken, refreshToken: newRefreshToken
+            }, "Access token refreshed")
+        )
+    }catch(err){
+        throw new ApiErr(401, err?.message || "Invalid Refresh Token")
+    }
 })
 
 const changeCurrPassword = asyncHandler(async (req, res) => {
@@ -118,19 +195,19 @@ const changeCurrPassword = asyncHandler(async (req, res) => {
         throw new ApiErr(404, "Employee not found")
     }
 
-    const match = await bcrypt.compare(oldPassword, emp.password)
+    const match = await emp.isPasswordCorrect(oldPassword)
     if(!match){
         throw new ApiErr(401, "Old Password is incorrect")
     }
 
-    emp.password = await bcrypt.hash(newPassword, 10)
+    emp.password = newPassword
     emp.updatedBy = req.body.updatedBy
-    await emp.save()
+    await emp.save({validateBeforeSave: false})
 
     return res
     .status(200)
     .json(
-        new ApiResponse(200, null, "Password changed successfully")
+        new ApiResponse(200, {}, "Password changed successfully")
     )
 })
 
@@ -236,6 +313,7 @@ export {
     registerEmployee,
     loginEmp,
     logoutEmp,
+    refreshAccessToken,
     changeCurrPassword,
     updatedEmpDetails,
     deleteEmp,
