@@ -8,12 +8,12 @@ import { getNextSequence } from "../utils/getNextSequence.js"
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 
-const generatorAccessAndRefreshTokens = async(empId) => {
+const generatorAccessAndRefreshTokensForEmp = async(empId) => {
     try{
-        const org = await Organization.findById(empId)
+        const emp = await Employee.findOne({ employeeId: empId })
 
-        const accessToken = emp.generateAccessToken()
-        const refreshToken = emp.generateRefreshToken()
+        const accessToken = emp.generateAccessTokenforEmp()
+        const refreshToken = emp.generateRefreshTokenforEmp()
 
         emp.refreshToken = refreshToken
         await emp.save({validateBeforeSave: false})
@@ -108,8 +108,8 @@ const loginEmp = asyncHandler(async (req, res) => {
         throw new ApiErr(401, "Invalid employee credentials")
     }
 
-    const {accessToken, refreshToken} = await generatorAccessAndRefreshTokens(emp.employeeId)
-    const loggedInEmp = await Employee.findOne(emp.employeeId).select("-password -refreshToken")
+    const {accessToken, refreshToken} = await generatorAccessAndRefreshTokensForEmp(emp.employeeId)
+    const loggedInEmp = await Employee.findOne({ employeeId: emp.employeeId }).select("-password -refreshToken")
 
     const options = {
         httpOnly: true,
@@ -149,14 +149,14 @@ const logoutEmp = asyncHandler(async (req, res) => {
 const refreshAccessToken = asyncHandler(async (req, res) => {
     const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
 
-    if(!refreshToken){
+    if(!incomingRefreshToken){
         throw new ApiErr(401, "Unauthorized Access")
     }
 
     try{
-        const decodedToken = jwt.verify(incomingRefreshToken, process.env.EMP_REFRESH_TOKEN_SECRET)
+        const decoded = jwt.verify(incomingRefreshToken, process.env.EMP_REFRESH_TOKEN_SECRET)
 
-        const emp = await Employee.findOne(decodedToken?.employeeId)
+        const emp = await Employee.findOne(decoded?.employeeId)
 
         if(!emp){
             throw new ApiErr(401, "Invalid Refresh Token")
@@ -171,7 +171,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
             secure: true
         }
 
-        const {accessToken, newRefreshToken} = await generatorAccessAndRefreshTokens(emp.employeeId)
+        const {accessToken, newRefreshToken} = await generatorAccessAndRefreshTokensForEmp(emp.employeeId)
         
         return res
         .status(200)

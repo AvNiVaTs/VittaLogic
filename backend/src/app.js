@@ -1,14 +1,10 @@
 import express from "express"
 import cors from "cors"
 import cookieParser from "cookie-parser"
-import dotenv from "dotenv"
 
 import { verifyEmployeeJWT } from "./middleware/verifyEmployeeJWT.js"
 import { checkServicePermission } from "./middleware/checkServicePermission.js"
 
-dotenv.config({
-    path: './env'
-})
 const app = express()
 app.use(cors({
     origin: process.env.CORS_ORIGIN,

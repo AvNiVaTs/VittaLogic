@@ -1,5 +1,9 @@
 import mongoose, {Schema} from "mongoose";
+import bcrypt from "bcrypt"
+import jwt from "jsonwebtoken"
+
 import { formatName } from '../utils/formatName.js';
+
 const allowedServices = [
   'Department Service',
   'Employee Service',
@@ -133,7 +137,7 @@ const employeeSchema = new Schema({
 // ====== Password Encryption ======
 employeeSchema.pre("save", async function (next) {
   if(this.isModified("password")){
-    password = await bcrypt.hash(authorized.password, 10)
+    this.password = await bcrypt.hash(this.password, 10)
   }
   next()
 })
@@ -147,11 +151,11 @@ employeeSchema.methods.isPasswordCorrect = async function(enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 }
 
-employeeSchema.methods.generateAccessToken = function(){
+employeeSchema.methods.generateAccessTokenforEmp = function(){
   return jwt.sign({
       employeeId: this.employeeId,
-      role: this.role,
-      services: this.servicePermissions
+      designation: this.designation,
+      role: this.role
   },
   process.env.EMP_ACCESS_TOKEN_SECRET,
   {
@@ -160,7 +164,7 @@ employeeSchema.methods.generateAccessToken = function(){
 )
 }
 
-employeeSchema.methods.generateRefreshToken = function(){
+employeeSchema.methods.generateRefreshTokenforEmp = function(){
   return jwt.sign({
     employeeId: this.employeeId
   },

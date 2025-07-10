@@ -144,7 +144,8 @@ organizationSchema.methods.generateAccessToken = function(){
   return jwt.sign({
       _id: this._id,
       email: this.email,
-      organizationName: this.organizationName
+      organizationName: this.organizationName,
+      tokenType: 'organization'
   },
   process.env.ACCESS_TOKEN_SECRET,
   {
@@ -155,7 +156,8 @@ organizationSchema.methods.generateAccessToken = function(){
 
 organizationSchema.methods.generateRefreshToken = function(){
   return jwt.sign({
-      _id: this._id
+      _id: this._id,
+      tokenType: 'organization'
   },
   process.env.REFRESH_TOKEN_SECRET,
   {

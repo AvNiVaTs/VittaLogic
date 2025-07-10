@@ -12,6 +12,9 @@ export const verifyJWT = asyncHandler(async(req, res, next) => {
         }
 
         const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET)
+        if (decoded.tokenType !== "organization") {
+            throw new ApiErr(401, "Unauthorized - Invalid token type for organization");
+        }
 
         const org = await Organization.findById(decodedToken?._id).select("-authorizedPerson.password -refreshToken")
 

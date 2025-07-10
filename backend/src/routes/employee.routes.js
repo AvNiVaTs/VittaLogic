@@ -3,6 +3,7 @@ import {
     registerEmployee,
     loginEmp,
     logoutEmp,
+    refreshAccessToken,
     changeCurrPassword,
     updatedEmpDetails,
     deleteEmp,
@@ -24,6 +25,7 @@ const router = Router()
 router.route("/registerEmp").post(populateCreatedByUpdatedBy, registerEmployee)
 router.route("/login").post(loginEmp)
 router.route("/logout").post(logoutEmp)
+router.route("/refresh-token").post(refreshAccessToken)
 router.route("/change-password").post(populateCreatedByUpdatedBy, changeCurrPassword)
 router.route("/update/:employee_id").patch(populateCreatedByUpdatedBy, updatedEmpDetails)
 router.route("/delete/:id").delete(deleteEmp)
