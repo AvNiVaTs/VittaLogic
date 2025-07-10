@@ -5,8 +5,9 @@ import { ApiErr } from "../utils/ApiError.js";
 import { Employee } from "../models/employee.model.js";
 
 export const verifyEmployeeJWT = asyncHandler(async (req, res, next) => {
+    console.log("Cookies:", req.cookies)
     try{
-        const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "");
+        const token = req.cookies?.accessToken1 || req.header("Authorization")?.replace("Bearer ", "");
         console.log("Token from Header/Cookie:", token);
 
         if (!token) {

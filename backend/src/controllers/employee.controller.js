@@ -118,8 +118,8 @@ const loginEmp = asyncHandler(async (req, res) => {
 
     return res
     .status(200)
-    .cookie("accessToken", accessToken, options)
-    .cookie("refreshToken", refreshToken, options)
+    .cookie("accessToken1", accessToken, options)
+    .cookie("refreshToken1", refreshToken, options)
     .json(new ApiResponse(200, {emp, servicePermissions: emp.servicePermissions, accessToken, refreshToken}, "Login successful"))
 })
 
@@ -141,13 +141,13 @@ const logoutEmp = asyncHandler(async (req, res) => {
 
     return res
     .status(200)
-    .clearCookie("accessToken", options)
-    .clearCookie("refreshToken", options)
+    .clearCookie("accessToken1", options)
+    .clearCookie("refreshToken1", options)
     .json(new ApiResponse(200, "Logged out successfully"))
 })
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
-    const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
+    const incomingRefreshToken = req.cookies.refreshToken1 || req.body.refreshToken1
 
     if(!incomingRefreshToken){
         throw new ApiErr(401, "Unauthorized Access")
@@ -175,8 +175,8 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
         
         return res
         .status(200)
-        .cookie("accessToken", accessToken, options)
-        .cookie("refreshToken", newRefreshToken, options)
+        .cookie("accessToken1", accessToken, options)
+        .cookie("refreshToken1", newRefreshToken, options)
         .json(
             new ApiResponse(200, {
                 accessToken, refreshToken: newRefreshToken
