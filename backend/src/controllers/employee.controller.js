@@ -93,7 +93,7 @@ const registerEmployee = asyncHandler(async (req, res) => {
 })
 
 const loginEmp = asyncHandler(async (req, res) => {
-    const { emailAddress, password} = req.body
+    const { emailAddress, password, serviceName} = req.body
     if(!emailAddress || !password){
         throw new ApiErr(400, "Email and password are required")
     }
@@ -108,24 +108,34 @@ const loginEmp = asyncHandler(async (req, res) => {
         throw new ApiErr(401, "Invalid employee credentials")
     }
 
+    const isAllowed = emp.servicePermissions?.includes(serviceName);
+    if (!isAllowed) {
+        throw new ApiErr(403, "Access to this service is forbidden for this employee");
+    }
+
     const {accessToken, refreshToken} = await generatorAccessAndRefreshTokensForEmp(emp.employeeId)
     const loggedInEmp = await Employee.findOne({ employeeId: emp.employeeId }).select("-password -refreshToken")
 
     const options = {
         httpOnly: true,
-        secure: true
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "Lax"
     }
 
     return res
     .status(200)
-    .cookie("accessToken1", accessToken, options)
-    .cookie("refreshToken1", refreshToken, options)
-    .json(new ApiResponse(200, {emp, servicePermissions: emp.servicePermissions, accessToken, refreshToken}, "Login successful"))
+    .cookie("empAccessToken", accessToken, options)
+    .cookie("empRefreshToken", refreshToken, options)
+    .json(new ApiResponse(200, {employee: loggedInEmp, servicePermissions: emp.servicePermissions, accessToken, refreshToken}, "Login successful"))
 })
 
 const logoutEmp = asyncHandler(async (req, res) => {
+    if (!req.employee || !req.employee.employeeId) {
+        throw new ApiErr(401, "Unauthorized. Employee not found in request.");
+    }
+
     await Employee.findOneAndUpdate(
-        req.emp.employeeId,
+        {employeeId: req.employee.employeeId},
         {
             $set: {
                 refreshToken: undefined
@@ -136,13 +146,14 @@ const logoutEmp = asyncHandler(async (req, res) => {
 
     const options = {
         httpOnly: true,
-        secure: true
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "Lax"
     }
 
     return res
     .status(200)
-    .clearCookie("accessToken1", options)
-    .clearCookie("refreshToken1", options)
+    .clearCookie("empAccessToken", options)
+    .clearCookie("empRefreshToken", options)
     .json(new ApiResponse(200, "Logged out successfully"))
 })
 
@@ -156,7 +167,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     try{
         const decoded = jwt.verify(incomingRefreshToken, process.env.EMP_REFRESH_TOKEN_SECRET)
 
-        const emp = await Employee.findOne(decoded?.employeeId)
+        const emp = await Employee.findOne({employeeId: decoded?.employeeId})
 
         if(!emp){
             throw new ApiErr(401, "Invalid Refresh Token")
@@ -168,15 +179,16 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
         const options = {
             httpOnly: true,
-            secure: true
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "Lax"
         }
 
         const {accessToken, newRefreshToken} = await generatorAccessAndRefreshTokensForEmp(emp.employeeId)
         
         return res
         .status(200)
-        .cookie("accessToken1", accessToken, options)
-        .cookie("refreshToken1", newRefreshToken, options)
+        .cookie("empAccessToken", accessToken, options)
+        .cookie("empRefreshToken", newRefreshToken, options)
         .json(
             new ApiResponse(200, {
                 accessToken, refreshToken: newRefreshToken
@@ -189,8 +201,11 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
 const changeCurrPassword = asyncHandler(async (req, res) => {
     const {emailAddress, oldPassword, newPassword} = req.body
+    // console.log("Received oldPassword:", oldPassword);
     
-    const emp = await Employee.findOne({emailAddress})
+    const emp = await Employee.findOne({emailAddress}).select("+password")
+    // console.log("Employee found:", emp);
+    // console.log("Stored password hash:", emp?.password);
     if(!emp){
         throw new ApiErr(404, "Employee not found")
     }
@@ -201,7 +216,7 @@ const changeCurrPassword = asyncHandler(async (req, res) => {
     }
 
     emp.password = newPassword
-    emp.updatedBy = req.body.updatedBy
+    emp.updatedBy = req.emp?.employeeId || emp.updatedBy;
     await emp.save({validateBeforeSave: false})
 
     return res
