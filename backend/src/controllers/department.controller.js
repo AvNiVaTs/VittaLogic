@@ -25,8 +25,9 @@ const registerDepartment = asyncHandler(async (req, res) => {
     const dept = await Department.create({
         department_id: departmentId,
         departmentName,
-        description,
-        createdBy: req.body.createdBy
+        departmentDescription: description,
+        createdBy: req.body.createdBy,
+        updatedBy: req.body.updatedBy
     })
 
     //check for creation
@@ -44,26 +45,32 @@ const registerDepartment = asyncHandler(async (req, res) => {
 })
 
 const getDeptEntry = asyncHandler(async (req, res) => {
+    const department = await Department.findOne({ departmentId: req.employee.departmentId });
+
+    if (!department) {
+        throw new ApiErr(404, "Department not found");
+    }
     return res
     .status(200)
     .json(
-        new ApiResponse(200, req.dept, "Current Department fetched")
+        new ApiResponse(200, department, "Current Department fetched")
     )
 })
 
 const editDeptEntry = asyncHandler(async (req, res) => {
-    const {departmentName, description} = req.body
+    const {departmentId, departmentName, description} = req.body
 
     if(!departmentName){
         throw new ApiErr(400, "Department name required")
     }
 
     const dept = await Department.findOneAndUpdate(
-        {department_id: req.dept.department_id},
+        {department_id: departmentId},
         {
             $set: {
                 departmentName,
-                departmentDescription: description
+                departmentDescription: description,
+                updatedBy: req.body.updatedBy
             }
         },
         { new: true }

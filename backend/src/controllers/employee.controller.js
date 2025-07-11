@@ -247,7 +247,7 @@ const updatedEmpDetails = asyncHandler(async (req, res) => {
 
     updates.updatedBy = req.body.updatedBy
 
-    const updatedEmp = await Employee.findByIdAndUpdate(employee_id, updates, {
+    const updatedEmp = await Employee.findOneAndUpdate({employeeId: employee_id}, updates, {
         new: true,
         runValidators: true
     })
