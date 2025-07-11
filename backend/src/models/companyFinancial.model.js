@@ -35,8 +35,7 @@ const financialProfileSchema = new Schema({
     type: String,
     ref: 'Employees',
     required : true,
-    index: true,
-    immutable: true
+    index: true
   },
   created_by: {
     type: String,
@@ -88,7 +87,7 @@ const financialAccountSchema = new Schema({
   },
   account_category: {
     type: String,
-    enum: ACCOUNT_CATEGORY,
+    enum: ACCOUNT_TYPES,
     required: true
   },
   account_name: {
