@@ -379,7 +379,7 @@ const purchaseTransactionSchema = new Schema({
   },
   paymentId: {
     type: String,
-    ref: "Payment",
+    ref: "VendorPayment",
     required: true
   },
   approvalId: {
