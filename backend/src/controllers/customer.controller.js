@@ -15,7 +15,7 @@ const createCustomer = asyncHandler(async (req, res) => {
         billing_Address,
         receiver_Name,
         receiver_ContactNo,
-        shipping_Address,
+        shipping_Addresses,
         customerPriority,
         customer_Location,
         indianDetails,
@@ -34,7 +34,9 @@ const createCustomer = asyncHandler(async (req, res) => {
     !billing_Address ||
     !receiver_Name ||
     !receiver_ContactNo ||
-    !shipping_Address ||
+    !shipping_Addresses ||
+    !Array.isArray(shipping_Addresses) ||
+    shipping_Addresses.length === 0 ||
     !customerPriority ||
     !customer_Location?.trim()){
         throw new ApiErr(400, "All mandatory fields must be filled")
@@ -64,7 +66,7 @@ const createCustomer = asyncHandler(async (req, res) => {
         billing_Address,
         receiver_Name,
         receiver_ContactNo,
-        shipping_Address,
+        shipping_Addresses,
         customerPriority,
         customer_Location,
         indianDetails: customer_Location==="Indian"? indianDetails : undefined,
@@ -73,7 +75,7 @@ const createCustomer = asyncHandler(async (req, res) => {
         updatedBy: req.body.updatedBy
     })
 
-    const createdCust = await Customer.findById(newCus.customer_Id)
+    const createdCust = await Customer.findOne({customer_Id: custId})
     if(!createdCust){
         throw new ApiErr(400, "Something went wrong while registering customer")
     }
@@ -104,7 +106,7 @@ const updateCust = asyncHandler(async (req, res) => {
     const updates = req.body
     updates.updatedBy = req.body.updatedBy
 
-    const updatedCustomer = await Customer.findByIdAndUpdate({customer_Id: id}, updates, {
+    const updatedCustomer = await Customer.findOneAndUpdate({customer_Id: id}, updates, {
         new: true,
         runValidator: true
     })
@@ -131,7 +133,7 @@ const deleteCustomer = asyncHandler(async (req, res) => {
     return res
     .status(200)
     .json(
-        new ApiResponse(200, {}, "Customer deleted")
+        new ApiResponse(200, customer, "Customer deleted")
     )
 })
 
