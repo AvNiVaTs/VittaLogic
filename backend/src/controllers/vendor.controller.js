@@ -27,11 +27,32 @@ const registerVendor = asyncHandler(async (req, res) => {
         throw new ApiErr(400, "All required fields are required")
     }
 
-    if(vendor_location==="Indian" && !indianBankDetails){
-        throw new ApiErr(400, "All required Bank Details must be filled")
+    if (vendor_location === "Indian") {
+        if (
+            !indianBankDetails ||
+            !indianBankDetails.accountHolderName?.trim() ||
+            !indianBankDetails.bankAccountNumber?.trim() ||
+            !indianBankDetails.bankName?.trim() ||
+            !indianBankDetails.bankBranch?.trim() ||
+            !indianBankDetails.ifscCode?.trim()
+        ) {
+            throw new ApiErr(400, "All Indian bank details must be filled");
+        }
     }
-    if(vendor_location==="International" && !internationalBankDetails){
-        throw new ApiErr(400, "All required Bank Details must be filled")
+
+    if (vendor_location === "International") {
+        if (
+            !internationalBankDetails ||
+            !internationalBankDetails.countryName?.trim() ||
+            !internationalBankDetails.bankName?.trim() ||
+            !internationalBankDetails.ibanOrAccountNumber?.trim() ||
+            !internationalBankDetails.swiftBicCode?.trim() ||
+            !internationalBankDetails.bankAddress?.trim() ||
+            !internationalBankDetails.beneficiaryName?.trim() ||
+            !internationalBankDetails.currency?.trim()
+        ) {
+            throw new ApiErr(400, "All International bank details must be filled");
+        }
     }
 
     const venId = `VEN-${(await getNextSequence("vendor_id")).toString().padStart(5, "0")}`
@@ -53,7 +74,7 @@ const registerVendor = asyncHandler(async (req, res) => {
         updatedBy: req.body.updatedBy
     })
 
-    const createdVendor = await Vendor.findById(vendor.vendor_id)
+    const createdVendor = await Vendor.findOne({vendor_id: venId})
     if(!createdVendor){
         throw new ApiErr(400, "Something went wrong while registering the Vendor")
     }
@@ -89,10 +110,15 @@ const updateVendor = asyncHandler(async (req, res) => {
         throw new ApiErr(400, "Vendor type must be a non-empty array");
     }
 
-    const updatedVen = await Vendor.findByIdAndUpdate(id, updates, {
-        new: true,
-        runValidators: true
-    })
+    const updatedVen = await Vendor.findOneAndUpdate(
+        { vendor_id: id },
+        updates,
+        {
+            new: true,
+            runValidators: true
+        }
+    )
+
 
     if(!updatedVen){
         throw new ApiErr(404, "Vendor not found")
@@ -108,7 +134,7 @@ const updateVendor = asyncHandler(async (req, res) => {
 const deleteVendor = asyncHandler(async (req, res) => {
     const {id} = req.params
 
-    const deleted = await Vendor.findByIdAndDelete(id)
+    const deleted = await Vendor.findOneAndDelete({vendor_id: id })
     if(!deleted){
         throw new ApiErr(404, "Vendor not able to delete")
     }

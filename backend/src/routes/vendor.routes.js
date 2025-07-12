@@ -27,7 +27,7 @@ router.route("/").get(getAllVendor)
 router.route("/update/:id").patch(verifyEmployeeJWT, populateCreatedByUpdatedBy, updateVendor)
 router.route("/delete/:id").delete(deleteVendor)
 router.route("/search-by-id/:id").get(searchVendorById)
-router.route("/search-by-name/:id").get(searchVendorByName)
+router.route("/search-by-name/:name").get(searchVendorByName)
 router.route("/filter").get(filterVendorByType)
 
 router.route("/payment/registerVendorPay").post(verifyEmployeeJWT, populateCreatedByUpdatedBy, createVendorPayment)
