@@ -5,10 +5,10 @@ import { ApiErr } from "../utils/ApiError.js";
 import { Employee } from "../models/employee.model.js";
 
 export const verifyEmployeeJWT = asyncHandler(async (req, res, next) => {
-    console.log("Cookies:", req.cookies)
+    // console.log("Cookies:", req.cookies)
     try{
-        const token = req.cookies?.accessToken1 || req.header("Authorization")?.replace("Bearer ", "");
-        console.log("Token from Header/Cookie:", token);
+        const token = req.cookies.empAccessToken || req.header("Authorization")?.replace("Bearer ", "");
+        // console.log("Token from Header/Cookie:", token);
 
         if (!token) {
             throw new ApiErr(401, "Unauthorized - No access token provided");
@@ -16,7 +16,7 @@ export const verifyEmployeeJWT = asyncHandler(async (req, res, next) => {
 
         // Verify token
         const decoded = jwt.verify(token, process.env.EMP_ACCESS_TOKEN_SECRET);
-        console.log("Decoded Token:", decoded)
+        // console.log("Decoded Token:", decoded)
 
 
         // Find employee using decoded ID

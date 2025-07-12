@@ -84,7 +84,8 @@ const employeeSchema = new Schema({
   password: {
     type: String,
     required: [true, "Password is required"],
-    minlength: 6
+    minlength: 6,
+    select: false
   },
   designation: {
     type: String,
@@ -144,6 +145,7 @@ employeeSchema.pre("save", async function (next) {
 
 // ====== Check Password ======
 employeeSchema.methods.isPasswordCorrect = async function(enteredPassword) {
+  // console.log("Comparing password:", enteredPassword, "with hash:", this.password);
   if (!enteredPassword || !this?.password) {
     throw new Error("Missing data or hash for password comparison");
   }

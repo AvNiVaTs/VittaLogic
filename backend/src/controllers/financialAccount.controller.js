@@ -24,7 +24,7 @@ const createFinancialAccount = asyncHandler(async (req, res) => {
         description,
         opening_balance,
         current_balance: opening_balance,
-        createdBy: req.body.createdBy,
+        enteredBy: req.body.createdBy,
         updatedBy: req.body.updatedBy
     })
 
@@ -83,10 +83,6 @@ const updateAccountStatus = asyncHandler(async (req, res) => {
     const acc = await FinancialAccount.findOne({account_id: accId})
     if(!acc){
         throw new ApiErr(404, "Account not found")
-    }
-
-    if(account.is_active===false){
-        throw new ApiErr(403, "Inactive account cannot be modified")
     }
 
     acc.is_active = is_active

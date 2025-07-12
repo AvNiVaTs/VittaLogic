@@ -6,7 +6,6 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiErr } from "../utils/ApiError.js";
 import jwt from "jsonwebtoken"
-import bcrypt from "bcrypt"
 
 const generatorAccessAndRefreshTokens = async(orgId) => {
     try{
@@ -79,6 +78,7 @@ const registerOrg = asyncHandler(async (req, res) => {
         throw new ApiErr(409, "Organization with email already exists");
     }
 
+    const pass = authorizedPerson.password
     // Create org
     const org = await Organization.create({
         organizationName,
@@ -96,7 +96,7 @@ const registerOrg = asyncHandler(async (req, res) => {
             email: authorizedPerson.email,
             designation: authorizedPerson.designation,
             contactNumber: authorizedPerson.contactNumber,
-            password: authorizedPerson.password,
+            password: pass,
             confirmpassword: authorizedPerson.confirmpassword
         },
         bankName,
@@ -129,13 +129,12 @@ const registerOrg = asyncHandler(async (req, res) => {
     // Now create authorized person as an employee
     const fullName = `${authorizedPerson.firstName} ${authorizedPerson.lastName}`;
     const empId = `EMP-${(await getNextSequence("employee")).toString().padStart(5, "0")}`;
-    const hashedPassword = await bcrypt.hash(authorizedPerson.password, 10);
     const employee = await Employee.create({
         employeeId: empId,
         employeeName: fullName,
         emailAddress: authorizedPerson.email,
         contactNumber: authorizedPerson.contactNumber,
-        password: hashedPassword,
+        password: pass,
         designation: authorizedPerson.designation,
         dateOfJoining: org.createdAt,
         role: "Application Manager",
@@ -200,7 +199,8 @@ const loginOrg = asyncHandler(async (req, res) => {
 
     const options = {
         httpOnly: true,
-        secure: true
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "Lax"
     }
 
     return res
@@ -229,7 +229,8 @@ const logoutOrg = asyncHandler(async (req, res) => {
 
     const options = {
         httpOnly: true,
-        secure: true
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "Lax"
     }
 
     return res
@@ -261,7 +262,8 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
         const options = {
             httpOnly: true,
-            secure: true
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "Lax"
         }
 
         const {accessToken, newRefreshToken} = await generatorAccessAndRefreshTokens(org._id)
@@ -317,7 +319,7 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
             "authorizedPerson.firstName": firstName,
             "authorizedPerson.lastName": lastName,
             "authorizedPerson.email": email,
-            "authorizedPerson.mobileNumber": mobileNumber
+            "authorizedPerson.contactNumber": mobileNumber
         }
     }, {new: true}).select("-authorizedPerson.password -authorizedPerson.confirmpassword -refreshToken")
 

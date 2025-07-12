@@ -17,22 +17,23 @@ import {
     searchVendorPayment,
     getVendorsForDropDown
 } from "../controllers/vendorPayment.controller.js"
+import { verifyEmployeeJWT } from "../middleware/verifyEmployeeJWT.js"
 import { populateCreatedByUpdatedBy } from "../middleware/populateEmpInfo.middleware.js"
 
 const router = Router()
 
-router.route("/registerVendor").post(populateCreatedByUpdatedBy, registerVendor)
+router.route("/registerVendor").post(verifyEmployeeJWT, populateCreatedByUpdatedBy, registerVendor)
 router.route("/").get(getAllVendor)
-router.route("/update/:id").patch(populateCreatedByUpdatedBy, updateVendor)
+router.route("/update/:id").patch(verifyEmployeeJWT, populateCreatedByUpdatedBy, updateVendor)
 router.route("/delete/:id").delete(deleteVendor)
 router.route("/search-by-id/:id").get(searchVendorById)
-router.route("/search-by-name/:id").get(searchVendorByName)
+router.route("/search-by-name/:name").get(searchVendorByName)
 router.route("/filter").get(filterVendorByType)
 
-router.route("/payment/registerVendorPay").post(populateCreatedByUpdatedBy, createVendorPayment)
+router.route("/payment/registerVendorPay").post(verifyEmployeeJWT, populateCreatedByUpdatedBy, createVendorPayment)
 router.route("/payment/").get(getAllVendorPayments)
 router.route("/payment/by-id/:id").get(getVendorPaymentById)
-router.route("/payment/update/:id").patch(populateCreatedByUpdatedBy, updateVendorPayment)
+router.route("/payment/update/:id").patch(verifyEmployeeJWT, populateCreatedByUpdatedBy, updateVendorPayment)
 router.route("/payment/delete/:id").delete(deleteVendorPayment)
 router.route("/payment/search").get(searchVendorPayment)
 router.route("/payment/dropdown").get(getVendorsForDropDown)
