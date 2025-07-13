@@ -5,7 +5,6 @@ import {ApiResponse} from "../utils/ApiResponse.js"
 import {Employee} from "../models/employee.model.js"
 import {Department} from "../models/department.model.js"
 import { getNextSequence } from "../utils/getNextSequence.js"
-import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 
 const generatorAccessAndRefreshTokensForEmp = async(empId) => {
@@ -63,7 +62,7 @@ const registerEmployee = asyncHandler(async (req, res) => {
     if(!existingDept){
         throw new ApiErr(404, "Selected department does not exists")
     }
-    const deptId = existingDept._id;
+    const deptId = existingDept.department_id;
 
     const empId = `EMP-${(await getNextSequence("employee")).toString().padStart(5, "0")}`
 
