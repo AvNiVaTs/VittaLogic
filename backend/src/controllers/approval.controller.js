@@ -29,7 +29,7 @@ const createApproval = asyncHandler(async (req, res) => {
     const approval = await Approval.create({
         approval_id: appId,
         approvalfor,
-        approval_to: emp._id,
+        approval_to: emp.employeeId,
         min_expense,
         max_expense,
         priority,
