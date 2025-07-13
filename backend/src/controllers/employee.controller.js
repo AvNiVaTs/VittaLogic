@@ -65,8 +65,6 @@ const registerEmployee = asyncHandler(async (req, res) => {
     }
     const deptId = existingDept._id;
 
-    const hashedPassword = await bcrypt.hash(password, 10)
-
     const empId = `EMP-${(await getNextSequence("employee")).toString().padStart(5, "0")}`
 
     const newEmp = await Employee.create({
@@ -74,7 +72,7 @@ const registerEmployee = asyncHandler(async (req, res) => {
         employeeName,
         emailAddress,
         contactNumber,
-        password: hashedPassword,
+        password,
         designation,
         dateOfJoining,
         department: deptId,
@@ -99,6 +97,8 @@ const loginEmp = asyncHandler(async (req, res) => {
     }
 
     const emp = await Employee.findOne({emailAddress}).select("+password")
+    // console.log("Entered password:", password);
+    // console.log("Stored hash:", emp?.password);
     if(!emp){
         throw new ApiErr(404, "Employee not found")
     }
