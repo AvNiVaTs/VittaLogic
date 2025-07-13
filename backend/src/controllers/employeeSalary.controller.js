@@ -8,23 +8,40 @@ import {getNextSequence} from "../utils/getNextSequence.js"
 
 const registerSalary = asyncHandler(async (req, res) => {
     const {
-        employee,
-        department,
+        employee,       // employeeId
+        department,     // departmentId
         role,
         payMonth,
         baseSalary,
-        bonus=0,
-        deduction=0,
+        bonus = 0,
+        deduction = 0,
         paymentDate
-    } = req.body
+    } = req.body;
 
-    if(!employee || !department || !role || !payMonth || !baseSalary || !paymentDate){
-        throw new ApiErr(400, "All required fields must be filled")
+    if (!employee || !department || !role || !payMonth || !baseSalary || !paymentDate) {
+        throw new ApiErr(400, "All required fields must be filled");
     }
 
-    const netSal = baseSalary + bonus - deduction
-    const salId = `SAL-${await getNextSequence("salaryId")}`
+    // 1. Fetch employee and verify existence
+    const emp = await Employee.findOne({ employeeId: employee });
+    if (!emp) {
+        throw new ApiErr(404, "Employee not found");
+    }
 
+    // 2. Check if the provided department matches the employee's department
+    if (emp.department !== department) {
+        throw new ApiErr(400, "Provided department does not match the employee's department");
+    }
+
+    if (emp.role !== role) {
+        throw new ApiErr(400, "Provided role does not match the employee's department");
+    }
+
+    // 3. Calculate net salary
+    const netSal = baseSalary + bonus - deduction;
+    const salId = `SAL-${(await getNextSequence("salaryId")).toString().padStart(5, "0")}`;
+
+    // 4. Create salary record
     const newSalary = await EmployeeSalary.create({
         salaryId: salId,
         employee,
@@ -37,40 +54,57 @@ const registerSalary = asyncHandler(async (req, res) => {
         netSalary: netSal,
         paymentDate,
         createdBy: req.body.createdBy,
-        updatedBy: req.body.updatedBy 
-    })
+        updatedBy: req.body.updatedBy
+    });
 
-    return res
-    .status(200)
-    .json(
+    return res.status(200).json(
         new ApiResponse(200, newSalary, "Salary registered successfully")
-    )
-})
+    );
+});
 
 const updateSalaryDetails = asyncHandler(async (req, res) => {
-    const {salaryId} = req.params
-    const {baseSalary, bonus=0, deduction=0, paymentDate} = req.body
+    const { salaryId } = req.params;
+    const { baseSalary, bonus = 0, deduction = 0, paymentDate, updatedBy } = req.body;
 
-    const salary = await EmployeeSalary.findOne({salaryId})
-    if(!salary){
-        throw new ApiErr(404, "Salary record not found")
+    if (baseSalary === undefined || baseSalary === null || !paymentDate || !updatedBy) {
+        throw new ApiErr(400, "Base salary, payment date, and updatedBy are required");
     }
 
-    salary.baseSalary = baseSalary
-    salary.bonus = bonus
-    salary.deduction = deduction
-    salary.netSalary = baseSalary + bonus - deduction
-    salary.paymentDate = paymentDate
-    salary.updatedBy = req.body.updatedBy
+    const salary = await EmployeeSalary.findOne({ salaryId });
+    if (!salary) {
+        throw new ApiErr(404, "Salary record not found");
+    }
 
-    await salary.save()
+    // Optional but recommended:
+    // Verify employee still exists and has the same department/role
+    const emp = await Employee.findOne({ employeeId: salary.employee });
+    if (!emp) {
+        throw new ApiErr(404, "Employee linked to this salary record no longer exists");
+    }
 
-    return res
-    .status(200)
-    .json(
+    if (emp.department !== salary.department) {
+        throw new ApiErr(400, "Mismatch between employee's current department and salary record");
+    }
+
+    if (emp.role !== salary.role) {
+        throw new ApiErr(400, "Mismatch between employee's current role and salary record");
+    }
+
+    // Update values
+    salary.baseSalary = baseSalary;
+    salary.bonus = bonus;
+    salary.deduction = deduction;
+    salary.netSalary = baseSalary + bonus - deduction;
+    salary.paymentDate = paymentDate;
+    salary.updatedBy = updatedBy;
+
+    await salary.save();
+
+    return res.status(200).json(
         new ApiResponse(200, salary, "Salary updated successfully")
-    )
-})
+    );
+});
+
 
 const getEmpSalaryDetails = asyncHandler(async (req, res) =>{
     const {employeeId} = req.params
@@ -134,13 +168,22 @@ const getEligibleEmpForSalary = asyncHandler(async (req, res) => {
 })
 
 const getDropDownData = asyncHandler(async (req, res) => {
-    const department = await Department.find().select("departmentId departmentName")
+    const departments = await Department.find().select("departmentId departmentName")
+    const departmentOptions = departments.map(d => ({
+        label: `${d.departmentId} - ${d.departmentName}`,
+        value: d.departmentId
+    }))
+
+    const employees = await Employee.find().select("employeeId employeeName")
+    const employeeOptions = employees.map(e => ({
+        label: `${e.employeeId} - ${e.employeeName}`,
+        value: e.employeeId
+    }))
+
     const roles = await Employee.find().distinct("designation")
 
-    return res
-    .status(200)
-    .json(
-        new ApiResponse(200, {department, roles}, "Data fetched")
+    return res.status(200).json(
+        new ApiResponse(200, { departments: departmentOptions, employees: employeeOptions, roles }, "Dropdown data")
     )
 })
 
