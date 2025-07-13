@@ -58,6 +58,11 @@ const assetStatuses = [
 ];
 
 const maintenanceTypes = [
+  "Maintenance Needed",
+  "Repair Needed"
+];
+
+const maintenancePeriod = [
   "15 Days", "30 Days", "45 Days", "60 Days", "90 Days", "180 Days", "365 Days"
 ];
 
@@ -82,7 +87,7 @@ const assetSchema = new Schema({
     index : true
  },
 
-  referenceId: { 
+  linkedreferenceId: { 
     type: String , 
     ref: "PurchaseTransaction", 
     required: true 
@@ -186,6 +191,13 @@ const assetSchema = new Schema({
     maintenanceType: { 
       type: String, 
       enum: maintenanceTypes,
+      required: function () {
+        return ["Maintenance Needed", "Repair Needed", "Under Maintenance", "Under Repair"].includes(this.status);
+      }
+    },
+    maintenancePeriod: { 
+      type: String, 
+      enum: maintenancePeriod,
       required: function () {
         return ["Maintenance Needed", "Repair Needed", "Under Maintenance", "Under Repair"].includes(this.status);
       }
