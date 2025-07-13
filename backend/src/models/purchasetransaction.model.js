@@ -444,13 +444,11 @@ const purchaseTransactionSchema = new Schema({
   },
   debitAccount: {
     type: String,
-    ref: "FinancialAccount",
-    default: null
+    ref: "FinancialAccount"
   },
   creditAccount: {
     type: String,
-    ref: "FinancialAccount",
-    default: null
+    ref: "FinancialAccount"
   },
   status: {
     type: String,

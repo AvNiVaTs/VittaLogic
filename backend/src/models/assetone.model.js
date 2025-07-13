@@ -15,37 +15,83 @@ const assetTypes = [
 // Enum for Subtypes
 const allowedAssetSubtypes = {
   "IT Equipment": [
-    "Laptop", "Desktop", "Monitor", "Printer", "Scanner",
-    "Router", "Server", "Tablet", "Projector", "Other"
+    "Laptop", 
+    "Desktop", 
+    "Monitor", 
+    "Printer", 
+    "Scanner",
+    "Router", 
+    "Server", 
+    "Tablet", 
+    "Projector", 
+    "Other"
   ],
   "Office Furniture": [
-    "Chair", "Desk", "Conference Table", "Cabinet", "Bookshelf",
-    "Partition", "Reception Desk", "Other"
+    "Chair", 
+    "Desk", 
+    "Conference Table", 
+    "Cabinet", 
+    "Bookshelf",
+    "Partition", 
+    "Reception Desk", 
+    "Other"
   ],
   "Machinery": [
-    "CNC Machine", "Lathe Machine", "Compressor", "Drill Press",
-    "Packaging Machine", "3D Printer", "Other"
+    "CNC Machine", 
+    "Lathe Machine", 
+    "Compressor", 
+    "Drill Press",
+    "Packaging Machine", 
+    "3D Printer", 
+    "Other"
   ],
   "Vehicles": [
-    "Car", "Motorcycle", "Truck", "Forklift", "Electric Scooter", "Other"
+    "Car", 
+    "Motorcycle", 
+    "Truck", 
+    "Forklift", 
+    "Electric Scooter", 
+    "Other"
   ],
   "Real Estate": [
-    "Office Building", "Warehouse", "Factory", "Retail Space", "Land", "Other"
+    "Office Building", 
+    "Warehouse", 
+    "Factory", 
+    "Retail Space", 
+    "Land", 
+    "Other"
   ],
   "Electrical Appliances": [
-    "Air Conditioner", "Refrigerator", "Microwave", "Water Purifier", "Heater", "Other"
+    "Air Conditioner", 
+    "Refrigerator", 
+    "Microwave", 
+    "Water Purifier", 
+    "Heater", 
+    "Other"
   ],
   "Software Licenses": [
-    "Operating System License", "Accounting Software", "Design Software",
-    "Productivity Suite", "ERP License", "Antivirus Subscription", "Other"
+    "Operating System License", 
+    "Accounting Software", 
+    "Design Software",
+    "Productivity Suite", 
+    "ERP License", 
+    "Antivirus Subscription", 
+    "Other"
   ],
   "Miscellaneous": [
-    "Security Camera", "Fire Extinguisher", "Whiteboard", "Tool Kit", "Other"
+    "Security Camera", 
+    "Fire Extinguisher", 
+    "Whiteboard", 
+    "Tool Kit", 
+    "Other"
   ]
 };
 
 // Enums for other fields
-const assignmentStatuses = ["Assigned", "Unassigned"];
+const assignmentStatuses = [
+  "Assigned", 
+  "Unassigned"
+];
 
 const assetStatuses = [
   "Active",
@@ -58,12 +104,30 @@ const assetStatuses = [
 ];
 
 const maintenanceTypes = [
-  "15 Days", "30 Days", "45 Days", "60 Days", "90 Days", "180 Days", "365 Days"
+  "Maintenance Needed",
+  "Repair Needed"
 ];
 
-const requestTypes = ["Maintenance", "Repair"];
+const maintenancePeriod = [
+  "15 Days", 
+  "30 Days", 
+  "45 Days", 
+  "60 Days", 
+  "90 Days", 
+  "180 Days", 
+  "365 Days"
+];
 
-const requestStatuses = ["Requested", "In Progress", "Completed"];
+const requestTypes = [
+  "Maintenance", 
+  "Repair"
+];
+
+const requestStatuses = [
+  "Requested", 
+  "In Progress", 
+  "Completed"
+];
 
 const depriciationMethod = [
         "Straight Line Method",
@@ -82,7 +146,7 @@ const assetSchema = new Schema({
     index : true
  },
 
-  referenceId: { 
+  linkedreferenceId: { 
     type: String , 
     ref: "PurchaseTransaction", 
     required: true 
@@ -186,6 +250,13 @@ const assetSchema = new Schema({
     maintenanceType: { 
       type: String, 
       enum: maintenanceTypes,
+      required: function () {
+        return ["Maintenance Needed", "Repair Needed", "Under Maintenance", "Under Repair"].includes(this.status);
+      }
+    },
+    maintenancePeriod: { 
+      type: String, 
+      enum: maintenancePeriod,
       required: function () {
         return ["Maintenance Needed", "Repair Needed", "Under Maintenance", "Under Repair"].includes(this.status);
       }
