@@ -87,7 +87,7 @@ const financialAccountSchema = new Schema({
   },
   account_category: {
     type: String,
-    enum: ACCOUNT_TYPES,
+    enum: ACCOUNT_CATEGORY,
     required: true
   },
   account_name: {
