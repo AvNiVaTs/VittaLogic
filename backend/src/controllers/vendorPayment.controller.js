@@ -22,9 +22,21 @@ const createVendorPayment = asyncHandler(async (req, res) => {
         throw new ApiErr(400, "Fill all required fields")
     }
 
-    const vendorExists = await Vendor.findById(vendor_id)
-    if(!vendorExists){
+    const vendor = await Vendor.findOne({vendor_id}).select("currency")
+    if(!vendor){
         throw new ApiErr(404, "Vendor not found");
+    }
+
+    // Get currency from correct location
+    let currency = null;
+    if (vendor.vendor_location === "International") {
+        currency = vendor.internationalBankDetails?.currency;
+    } else {
+        currency = "INR"; // default or hardcoded for Indian vendors
+    }
+
+    if (!currency) {
+        throw new ApiErr(400, "Currency is missing in vendor details");
     }
 
     const payment_id = `VEN_PAY-${(await getNextSequence("payment_id")).toString().padStart(5, "0")}`
@@ -33,10 +45,10 @@ const createVendorPayment = asyncHandler(async (req, res) => {
     const newPayment = await VendorPayment.create({
         payment_id: payment_id,
         vendor_id,
-        currency: vendorExists.currency,
+        currency,
         payment_amount_in_vendor_currency,
         exchangeRate,
-        payment_amount_in_indian_currency: payment_amount_in_vendor_currency*exchangeRate,
+        payment_amount_in_indian_currency: indianAmount,
         due_date,
         purpose,
         payment_method,
@@ -80,43 +92,39 @@ const getVendorPaymentById = asyncHandler(async (req, res) => {
 })
 
 const updateVendorPayment = asyncHandler(async (req, res) => {
-    const {id} = req.params
-    const {due_date, status} = req.body
+    const { payment_id } = req.params;
+    const { due_date, status } = req.body;
 
-    const payment = await VendorPayment.findById(id);
-    if(!payment){
-        throw new ApiErr(400, "Payment not found")
+    const payment = await VendorPayment.findOne({ payment_id });
+    if (!payment) {
+        throw new ApiErr(404, "Vendor payment not found");
     }
 
-    const updates = {}
+    const updates = {};
+    if (due_date) updates.due_date = due_date;
+    if (status) updates.status = status;
+    updates.updatedBy = req.body.updatedBy;
 
-    if(due_date) updates.due_date = due_date
-    if(status) updates.status = status
-    updates.updatedBy = req.body.updatedBy
-
-    const updated = await VendorPayment.findByIdAndUpdate(id, updates, {new: true})
+    const updated = await VendorPayment.findOneAndUpdate({ payment_id }, updates, { new: true });
 
     return res
-    .status(200)
-    .json(
-        new ApiResponse(200, updated, "Payment updated")
-    )
-})
+        .status(200)
+        .json(new ApiResponse(200, updated, "Vendor payment updated"));
+});
 
 const deleteVendorPayment = asyncHandler(async (req, res) => {
-    const {id} = req.params
-    const deleted = await VendorPayment.findByIdAndDelete(id)
+    const { payment_id } = req.params;
 
-    if(!deleted){
-        throw new ApiErr(400, "Something went wrong")
+    const deleted = await VendorPayment.findOneAndDelete({ payment_id });
+
+    if (!deleted) {
+        throw new ApiErr(404, "Vendor payment not found");
     }
 
     return res
-    .status(200)
-    .json(
-        new ApiResponse(200, deleted, "Payment deleted")
-    )
-})
+        .status(200)
+        .json(new ApiResponse(200, deleted, "Vendor payment deleted"));
+});
 
 const searchVendorPayment = asyncHandler(async (req, res)=>{
     const {company_Name, vendor_id, payment_id, status} = req.query

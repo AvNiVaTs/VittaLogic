@@ -28,22 +28,37 @@ const createCustomerPayment = asyncHandler(async (req, res) => {
         throw new ApiErr(400, "All mandatory fields are required")
     }
 
-    const customer = await Customer.findById(customer_id)
+    const customer = await Customer.findOne({customer_Id: customer_id})
     if(!customer){
         throw new ApiErr(404, "Customer not found")
     }
 
+    let currency;
+    if (customer.customer_Location === "International") {
+    currency = customer.internationalDetails?.defaultCurrency;
+    } else {
+    currency = "INR"; // or whatever default you're assuming for Indian customers
+    }
+
+    if (!currency) {
+    throw new ApiErr(400, "Currency is missing for this customer");
+    }
+
     const payment_id = `CUST-PAY-${(await getNextSequence("customer_payment_id")).toString().padStart(5, "0")}`
+
+    const payment_amount_in_customer_currency = payment_amount;
+    const payment_amount_in_inr = payment_amount * exchange_rate;
 
     const payment = await CustomerPayment.create({
         customer_payment_id: payment_id,
         customer_id: customer.customer_Id,
-        payment_amount,
+        payment_amount_in_customer_currency,
+        payment_amount_in_inr,
         purpose,
         due_date,
         credit_days,
         outstanding_amount,
-        currency: customer.currency,
+        currency,
         exchange_rate,
         createdBy: req.body.createdBy,
         updatedBy: req.body.updatedBy
