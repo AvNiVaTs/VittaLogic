@@ -155,6 +155,10 @@ const liabilitySchema = new Schema({
     trim: true,
     maxLength: [100, 'Vendor name cannot exceed 100 characters']
   },
+  calculated_payment_amount : {
+    type : DECIMAL_TYPE,
+    required : true
+  },
   attachment: {
     type: String,  //cloudinary url
     required: true
