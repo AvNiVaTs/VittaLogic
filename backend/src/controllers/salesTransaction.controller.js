@@ -2,9 +2,8 @@ import { SaleTransaction } from "../models/saleTransaction.model.js";
 import { Customer } from "../models/customer.model.js";
 import { CustomerPayment } from "../models/customerPayment.model.js";
 import { Approval } from "../models/approval.model.js";
-import { Asset } from "../models/asset.model.js";
-import { FinancialAccount } from "../models/financialAccount.model.js";
-import { Employee } from "../models/employee.model.js";
+import { Asset } from "../models/assets.model.js";
+import { FinancialAccount } from "../models/companyFinancial.model.js";
 
 import { getNextSequence } from "../utils/getNextSequence.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
@@ -117,59 +116,6 @@ const completeSaleTransaction = asyncHandler(async (req, res) => {
   );
 });
 
-// Search Sale Transactions
-const searchSaleTransactions = asyncHandler(async (req, res) => {
-  const { transactionId, status, saleName, asSale } = req.query;
-  const filter = {};
-
-  if (transactionId) {
-    filter.transactionId = { $regex: transactionId, $options: "i" };
-  }
-  if (saleName) {
-    filter.saleName = { $regex: saleName, $options: "i" };
-  }
-  if (status) {
-    filter.status = status;
-  }
-  if (asSale && asSale !== "sale") {
-    throw new ApiErr(400, "Invalid filter: Only sale transactions are supported here");
-  }
-
-  const results = await SaleTransaction.find(filter)
-    .populate("customerId")
-    .populate("paymentId")
-    .populate("approvalId")
-    .populate("enteredBy")
-    .populate("assetDetails.assetId")
-    .populate("debitAccount")
-    .populate("creditAccount");
-
-  return res.status(200).json(
-    new ApiResponse(200, results, "Sale transactions fetched")
-  );
-});
-
-// Get Sale Transaction by ID
-const getSaleTransactionById = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const transaction = await SaleTransaction.findOne({transactionId: id})
-    .populate("customerId")
-    .populate("paymentId")
-    .populate("approvalId")
-    .populate("enteredBy")
-    .populate("assetDetails.assetId")
-    .populate("debitAccount")
-    .populate("creditAccount");
-
-  if (!transaction) {
-    throw new ApiErr(404, "Sale transaction not found");
-  }
-
-  return res.status(200).json(
-    new ApiResponse(200, transaction, "Sale transaction fetched")
-  );
-});
-
 // Dropdown Controllers
 const getCustomersByType = asyncHandler(async (req, res) => {
   const { customerType } = req.query;
@@ -257,8 +203,6 @@ const getCreditAccounts = asyncHandler(async (req, res) => {
 export {
   createSaleTransaction,
   completeSaleTransaction,
-  searchSaleTransactions,
-  getSaleTransactionById,
   getCustomersByType,
   getPendingPaymentsByCustomer,
   getApprovedCustomerPaymentApprovals,
