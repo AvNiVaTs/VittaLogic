@@ -1,12 +1,11 @@
 "use client"
 
-import { Menu, LogOut, User } from "lucide-react"
+import { LogOut, Menu, User } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 
-import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
@@ -32,24 +32,11 @@ export default function Navbar() {
       <div className="container mx-auto max-w-6xl px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-<<<<<<< HEAD
           <Link href="/" className="text-2xl font-bold text-blue-600">
             VittaLogic
           </Link>
 
           {/* Desktop Navigation */}
-=======
-          <Link href="/" className="flex items-center space-x-2">
-            <img
-              src="/favicon2.png"
-              alt="Logo"
-              className="w-14 h-14 rounded-full object-cover"
-              style={{ boxShadow: '1px 1px 5px rgba(0, 0, 0, 0.5)' }}
-            />
-            <span className="text-2xl font-bold text-blue-600">VittaLogic</span>
-          </Link>
-
->>>>>>> d5fd4873b3b25e02b440938e772d6e9611f3cee1
           <div className="hidden md:flex items-center space-x-8">
             <Link href="/" className="text-gray-700 hover:text-blue-600 font-medium transition-colors">
               HOME

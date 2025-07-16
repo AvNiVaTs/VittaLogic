@@ -30,13 +30,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-<<<<<<< HEAD
-=======
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import Navbar from "@/components/navbar"
-import Footer from "@/components/footer"
->>>>>>> d5fd4873b3b25e02b440938e772d6e9611f3cee1
 
 // Define service roles
 const serviceRoles = {
@@ -482,21 +475,12 @@ export default function ServicesPage() {
                 )}
 
                 <div className="space-y-2">
-<<<<<<< HEAD
                   <Label htmlFor="employeeId">Employee ID or Email</Label>
                   <Input
                     id="employee email or employeeId"
                     value={employeeId}
                     onChange={(e) => setEmployeeId(e.target.value)}
                     placeholder="Enter your email or employee ID"
-=======
-                  <Label htmlFor="employeeId">Employee ID</Label>
-                  <Input
-                    id="employeeId"
-                    value={employeeId}
-                    onChange={(e) => setEmployeeId(e.target.value)}
-                    placeholder="Enter your employee ID"
->>>>>>> d5fd4873b3b25e02b440938e772d6e9611f3cee1
                     required
                   />
                 </div>

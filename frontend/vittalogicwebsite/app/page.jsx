@@ -1,10 +1,10 @@
 import { ArrowRight, BarChart3, Shield, Users, Zap } from "lucide-react"
 import Link from "next/link"
 
+import Footer from "@/components/footer"
+import Navbar from "@/components/navbar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import Navbar from "@/components/navbar"
-import Footer from "@/components/footer"
 
 export default function HomePage() {
   return (
@@ -142,11 +142,7 @@ export default function HomePage() {
           <Button asChild size="lg">
             <Link
               href="/signup"
-<<<<<<< HEAD
               className="bg-white text-blue-600 hover:bg-gray-50 px-8 py-3 text-lg rounded-full flex items-center justify-center"
-=======
-              className="bg-white !text-black hover:bg-gray-50 hover:!text-white px-8 py-3 text-lg rounded-full flex items-center justify-center"
->>>>>>> d5fd4873b3b25e02b440938e772d6e9611f3cee1
             >
               Get Started Today
               <ArrowRight className="ml-2 h-5 w-5" />

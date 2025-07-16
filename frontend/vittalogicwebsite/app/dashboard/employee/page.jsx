@@ -27,7 +27,6 @@ const LOGGED_IN_EMPLOYEE_ID = employee?.employeeId || null
 
 // Available services for permissions
 const availableServices = [
-<<<<<<< HEAD
   { id: "Department Service", name: "Department Service" },
   { id: "Employee Service", name: "Employee Service" },
   { id: "Transaction Service", name: "Transaction Service" },
@@ -37,104 +36,6 @@ const availableServices = [
   { id: "Customer Service", name: "Customer Service" },
   { id: "Approval Service", name: "Approval Service" },
   { id: "Dashboard Service", name: "Dashboard Service" },
-=======
-  { id: "department", name: "Department Service" },
-  { id: "employee", name: "Employee Service" },
-  { id: "transaction", name: "Transaction Service" },
-  { id: "asset", name: "Asset Service" },
-  { id: "financials", name: "Company Financials Service" },
-  { id: "vendors", name: "Vendor Service" },
-  { id: "customers", name: "Customer Service" },
-  { id: "approvals", name: "Approval Service" },
-  { id: "dashboard", name: "Dashboard Service" },
-]
-
-// Mock existing employees
-const mockEmployees = [
-  {
-    id: "EMP001",
-    name: "John Doe",
-    email: "john.doe@company.com",
-    contact: "+91 9876543210",
-    department: "Human Resources",
-    role: "HR Manager",
-    level: "4",
-    designation: "Senior HR Manager",
-    dateOfJoining: "2023-01-15",
-    createdBy: "EMP000 - Admin User",
-    updatedBy: "EMP000 - Admin User",
-    lastUpdated: "2024-01-15T10:30:00Z",
-    permissions: ["department", "employee"],
-  },
-  {
-    id: "EMP002",
-    name: "Jane Smith",
-    email: "jane.smith@company.com",
-    contact: "+91 9876543211",
-    department: "Finance",
-    role: "Finance Manager",
-    level: "3",
-    designation: "Senior Finance Manager",
-    dateOfJoining: "2023-02-20",
-    createdBy: "EMP000 - Admin User",
-    updatedBy: "EMP000 - Admin User",
-    lastUpdated: "2024-01-20T14:15:00Z",
-    permissions: ["financials", "transaction"],
-  },
-  {
-    id: "EMP003",
-    name: "Mike Johnson",
-    email: "mike.johnson@company.com",
-    contact: "+91 9876543212",
-    department: "Information Technology",
-    role: "IT Manager",
-    level: "3",
-    designation: "Senior IT Manager",
-    dateOfJoining: "2023-03-10",
-    createdBy: "EMP000 - Admin User",
-    updatedBy: "EMP000 - Admin User",
-    lastUpdated: "2024-01-10T09:45:00Z",
-    permissions: ["asset", "transaction"],
-  },
-]
-
-// Mock salary records
-const mockSalaryRecords = [
-  {
-    id: "SAL001",
-    salaryId: "SAL202401001",
-    employeeId: "EMP001",
-    employeeName: "John Doe",
-    department: "Human Resources",
-    role: "HR Manager",
-    payMonth: "2024-01",
-    baseSalary: 75000,
-    bonus: 5000,
-    deduction: 2000,
-    netSalary: 78000,
-    paymentDate: "2024-01-31",
-    createdBy: "EMP000 - Admin User",
-    updatedBy: "EMP000 - Admin User",
-    lastUpdated: "2024-01-15T10:30:00Z",
-  },
-  {
-    id: "SAL002",
-    salaryId: "SAL202401002",
-    employeeId: "EMP002",
-    employeeName: "Jane Smith",
-    department: "Finance",
-    role: "Finance Manager",
-    payMonth: "2024-01",
-    baseSalary: 80000,
-    bonus: 7000,
-    deduction: 1500,
-    netSalary: 85500,
-    paymentDate: "2024-01-31",
-    createdBy: "EMP000 - Admin User",
-    updatedBy: "EMP000 - Admin User",
-    lastUpdated: "2024-01-20T14:15:00Z",
-  },
->>>>>>> d5fd4873b3b25e02b440938e772d6e9611f3cee1
 ]
 
 export default function EmployeePage() {

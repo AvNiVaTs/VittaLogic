@@ -1,7 +1,6 @@
 "use client"
 
 import { ArrowRight, Check } from "lucide-react"
-<<<<<<< HEAD
 
 import { useState } from "react"
 
@@ -12,25 +11,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-=======
-import Link from "next/link"
-import { useState } from "react"
-
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import Navbar from "@/components/navbar"
-import Footer from "@/components/footer"
->>>>>>> d5fd4873b3b25e02b440938e772d6e9611f3cee1
 
 export default function SignupPage() {
   const [currentStep, setCurrentStep] = useState(1)
   const totalSteps = 3
 
-<<<<<<< HEAD
   const [formData, setFormData] = useState({
     orgName: "",
     panNo: "",
@@ -54,8 +39,6 @@ export default function SignupPage() {
     agreedToTerms: false,
   })
 
-=======
->>>>>>> d5fd4873b3b25e02b440938e772d6e9611f3cee1
   const steps = [
     { number: 1, title: "Organization Details", active: currentStep === 1 },
     { number: 2, title: "Authorized Person Details", active: currentStep === 2 },
@@ -74,7 +57,6 @@ export default function SignupPage() {
     }
   }
 
-<<<<<<< HEAD
   const handleFinalSubmit = async (e) => {
   e.preventDefault();
 
@@ -126,8 +108,6 @@ export default function SignupPage() {
   }
 };
 
-=======
->>>>>>> d5fd4873b3b25e02b440938e772d6e9611f3cee1
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
       <Navbar />
@@ -173,7 +153,6 @@ export default function SignupPage() {
 
           <CardContent>
             {currentStep === 1 && (
-<<<<<<< HEAD
               <div className="space-y-4">
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -194,23 +173,11 @@ export default function SignupPage() {
                       onChange={(e) => setFormData({ ...formData, panNo: e.target.value })}
                       placeholder="Enter PAN number" 
                     />
-=======
-              <form className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="orgName">Organization Name *</Label>
-                    <Input id="orgName" placeholder="Enter organization name" required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="panNo">PAN No. (Optional)</Label>
-                    <Input id="panNo" placeholder="Enter PAN number" />
->>>>>>> d5fd4873b3b25e02b440938e772d6e9611f3cee1
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="website">Organization Website Link (Optional)</Label>
-<<<<<<< HEAD
                   <Input 
                     id="website" 
                     type="url" 
@@ -218,15 +185,11 @@ export default function SignupPage() {
                     onChange={(e) => setFormData({ ...formData, website: e.target.value })}
                     placeholder="https://example.com" 
                   />
-=======
-                  <Input id="website" type="url" placeholder="https://example.com" />
->>>>>>> d5fd4873b3b25e02b440938e772d6e9611f3cee1
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="orgEmail">Organization Email *</Label>
-<<<<<<< HEAD
                     <Input 
                       id="orgEmail" 
                       type="email" 
@@ -246,19 +209,11 @@ export default function SignupPage() {
                       placeholder="+91 234 567 8900" 
                       required 
                     />
-=======
-                    <Input id="orgEmail" type="email" placeholder="org@example.com" required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="contactNo">Contact Number *</Label>
-                    <Input id="contactNo" type="tel" placeholder="+1 234 567 8900" required />
->>>>>>> d5fd4873b3b25e02b440938e772d6e9611f3cee1
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="gstin">GSTIN (Required for B2B dealing in India) *</Label>
-<<<<<<< HEAD
                   <Input 
                     id="gstin" 
                     value={formData.gstin}
@@ -266,14 +221,10 @@ export default function SignupPage() {
                     placeholder="Enter GSTIN" 
                     required 
                   />
-=======
-                  <Input id="gstin" placeholder="Enter GSTIN" required />
->>>>>>> d5fd4873b3b25e02b440938e772d6e9611f3cee1
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="address">Organization Address *</Label>
-<<<<<<< HEAD
                   <Textarea 
                     id="address" 
                     value={formData.address}
@@ -281,15 +232,11 @@ export default function SignupPage() {
                     placeholder="Enter complete address" 
                     required 
                   />
-=======
-                  <Textarea id="address" placeholder="Enter complete address" required />
->>>>>>> d5fd4873b3b25e02b440938e772d6e9611f3cee1
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="country">Country *</Label>
-<<<<<<< HEAD
                     <Input 
                       id="country" 
                       value={formData.country}
@@ -342,39 +289,12 @@ export default function SignupPage() {
                       placeholder="Enter last name" 
                       required 
                     />
-=======
-                    <Input id="country" placeholder="Enter country" required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="pincode">Pin Code *</Label>
-                    <Input id="pincode" placeholder="Enter pin code" required />
-                  </div>
-                </div>
-
-                <Button onClick={nextStep} className="w-full bg-blue-600 hover:bg-blue-700">
-                  Save and Next <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </form>
-            )}
-
-            {currentStep === 2 && (
-              <form className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="firstName">First Name *</Label>
-                    <Input id="firstName" placeholder="Enter first name" required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lastName">Last Name *</Label>
-                    <Input id="lastName" placeholder="Enter last name" required />
->>>>>>> d5fd4873b3b25e02b440938e772d6e9611f3cee1
                   </div>
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">Email Id *</Label>
-<<<<<<< HEAD
                     <Input 
                       id="email" 
                       type="email" 
@@ -393,19 +313,11 @@ export default function SignupPage() {
                       placeholder="Enter designation" 
                       required 
                     />
-=======
-                    <Input id="email" type="email" placeholder="person@example.com" required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="designation">Designation *</Label>
-                    <Input id="designation" placeholder="Enter designation" required />
->>>>>>> d5fd4873b3b25e02b440938e772d6e9611f3cee1
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="personContact">Contact Number *</Label>
-<<<<<<< HEAD
                   <Input 
                     id="personContact" 
                     type="tel" 
@@ -414,15 +326,11 @@ export default function SignupPage() {
                     placeholder="+91 234 567 8900" 
                     required 
                   />
-=======
-                  <Input id="personContact" type="tel" placeholder="+1 234 567 8900" required />
->>>>>>> d5fd4873b3b25e02b440938e772d6e9611f3cee1
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="password">Password *</Label>
-<<<<<<< HEAD
                     <Input 
                       id="password" 
                       type="password" 
@@ -442,13 +350,6 @@ export default function SignupPage() {
                       placeholder="Confirm password" 
                       required 
                     />
-=======
-                    <Input id="password" type="password" placeholder="Create password" required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirm Password *</Label>
-                    <Input id="confirmPassword" type="password" placeholder="Confirm password" required />
->>>>>>> d5fd4873b3b25e02b440938e772d6e9611f3cee1
                   </div>
                 </div>
 
@@ -456,7 +357,6 @@ export default function SignupPage() {
                   <Button type="button" variant="outline" onClick={prevStep} className="flex-1">
                     Back
                   </Button>
-<<<<<<< HEAD
                   <Button type="button" onClick={nextStep} className="flex-1 bg-blue-600 hover:bg-blue-700">
                     Save and Next <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
@@ -486,31 +386,11 @@ export default function SignupPage() {
                       placeholder="Enter IFSC code"
                       required
                     />
-=======
-                  <Button onClick={nextStep} className="flex-1 bg-blue-600 hover:bg-blue-700">
-                    Save and Next <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </div>
-              </form>
-            )}
-
-            {currentStep === 3 && (
-              <form className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="bankName">Bank Name *</Label>
-                    <Input id="bankName" placeholder="Enter bank name" required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="ifsc">IFSC Code *</Label>
-                    <Input id="ifsc" placeholder="Enter IFSC code" required />
->>>>>>> d5fd4873b3b25e02b440938e772d6e9611f3cee1
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="bankAccount">Bank Account No. *</Label>
-<<<<<<< HEAD
                   <Input
                     id="bankAccount"
                     value={formData.bankAccount}
@@ -521,21 +401,6 @@ export default function SignupPage() {
                 </div>
 
 
-=======
-                  <Input id="bankAccount" placeholder="Enter bank account number" required />
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox id="terms" required />
-                  <Label htmlFor="terms" className="text-sm">
-                    Agree to the{" "}
-                    <Link href="/terms" className="text-blue-600 hover:text-blue-800">
-                      Terms and Conditions
-                    </Link>{" "}
-                    by clicking on this Checkbox
-                  </Label>
-                </div>
->>>>>>> d5fd4873b3b25e02b440938e772d6e9611f3cee1
 
                 <div className="flex gap-4">
                   <Button type="button" variant="outline" onClick={prevStep} className="flex-1">
