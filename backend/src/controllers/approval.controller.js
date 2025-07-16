@@ -1,8 +1,8 @@
 import { Approval } from "../models/approval.model.js"
 import { Employee } from "../models/employee.model.js"
-import { asyncHandler } from "../utils/asyncHandler.js"
 import { ApiErr } from "../utils/ApiError.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
+import { asyncHandler } from "../utils/asyncHandler.js"
 import { getNextSequence } from "../utils/getNextSequence.js"
 
 const createApproval = asyncHandler(async (req, res) => {
@@ -141,34 +141,27 @@ const updateApprovalStatus = asyncHandler(async (req, res) => {
 })
 
 const getEligibleApprovers = asyncHandler(async (req, res) => {
-    const createdById = req.body.createdBy
-
-    const sender = await Employee.findOne({employeeId: {$regex: `^${createdById}$`, $options: "i"}})
-    if(!sender){
-        throw new ApiErr(404, "Approval sender not found")
-    }
-
-    const eligible = await Employee.find({
-        level: sender.level+1,
-        servicePermissions: {$in: ["Approval Service"]}
-    })
-
-    const dropdownOptions = eligible.map(emp => ({
-        employeeId: emp.employeeId,
-        label: `${emp.name} - ${emp.role}`
-    }))
-
-    return res
+  const createdById = req.query.createdBy;
+  if (!createdById) {
+    throw new ApiErr(400, "createdBy is required");
+  }
+  const sender = await Employee.findOne({ employeeId: { $regex: `^${createdById}$`, $options: "i" } });
+  if (!sender) {
+    throw new ApiErr(404, "Approval sender not found");
+  }
+  const eligible = await Employee.find({
+    level: sender.level + 1,
+    servicePermissions: { $in: ["Approval Service"] }
+  }).select('employeeId employeeName role'); // Ensure required fields are selected
+  const dropdownOptions = eligible.map(emp => ({
+    employeeId: emp.employeeId,
+    label: `${emp.employeeName || 'Unknown'} - ${emp.role || emp.designation || 'Unknown'}` // Fallbacks
+  }));
+  return res
     .status(200)
-    .json(
-        new ApiResponse(200, dropdownOptions, "Eligible approvers fetched")
-    )
-})
+    .json(new ApiResponse(200, dropdownOptions, "Eligible approvers fetched"));
+});
 
 export {
-    createApproval,
-    getApprovalReceived,
-    getApprovalHistory,
-    updateApprovalStatus,
-    getEligibleApprovers
+    createApproval, getApprovalHistory, getApprovalReceived, getEligibleApprovers, updateApprovalStatus
 }

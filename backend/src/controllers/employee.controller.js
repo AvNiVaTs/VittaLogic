@@ -1,11 +1,11 @@
-import mongoose from "mongoose"
-import {asyncHandler} from "../utils/asyncHandler.js"
-import {ApiErr} from "../utils/ApiError.js"
-import {ApiResponse} from "../utils/ApiResponse.js"
-import {Employee} from "../models/employee.model.js"
-import {Department} from "../models/department.model.js"
-import { getNextSequence } from "../utils/getNextSequence.js"
 import jwt from "jsonwebtoken"
+import mongoose from "mongoose"
+import { Department } from "../models/department.model.js"
+import { Employee } from "../models/employee.model.js"
+import { ApiErr } from "../utils/ApiError.js"
+import { ApiResponse } from "../utils/ApiResponse.js"
+import { asyncHandler } from "../utils/asyncHandler.js"
+import { getNextSequence } from "../utils/getNextSequence.js"
 
 const generatorAccessAndRefreshTokensForEmp = async(empId) => {
     try{
@@ -58,7 +58,7 @@ const registerEmployee = asyncHandler(async (req, res) => {
         throw new ApiErr(409, "Employee with given or contact already exists")
     }
 
-    const existingDept = await Department.findOne({departmentName: department})
+    const existingDept = await Department.findOne({department_id: department})
     if(!existingDept){
         throw new ApiErr(404, "Selected department does not exists")
     }
@@ -323,14 +323,26 @@ const searchEmpDept = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, employees, "Employees in department fetched"))
 })
 
+const getDepartmentsForDropdown = asyncHandler(async (req, res) => {
+    const departments = await Department.find({}, "department_id departmentName");
+
+    if (!departments || departments.length === 0) {
+        throw new ApiErr(404, "No departments found");
+    }
+
+    const dropdownOptions = departments.map(dept => ({
+        label: `${dept.department_id} - ${dept.departmentName}`,
+        value: dept.department_id  // this value will be sent to backend
+    }));
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, dropdownOptions, "Departments fetched successfully for dropdown"));
+});
+
 export {
-    registerEmployee,
-    loginEmp,
+    assignPermissions, changeCurrPassword, deleteEmp, getDepartmentsForDropdown, loginEmp,
     logoutEmp,
-    refreshAccessToken,
-    changeCurrPassword,
-    updatedEmpDetails,
-    deleteEmp,
-    assignPermissions,
-    searchEmpDept
+    refreshAccessToken, registerEmployee, searchEmpDept, updatedEmpDetails
 }
+

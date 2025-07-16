@@ -67,7 +67,7 @@ export default function EmployeePage() {
   useEffect(() => {
     const fetchDepartments = async () => {
       try {
-        const res = await fetch("http://localhost:8000/api/v1/emp/deptdropdown");
+        const res = await fetch("http://localhost:8000/api/v1/emp/dropdown");
         const data = await res.json();
         if (data.success) {
           setDepartmentOptions(data.data);

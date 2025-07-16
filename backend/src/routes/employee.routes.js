@@ -1,26 +1,27 @@
 import { Router } from "express"
 import {
-    registerEmployee,
+    assignPermissions,
+    changeCurrPassword,
+    deleteEmp,
+    getDepartmentsForDropdown,
     loginEmp,
     logoutEmp,
     refreshAccessToken,
-    changeCurrPassword,
-    updatedEmpDetails,
-    deleteEmp,
-    assignPermissions,
-    searchEmpDept
+    registerEmployee,
+    searchEmpDept,
+    updatedEmpDetails
 } from "../controllers/employee.controller.js"
 import {
-    registerSalary,
-    updateSalaryDetails,
-    getEmpSalaryDetails,
-    searchSalaryByEmpName,
+    getDropDownData,
     getEligibleEmpForSalary,
-    getDropDownData
+    getEmpSalaryDetails,
+    registerSalary,
+    searchSalaryByEmpName,
+    updateSalaryDetails
 } from "../controllers/employeeSalary.controller.js"
 
-import { verifyEmployeeJWT } from "../middleware/verifyEmployeeJWT.js"
 import { populateCreatedByUpdatedBy } from "../middleware/populateEmpInfo.middleware.js"
+import { verifyEmployeeJWT } from "../middleware/verifyEmployeeJWT.js"
 
 const router = Router()
 
@@ -36,6 +37,7 @@ router.route("/update/:employee_id").patch(verifyEmployeeJWT, populateCreatedByU
 router.route("/delete/:id").delete(deleteEmp)
 router.route("/assign-permissions/:id").patch(verifyEmployeeJWT, populateCreatedByUpdatedBy, assignPermissions)
 router.route("/search-by-dept/:departmentName").get(searchEmpDept)
+router.route("/dropdown").get(getDepartmentsForDropdown)
 
 router.route("/salary/register").post(verifyEmployeeJWT, populateCreatedByUpdatedBy, registerSalary)
 router.route("/salary/update/:salaryId").patch(verifyEmployeeJWT, populateCreatedByUpdatedBy, updateSalaryDetails)
