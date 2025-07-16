@@ -1,9 +1,4 @@
-// reference_type
-// liability_id
-
 import mongoose, { Schema } from "mongoose";
-
-/* ----------------------------- ENUM DECLARATIONS ----------------------------- */
 
 const referenceTypes = [
   "Salary", 
@@ -103,7 +98,7 @@ const internalTransactionSchema = new Schema({
     ref: "Approval",
     required: true
   },
-  referenceType: {
+  reference_type: {
     type: String,
     enum: referenceTypes,
     required: true

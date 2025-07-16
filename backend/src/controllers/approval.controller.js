@@ -154,7 +154,7 @@ const getEligibleApprovers = asyncHandler(async (req, res) => {
     })
 
     const dropdownOptions = eligible.map(emp => ({
-        employeeId: emp._id,
+        employeeId: emp.employeeId,
         label: `${emp.name} - ${emp.role}`
     }))
 
