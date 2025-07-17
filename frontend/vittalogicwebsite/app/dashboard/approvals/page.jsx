@@ -64,7 +64,7 @@ export default function ApprovalsPage() {
   const [receivedApprovals, setReceivedApprovals] = useState([])
   const [approvalHistory, setApprovalHistory] = useState([])
   const [actionDialogOpen, setActionDialogOpen] = useState(false)
-  const [selectedApproval, setSelectedApproval] = useState(null)
+  const [selectedApproval, setSelectedApproval] = useState("")
   const [actionType, setActionType] = useState("")
   const [eligibleApprovers, setEligibleApprovers] = useState([])
 
@@ -82,7 +82,7 @@ export default function ApprovalsPage() {
   // New state variables for approver lookup and notes
   const [actionNote, setActionNote] = useState("")
   const [detailDialogOpen, setDetailDialogOpen] = useState(false)
-  const [selectedApprovalDetail, setSelectedApprovalDetail] = useState(null)
+  const [selectedApprovalDetail, setSelectedApprovalDetail] = useState("")
 
   // Filter states for history
   const [statusFilter, setStatusFilter] = useState("all")
@@ -260,7 +260,7 @@ useEffect(() => {
     setIsSubmitting(true);
     console.log("Submitting form with:", { approval_id, approval_to, approval_created_by, approvalfor, min_expense, max_expense, priority, tentative_date, reason });
     try {
-      const response = await fetch("http://localhost:8000/api/v1/approval", { // Fixed endpoint to match controller
+      const response = await fetch("http://localhost:8000/api/v1/approval/createApproval", { // Fixed endpoint to match controller
         method: "POST",
         credentials: "include",
         headers: getAuthHeaders(),
