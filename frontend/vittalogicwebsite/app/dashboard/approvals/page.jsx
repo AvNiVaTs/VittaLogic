@@ -26,6 +26,7 @@ const employee = typeof window !== "undefined" ? JSON.parse(localStorage.getItem
 const LOGGED_IN_EMPLOYEE_ID = employee?.employeeId || null
 const TOKEN = typeof window !== "undefined" ? localStorage.getItem("token") : null
 
+
 // Function to get approval category display name
 const getApprovalCategoryName = (category) => {
   switch (category) {
@@ -139,42 +140,62 @@ export default function ApprovalsPage() {
   }, [approval_created_by]);
 
   // Fetch received approvals
-  useEffect(() => {
-    if (activeSection === "received" && approval_created_by) {
-      const fetchReceivedApprovals = async () => {
-        try {
-          const response = await fetch(`http://localhost:8000/api/v1/approval/received/${approval_created_by}?priority=${priorityFilter}`, {
-            headers: getAuthHeaders(),
-          })
-          const data = await response.json()
-          if (data.status === 200) {
-            setReceivedApprovals(data.data.map(approval => ({
-              id: approval._id,
-              senderId: approval.approval_created_by.employeeId,
-              senderName: approval.approval_created_by.name,
-              senderDesignation: approval.approval_created_by.role,
-              senderDepartment: approval.approval_created_by.department || "N/A",
-              approval_id: approval.approval_id,
-              approvalfor: approval.approvalfor,
-              reason: approval.reason,
-              priority: approval.priority,
-              expenseRange: `${approval.min_expense} - ${approval.max_expense}`,
-              tentative_date: approval.tentative_date,
-              receiveDate: approval.createdAt,
-              status: approval.status.toLowerCase(),
-            })))
-          } else {
-            setSubmitMessage(data.message || "Error fetching received approvals")
-            setTimeout(() => setSubmitMessage(""), 3000)
-          }
-        } catch (error) {
-          setSubmitMessage("Error fetching received approvals")
-          setTimeout(() => setSubmitMessage(""), 3000)
+  // pages/ApprovalsPage.js
+useEffect(() => {
+  if (activeSection === "received") {
+    const fetchReceivedApprovals = async () => {
+      try {
+        if (!LOGGED_IN_EMPLOYEE_ID) {
+          setSubmitMessage("Please log in to view received approvals");
+          setTimeout(() => setSubmitMessage(""), 3000);
+          return;
         }
+        const response = await fetch(
+          `http://localhost:8000/api/v1/approval/received/${LOGGED_IN_EMPLOYEE_ID}?priority=${priorityFilter === 'all' ? '' : priorityFilter}`,
+          {
+            method: "GET",
+            credentials: "include",
+            headers: getAuthHeaders(),
+          }
+        );
+        const data = await response.json();
+        console.log("Received approvals data:", data);
+        if (data.statusCode === 200) {
+          const transformedApprovals = data.data.map(approval => ({
+            id: approval._id,
+            approval_id: approval.approval_id,
+            approvalfor: approval.approvalfor,
+            reason: approval.reason,
+            priority: approval.priority,
+            expenseRange: `${approval.min_expense.toFixed(2)} - ${approval.max_expense.toFixed(2)}`,
+            tentative_date: new Date(approval.tentative_date).toISOString().split('T')[0],
+            receiveDate: new Date(approval.createdAt).toISOString().split('T')[0],
+            status: approval.status,
+            senderName: approval.approval_created_by?.name || 'Unknown',
+            senderDepartment: approval.approval_created_by?.department || 'N/A',
+            senderDesignation: approval.approval_created_by?.role || 'Unknown',
+            senderId: approval.approval_created_by?.employeeId || '',
+            approval_to: approval.approval_to?.employeeId || '',
+            approverName: approval.approval_to?.name || 'Unknown',
+            actionDate: approval.decision_date ? new Date(approval.decision_date).toISOString().split('T')[0] : '',
+            actionNote: approval.approver_note || '',
+            decisionTime: approval.decision_time ? new Date(approval.decision_time).toLocaleTimeString() : '',
+            decisionDateP: approval.decision_date ? new Date(approval.decision_date).toISOString().split('T')[0] : ''
+          }));
+          setReceivedApprovals(transformedApprovals);
+        } else {
+          setSubmitMessage(data.message || "Error fetching received approvals");
+          setTimeout(() => setSubmitMessage(""), 3000);
+        }
+      } catch (error) {
+        console.error("Fetch received approvals error:", error);
+        setSubmitMessage("Error fetching received approvals");
+        setTimeout(() => setSubmitMessage(""), 3000);
       }
-      fetchReceivedApprovals()
-    }
-  }, [activeSection, priorityFilter, approval_created_by])
+    };
+    fetchReceivedApprovals();
+  }
+}, [activeSection, priorityFilter, LOGGED_IN_EMPLOYEE_ID]);
 
   // Fetch approval history
   useEffect(() => {
@@ -234,54 +255,53 @@ export default function ApprovalsPage() {
   }, [])
 
   // Handle new approval form submission
-const handleNewApprovalSubmit = async (e) => {
-  e.preventDefault();
-  setIsSubmitting(true);
-  console.log("Submitting form with:", { approval_id, approval_to, approval_created_by, approvalfor, min_expense, max_expense, priority, tentative_date, reason });
-  try {
-    const response = await fetch("http://localhost:8000/api/v1/approval/createApproval", {
-      method: "POST",
-      credentials: "include", 
-      headers: getAuthHeaders(),
-      body: JSON.stringify({
-        approval_id,
-        approval_to,
-        approval_created_by,
-        approvalfor,
-        min_expense,
-        max_expense, 
-        priority,   
-        tentative_date, 
-        reason,     
-      }),
-    });
-    const data = await response.json();
-    if (response.ok) {
-      setSubmitMessage("Approval request submitted successfully");
+  const handleNewApprovalSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    console.log("Submitting form with:", { approval_id, approval_to, approval_created_by, approvalfor, min_expense, max_expense, priority, tentative_date, reason });
+    try {
+      const response = await fetch("http://localhost:8000/api/v1/approval", { // Fixed endpoint to match controller
+        method: "POST",
+        credentials: "include",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          approval_id,
+          approval_to,
+          approval_created_by,
+          approvalfor,
+          min_expense,
+          max_expense,
+          priority,
+          tentative_date,
+          reason,
+        }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setSubmitMessage("Approval request submitted successfully");
+        setTimeout(() => setSubmitMessage(""), 3000);
+        setapproval_to("");
+        setApprovalfor("");
+        setmin_expense("");
+        setmax_expense("");
+        setPriority("");
+        settentative_date("");
+        setReason("");
+      } else {
+        setSubmitMessage(data.message || `Failed to submit: ${response.status} ${response.statusText}`);
+        console.log("Error response:", data);
+      }
+    } catch (error) {
+      console.error("Submission error:", error);
+      if (error.name === "SyntaxError") {
+        setSubmitMessage("Server error: Endpoint not found or invalid response");
+      } else {
+        setSubmitMessage("Error submitting approval request");
+      }
       setTimeout(() => setSubmitMessage(""), 3000);
-      // Reset form
-      setapproval_to("");
-      setApprovalfor("");
-      setmin_expense("");
-      setmax_expense("");
-      setPriority("");
-      settentative_date("");
-      setReason("");
-    } else {
-      setSubmitMessage(data.message || `Failed to submit: ${response.status} ${response.statusText}`);
-      console.log("Error response:", data);
     }
-  } catch (error) {
-    console.error("Submission error:", error);
-    if (error.name === "SyntaxError") {
-      setSubmitMessage("Server error: Endpoint not found or invalid response");
-    } else {
-      setSubmitMessage("Error submitting approval request");
-    }
-    setTimeout(() => setSubmitMessage(""), 3000);
-  }
-  setIsSubmitting(false);
-};
+    setIsSubmitting(false);
+  };
 
   // Handle approval action
   const handleApprovalAction = (approval, action) => {
@@ -290,50 +310,80 @@ const handleNewApprovalSubmit = async (e) => {
     setActionDialogOpen(true)
   }
 
-  // Confirm approval action
-  const confirmApprovalAction = async () => {
-    if (!approval_created_by || !TOKEN) {
-      setSubmitMessage("Please log in to perform this action")
-      setActionDialogOpen(false)
-      setActionNote("")
-      setTimeout(() => setSubmitMessage(""), 3000)
-      return
-    }
+const confirmApprovalAction = async () => {
+  // Read fresh values from localStorage
+  const loggedInEmployee = typeof window !== "undefined" ? localStorage.getItem("loggedInEmployee") : null;
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  
+  let employeeId = null;
+  
+  if (loggedInEmployee) {
     try {
-      const response = await fetch(`http://localhost:8000/api/v1/approval/update-status/${selectedApproval.approval_id}`, {
-        method: "PATCH",
-        headers: getAuthHeaders(),
-        body: JSON.stringify({
-          status: actionType === "accept" ? "Approved" : actionType === "reject" ? "Rejected" : "On Hold",
-          approver_note: actionNote,
-        }),
-      })
-      const data = await response.json()
-      if (data.status === 200) {
-        setReceivedApprovals(receivedApprovals.map((approval) =>
-          approval.id === selectedApproval.id
-            ? {
-                ...approval,
-                status: actionType === "accept" ? "approved" : actionType === "reject" ? "rejected" : "on-hold",
-                actionNote: actionNote,
-                actionDate: new Date().toISOString().split("T")[0],
-                actionBy: approval_created_by,
-              }
-            : approval
-        ))
-        setSubmitMessage(`Approval ${actionType === "accept" ? "accepted" : actionType === "reject" ? "rejected" : "put on hold"} successfully!`)
-      } else {
-        setSubmitMessage(data.message || "Error updating approval status")
-      }
-    } catch (error) {
-      setSubmitMessage("Error updating approval status")
-    } finally {
-      setActionDialogOpen(false)
-      setActionNote("")
-      setTimeout(() => setSubmitMessage(""), 3000)
+      const parsedEmployee = JSON.parse(loggedInEmployee);
+      employeeId = parsedEmployee?.employeeId;
+    } catch (e) {
+      console.error("Error parsing employee from localStorage:", e);
     }
   }
-
+  
+  if (!employeeId) {
+    setSubmitMessage("Please log in to perform this action - Employee not found");
+    setActionDialogOpen(false);
+    setActionNote("");
+    setTimeout(() => setSubmitMessage(""), 3000);
+    return;
+  }
+  
+  try {
+    const headers = {
+      "Content-Type": "application/json",
+      "X-Employee-ID": employeeId, // ✅ Send employee ID in header
+    };
+    
+    // Add token if available
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    
+    const response = await fetch(`http://localhost:8000/api/v1/approval/update-status/${selectedApproval.approval_id}`, {
+      method: "PATCH",
+      headers: headers,
+      credentials: "include",
+      body: JSON.stringify({
+        status: actionType === "accept" ? "Approved" : actionType === "reject" ? "Rejected" : "On Hold",
+        approver_note: actionNote,
+        employeeId: employeeId, // ✅ Also send in body as fallback
+      }),
+    });
+    
+    const data = await response.json();
+    console.log("Response:", data);
+    
+    if (data.status === 200 || data.statusCode === 200) {
+      setReceivedApprovals(receivedApprovals.map((approval) =>
+        approval.id === selectedApproval.id
+          ? {
+              ...approval,
+              status: actionType === "accept" ? "approved" : actionType === "reject" ? "rejected" : "on-hold",
+              actionNote: actionNote,
+              actionDate: new Date().toISOString().split("T")[0],
+              actionBy: employeeId,
+            }
+          : approval
+      ));
+      setSubmitMessage(`Approval ${actionType === "accept" ? "accepted" : actionType === "reject" ? "rejected" : "put on hold"} successfully!`);
+    } else {
+      setSubmitMessage(data.message || "Error updating approval status");
+    }
+  } catch (error) {
+    console.error("Request error:", error);
+    setSubmitMessage("Error updating approval status");
+  } finally {
+    setActionDialogOpen(false);
+    setActionNote("");
+    setTimeout(() => setSubmitMessage(""), 3000);
+  }
+};
   // Get priority badge color
   const getPriorityColor = (priority) => {
     switch (priority) {

@@ -170,57 +170,71 @@ export default function ServicesPage() {
     }
   }
 
-  const handleEmployeeAuth = async (e) => {
-    e.preventDefault()
-    setIsAuthenticating(true)
-    setAuthError("")
-
-    try {
-      const res = await fetch("http://localhost:8000/api/v1/emp/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include", // important to receive cookies
-        body: JSON.stringify({
-          emailAddress: employeeId,
-          password,
-          serviceName: selectedService,
-        }),
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        throw new Error(data?.message || "Login failed")
-      }
-
-      localStorage.setItem("loggedInEmployee", JSON.stringify(data.data.employee))
-
-      const { employee, servicePermissions } = data.data
-
-      // ✅ FIXED: declare service before using it
-      const service = services.find((s) => s.id === selectedService)
-      const fullServiceName = service?.id || selectedService
-
-      if (!servicePermissions.includes(fullServiceName)) {
-        setAuthError("You don't have permission to access this service.")
-        return
-      }
-
-      // Redirect on success
-      if (service) {
-        setShowEmployeeAuthDialog(false)
-        window.location.href = service.href
-      }
-    } catch (error) {
-      setAuthError(error.message || "Authentication failed.")
-    } finally {
-      setIsAuthenticating(false)
+ const handleEmployeeAuth = async (e) => {
+  e.preventDefault()
+  setIsAuthenticating(true)
+  setAuthError("")
+  
+  try {
+    const res = await fetch("http://localhost:8000/api/v1/emp/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include", // important to receive cookies
+      body: JSON.stringify({
+        emailAddress: employeeId,
+        password,
+        serviceName: selectedService,
+      }),
+    })
+    
+    const data = await res.json()
+    
+    if (!res.ok) {
+      throw new Error(data?.message || "Login failed")
     }
+    
+    // ✅ FIXED: Save both employee data AND token
+    localStorage.setItem("loggedInEmployee", JSON.stringify(data.data.employee))
+    
+    // ✅ ADD: Save the token if it exists in the response
+    if (data.data.token) {
+      localStorage.setItem("token", data.data.token)
+    }
+    // Alternative: if token is in a different location in response
+    else if (data.token) {
+      localStorage.setItem("token", data.token)
+    }
+    // Alternative: if token is in accessToken
+    else if (data.data.accessToken) {
+      localStorage.setItem("token", data.data.accessToken)
+    }
+    
+    console.log("Login response data:", data) // Debug: see what's in the response
+    
+    const { employee, servicePermissions } = data.data
+    
+    // ✅ FIXED: declare service before using it
+    const service = services.find((s) => s.id === selectedService)
+    const fullServiceName = service?.id || selectedService
+    
+    if (!servicePermissions.includes(fullServiceName)) {
+      setAuthError("You don't have permission to access this service.")
+      return
+    }
+    
+    // Redirect on success
+    if (service) {
+      setShowEmployeeAuthDialog(false)
+      window.location.href = service.href
+    }
+  } catch (error) {
+    setAuthError(error.message || "Authentication failed.")
+  } finally {
+    setIsAuthenticating(false)
   }
-
-
+}
 
   const handlePasswordChange = async (e) => {
     e.preventDefault()
