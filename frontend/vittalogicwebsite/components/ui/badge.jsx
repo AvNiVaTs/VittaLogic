@@ -30,7 +30,4 @@ function Badge({ className, variant, ...props }) {
 }
 
 export { Badge, badgeVariants }
-<<<<<<< HEAD
 
-=======
->>>>>>> d5fd4873b3b25e02b440938e772d6e9611f3cee1

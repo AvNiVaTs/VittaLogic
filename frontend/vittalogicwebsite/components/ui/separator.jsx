@@ -26,7 +26,4 @@ const Separator = React.forwardRef(
 Separator.displayName = SeparatorPrimitive.Root.displayName
 
 export { Separator }
-<<<<<<< HEAD
 
-=======
->>>>>>> d5fd4873b3b25e02b440938e772d6e9611f3cee1

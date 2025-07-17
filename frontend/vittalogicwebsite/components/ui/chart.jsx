@@ -20,7 +20,6 @@ function useChart() {
   return context
 }
 
-<<<<<<< HEAD
 const ChartContainer = React.forwardRef(({ id, className, children, config, ...props }, ref) => {
   const uniqueId = React.useId()
   const chartId = `chart-${id || uniqueId.replace(/:/g, "")}`
@@ -44,33 +43,6 @@ const ChartContainer = React.forwardRef(({ id, className, children, config, ...p
     </ChartContext.Provider>
   )
 })
-=======
-const ChartContainer = React.forwardRef(
-  ({ id, className, children, config, ...props }, ref) => {
-    const uniqueId = React.useId()
-    const chartId = `chart-${id || uniqueId.replace(/:/g, "")}`
-
-    return (
-      <ChartContext.Provider value={{ config }}>
-        <div
-          data-chart={chartId}
-          ref={ref}
-          className={cn(
-            "flex aspect-video justify-center text-xs [&_.recharts-cartesian-axis-tick_text]:fill-muted-foreground [&_.recharts-cartesian-grid_line[stroke='#ccc']]:stroke-border/50 [&_.recharts-curve.recharts-tooltip-cursor]:stroke-border [&_.recharts-dot[stroke='#fff']]:stroke-transparent [&_.recharts-layer]:outline-none [&_.recharts-polar-grid_[stroke='#ccc']]:stroke-border [&_.recharts-radial-bar-background-sector]:fill-muted [&_.recharts-rectangle.recharts-tooltip-cursor]:fill-muted [&_.recharts-reference-line_[stroke='#ccc']]:stroke-border [&_.recharts-sector[stroke='#fff']]:stroke-transparent [&_.recharts-sector]:outline-none [&_.recharts-surface]:outline-none",
-            className
-          )}
-          {...props}
-        >
-          <ChartStyle id={chartId} config={config} />
-          <RechartsPrimitive.ResponsiveContainer>
-            {children}
-          </RechartsPrimitive.ResponsiveContainer>
-        </div>
-      </ChartContext.Provider>
-    )
-  }
-)
->>>>>>> d5fd4873b3b25e02b440938e772d6e9611f3cee1
 ChartContainer.displayName = "Chart"
 
 const ChartStyle = ({ id, config }) => {
@@ -139,11 +111,7 @@ const ChartTooltipContent = React.forwardRef(
       const itemConfig = getPayloadConfigFromPayload(config, item, key)
       const value =
         !labelKey && typeof label === "string"
-<<<<<<< HEAD
           ? config[label]?.label || label
-=======
-          ? (config[label]?.label || label)
->>>>>>> d5fd4873b3b25e02b440938e772d6e9611f3cee1
           : itemConfig?.label
 
       if (labelFormatter) {
@@ -217,19 +185,12 @@ const ChartTooltipContent = React.forwardRef(
                               "my-0.5": nestLabel && indicator === "dashed",
                             }
                           )}
-<<<<<<< HEAD
                           style={
                             {
                               "--color-bg": indicatorColor,
                               "--color-border": indicatorColor,
                             }
                           }
-=======
-                          style={{
-                            "--color-bg": indicatorColor,
-                            "--color-border": indicatorColor,
-                          }}
->>>>>>> d5fd4873b3b25e02b440938e772d6e9611f3cee1
                         />
                       )
                     )}
@@ -317,15 +278,11 @@ const ChartLegendContent = React.forwardRef(
 ChartLegendContent.displayName = "ChartLegend"
 
 // Helper to extract item config from a payload.
-<<<<<<< HEAD
 function getPayloadConfigFromPayload(
   config,
   payload,
   key
 ) {
-=======
-function getPayloadConfigFromPayload(config, payload, key) {
->>>>>>> d5fd4873b3b25e02b440938e772d6e9611f3cee1
   if (typeof payload !== "object" || payload === null) {
     return undefined
   }
@@ -363,7 +320,4 @@ export {
     ChartStyle, ChartTooltip,
     ChartTooltipContent
 }
-<<<<<<< HEAD
 
-=======
->>>>>>> d5fd4873b3b25e02b440938e772d6e9611f3cee1

@@ -488,7 +488,8 @@ export default function DepartmentPage() {
                               <SelectItem key={approval.approval_id} value={approval.approval_id}>
                                 {approval.approval_id} - ₹{approval.min_expense} - ₹{approval.max_expense} ({approval.reason.substring(0, 50)}...)
                               </SelectItem>
-                            ))}
+                            ))
+                          }
                         </SelectContent>
                       </Select>
                       <p className="text-xs text-gray-500">
