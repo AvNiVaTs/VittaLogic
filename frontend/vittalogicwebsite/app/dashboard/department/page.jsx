@@ -33,8 +33,8 @@ export default function DepartmentPage() {
   const [departments, setDepartments] = useState([])
 
   const [searchTerm, setSearchTerm] = useState("")
-  const [editingBudget, setEditingBudget] = useState(null)
-  const [editingDepartment, setEditingDepartment] = useState(null)
+  const [editingBudget, setEditingBudget] = useState("")
+  const [editingDepartment, setEditingDepartment] = useState("")
   const [editDialogStates, setEditDialogStates] = useState({})
 
   // Department Entry Form State
@@ -399,7 +399,8 @@ export default function DepartmentPage() {
                               <SelectItem key={approval.approvalId} value={approval.approvalId}>
                                 {approval.approvalId} - ₹{approval.expenseRange} ({approval.reason.substring(0, 50)}...)
                               </SelectItem>
-                            ))}
+                            ))
+                          }
                         </SelectContent>
                       </Select>
                       <p className="text-xs text-gray-500">

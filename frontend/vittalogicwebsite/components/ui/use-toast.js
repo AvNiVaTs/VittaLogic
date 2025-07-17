@@ -6,7 +6,6 @@ import * as React from "react"
 const TOAST_LIMIT = 1
 const TOAST_REMOVE_DELAY = 1000000
 
-<<<<<<< HEAD
 const actionTypes = {
   ADD_TOAST: "ADD_TOAST",
   UPDATE_TOAST: "UPDATE_TOAST",
@@ -14,8 +13,6 @@ const actionTypes = {
   REMOVE_TOAST: "REMOVE_TOAST",
 }
 
-=======
->>>>>>> d5fd4873b3b25e02b440938e772d6e9611f3cee1
 let count = 0
 
 function genId() {
@@ -23,16 +20,6 @@ function genId() {
   return count.toString()
 }
 
-<<<<<<< HEAD
-=======
-const actionTypes = {
-  ADD_TOAST: "ADD_TOAST",
-  UPDATE_TOAST: "UPDATE_TOAST",
-  DISMISS_TOAST: "DISMISS_TOAST",
-  REMOVE_TOAST: "REMOVE_TOAST",
-}
-
->>>>>>> d5fd4873b3b25e02b440938e772d6e9611f3cee1
 const toastTimeouts = new Map()
 
 const addToRemoveQueue = (toastId) => {
@@ -167,7 +154,4 @@ function useToast() {
 }
 
 export { toast, useToast }
-<<<<<<< HEAD
 
-=======
->>>>>>> d5fd4873b3b25e02b440938e772d6e9611f3cee1
