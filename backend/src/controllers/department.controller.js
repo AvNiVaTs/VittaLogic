@@ -44,6 +44,24 @@ const registerDepartment = asyncHandler(async (req, res) => {
     )
 })
 
+const getAllDepartments = asyncHandler(async (req, res) => {
+    console.log("Get department hit")
+    const departments = await Department.find()
+        .populate("createdBy", "fullName email")
+        .populate("updatedBy", "fullName email")
+        .select("-__v") // remove mongoose metadata
+
+    if (!departments || departments.length === 0) {
+        throw new ApiErr(404, "No departments found")
+    }
+
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(200, departments, "All departments fetched successfully")
+    )
+})
+
 const getDeptEntry = asyncHandler(async (req, res) => {
     const department = await Department.findOne({ departmentId: req.employee.departmentId });
 
@@ -129,6 +147,7 @@ const getDeptOptions = asyncHandler(async (req, res) => {
 
 export {
     registerDepartment,
+    getAllDepartments,
     getDeptEntry,
     editDeptEntry,
     searchDeptByName,

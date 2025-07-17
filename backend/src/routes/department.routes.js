@@ -1,6 +1,7 @@
 import { Router } from "express"
 import {
     registerDepartment,
+    getAllDepartments,
     getDeptEntry,
     searchDeptByName,
     getDeptOptions,
@@ -13,7 +14,12 @@ import { populateCreatedByUpdatedBy } from "../middleware/populateEmpInfo.middle
 const router = Router()
 
 router.route("/register").post(verifyEmployeeJWT, populateCreatedByUpdatedBy, registerDepartment)
-router.route("/current").get(verifyEmployeeJWT, getDeptEntry)
+router.route("/alldepts").get(getAllDepartments)
+router.route("/test-dept").get((req, res) => {
+  console.log("✅ /test-dept hit")
+  res.send("Test route working!")
+})
+router.route("/current").get(getDeptEntry)
 router.route("/edit").patch(verifyEmployeeJWT, populateCreatedByUpdatedBy, editDeptEntry)
 router.route("/search").get(searchDeptByName)
 router.route("/dropdown-options").get(getDeptOptions)
