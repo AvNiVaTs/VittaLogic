@@ -9,12 +9,12 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -22,20 +22,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 
 const employee = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("loggedInEmployee")) : null
-
 const LOGGED_IN_EMPLOYEE_ID = employee?.employeeId || null
-
 
 export default function DepartmentPage() {
   const [activeSection, setActiveSection] = useState("entry")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitMessage, setSubmitMessage] = useState("")
   const [departments, setDepartments] = useState([])
-
   const [searchTerm, setSearchTerm] = useState("")
-  const [editingBudget, setEditingBudget] = useState(null)
   const [editingDepartment, setEditingDepartment] = useState(null)
-  const [editDialogStates, setEditDialogStates] = useState({})
+  const [approvalList, setApprovalList] = useState([])
 
   // Department Entry Form State
   const [departmentName, setDepartmentName] = useState("")
@@ -44,7 +40,6 @@ export default function DepartmentPage() {
 
   // Department Budget Form State
   const [approvalId, setApprovalId] = useState("")
-  const [approvalList, setApprovalList] = useState([])
   const [budgetId, setBudgetId] = useState("")
   const [budgetDepartmentId, setBudgetDepartmentId] = useState("")
   const [timePeriodFrom, setTimePeriodFrom] = useState("")
@@ -53,25 +48,92 @@ export default function DepartmentPage() {
   const [budgetCreationDate, setBudgetCreationDate] = useState("")
   const [budgetNotes, setBudgetNotes] = useState("")
 
+  // Fetch approvals
   useEffect(() => {
-  const fetchApprovals = async () => {
-    try {
-      const res = await fetch("http://localhost:8000/api/v1/approval/department", {
-        credentials: "include",
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setApprovalList(data.data);
-      } else {
-        console.error("Failed to fetch approvals:", data.message);
+    const fetchApprovals = async () => {
+      try {
+        const res = await fetch("http://localhost:8000/api/v1/approval/department", {
+          credentials: "include",
+        })
+        const data = await res.json()
+        if (res.ok) {
+          setApprovalList(data.data)
+        } else {
+          console.error("Failed to fetch approvals:", data.message)
+        }
+      } catch (err) {
+        console.error("Error fetching approvals:", err)
       }
-    } catch (err) {
-      console.error("Error fetching approvals:", err);
     }
-  };
+    fetchApprovals()
+  }, [])
 
-  fetchApprovals();
-}, []);
+  // Fetch departments
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        const res = await fetch("http://localhost:8000/api/v1/dept/current", {
+          credentials: "include",
+        })
+        const data = await res.json()
+        if (res.ok) {
+          setDepartments(data.data.map(dept => ({
+            id: dept.department_id,
+            name: dept.departmentName,
+            description: dept.departmentDescription,
+            createdBy: dept.createdBy?.employeeId || 'Unknown',
+            createdAt: new Date(dept.createdAt).toISOString().split("T")[0],
+            budgets: [], // Initialize empty, will fetch budgets separately
+            updatedBy: dept.updatedBy?.employeeId || null,
+            lastUpdated: dept.updatedAt || null,
+          })))
+        } else {
+          console.error("Failed to fetch departments:", data.message)
+        }
+      } catch (err) {
+        console.error("Error fetching departments:", err)
+      }
+    }
+    fetchDepartments()
+  }, [])
+
+  // Fetch budgets for each department when switching to info section
+  useEffect(() => {
+    if (activeSection === "info") {
+      const fetchBudgets = async () => {
+        try {
+          const updatedDepartments = await Promise.all(
+            departments.map(async (dept) => {
+              const res = await fetch(`http://localhost:8000/api/v1/dept/budget?departmentId=${dept.id}`, {
+                credentials: "include",
+              })
+              const data = await res.json()
+              if (res.ok) {
+                return {
+                  ...dept,
+                  budgets: data.data.map(budget => ({
+                    budgetId: budget.budgetId,
+                    createdBy: budget.createdBy?.employeeId || 'Unknown',
+                    approvalId: budget.approvalId,
+                    timePeriodFrom: budget.timePeriodFrom,
+                    timePeriodTo: budget.timePeriodTo,
+                    allocatedAmount: budget.allocatedAmount,
+                    budgetCreationDate: budget.budgetCreationDate,
+                    budgetNotes: budget.budgetNote,
+                  }))
+                }
+              }
+              return dept
+            })
+          )
+          setDepartments(updatedDepartments)
+        } catch (err) {
+          console.error("Error fetching budgets:", err)
+        }
+      }
+      fetchBudgets()
+    }
+  }, [activeSection])
 
   // Generate unique ID based on timestamp
   const generateTimestampId = (prefix) => {
@@ -86,12 +148,14 @@ export default function DepartmentPage() {
   }, [activeSection])
 
   // Filter departments based on search term
-  const filteredDepartments = departments.filter((dept) => dept.name.toLowerCase().includes(searchTerm.toLowerCase()))
+  const filteredDepartments = departments.filter((dept) =>
+    dept.name.toLowerCase().includes(searchTerm.toLowerCase())
+  )
 
   const handleDepartmentSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setSubmitMessage("");
+    e.preventDefault()
+    setIsSubmitting(true)
+    setSubmitMessage("")
 
     try {
       const response = await fetch("http://localhost:8000/api/v1/dept/register", {
@@ -99,72 +163,97 @@ export default function DepartmentPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include", // ✅ send the cookie containing JWT
+        credentials: "include",
         body: JSON.stringify({
           departmentName,
           description: departmentDescription,
           createdBy: LOGGED_IN_EMPLOYEE_ID,
           updatedBy: LOGGED_IN_EMPLOYEE_ID,
         }),
-      });
+      })
 
-      const result = await response.json();
+      const result = await response.json()
 
       if (!response.ok) {
-        throw new Error(result.message || "Error creating department");
+        throw new Error(result.message || "Error creating department")
       }
 
-      // Update UI
-      setDepartments((prev) => [...prev, {
-        id: result.data.department_id,
-        name: result.data.departmentName,
-        description: result.data.departmentDescription,
-        createdBy: result.data.createdBy,
-        createdAt: new Date().toISOString().split("T")[0],
-        budgets: [],
-        updatedBy: null,
-        lastUpdated: null,
-      }]);
+      setDepartments((prev) => [
+        ...prev,
+        {
+          id: result.data.department_id,
+          name: result.data.departmentName,
+          description: result.data.departmentDescription,
+          createdBy: result.data.createdBy,
+          createdAt: new Date().toISOString().split("T")[0],
+          budgets: [],
+          updatedBy: null,
+          lastUpdated: null,
+        },
+      ])
 
-      setSubmitMessage("Department created successfully!");
-      setDepartmentName("");
-      setDepartmentDescription("");
-      setDepartmentId(generateTimestampId("DEPT"));
+      setSubmitMessage("Department created successfully!")
+      setDepartmentName("")
+      setDepartmentDescription("")
+      setDepartmentId(generateTimestampId("DEPT"))
     } catch (err) {
-      setSubmitMessage(err.message);
+      setSubmitMessage(err.message)
     } finally {
-      setIsSubmitting(false);
-      setTimeout(() => setSubmitMessage(""), 3000);
+      setIsSubmitting(false)
+      setTimeout(() => setSubmitMessage(""), 3000)
     }
-};
+  }
 
   const handleBudgetSubmit = async (e) => {
     e.preventDefault()
     setIsSubmitting(true)
     setSubmitMessage("")
 
-    const newBudget = {
-      budgetId,
-      createdBy: LOGGED_IN_EMPLOYEE_ID,
-      approvalId,
-      timePeriodFrom,
-      timePeriodTo,
-      allocatedAmount: Number.parseFloat(allocatedAmount),
-      budgetCreationDate,
-      budgetNotes,
-    }
+    try {
+      const response = await fetch("http://localhost:8000/api/v1/dept/budget/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          departmentId: budgetDepartmentId,
+          timePeriodFrom,
+          timePeriodTo,
+          allocatedAmount: Number.parseFloat(allocatedAmount),
+          budgetNote: budgetNotes,
+          approval_id: approvalId,
+          createdBy: LOGGED_IN_EMPLOYEE_ID,
+          updatedBy: LOGGED_IN_EMPLOYEE_ID,
+        }),
+      })
 
-    // Simulate API call
-    setTimeout(() => {
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.message || "Error creating budget")
+      }
+
+      const newBudget = {
+        budgetId: result.data.budgetId,
+        createdBy: LOGGED_IN_EMPLOYEE_ID,
+        approvalId,
+        timePeriodFrom,
+        timePeriodTo,
+        allocatedAmount: Number.parseFloat(allocatedAmount),
+        budgetCreationDate,
+        budgetNotes,
+      }
+
       setDepartments((prev) =>
         prev.map((dept) =>
-          dept.id === budgetDepartmentId ? { ...dept, budgets: [...dept.budgets, newBudget] } : dept,
-        ),
+          dept.id === budgetDepartmentId
+            ? { ...dept, budgets: [...dept.budgets, newBudget] }
+            : dept
+        )
       )
 
       setSubmitMessage("Budget allocation created successfully!")
-
-      // Reset form
       setBudgetId(generateTimestampId("BUD"))
       setBudgetDepartmentId("")
       setTimePeriodFrom("")
@@ -173,16 +262,17 @@ export default function DepartmentPage() {
       setBudgetCreationDate(new Date().toISOString())
       setBudgetNotes("")
       setApprovalId("")
+    } catch (err) {
+      setSubmitMessage(err.message)
+    } finally {
       setIsSubmitting(false)
-
-      // Clear message after 3 seconds
       setTimeout(() => setSubmitMessage(""), 3000)
-    }, 1000)
+    }
   }
 
   const handleEditDepartment = async (departmentId, updatedData) => {
-    setIsSubmitting(true);
-    setSubmitMessage("");
+    setIsSubmitting(true)
+    setSubmitMessage("")
 
     try {
       const response = await fetch("http://localhost:8000/api/v1/dept/edit", {
@@ -190,19 +280,19 @@ export default function DepartmentPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "includes",
+        credentials: "include",
         body: JSON.stringify({
           departmentId,
           departmentName: updatedData.name,
           description: updatedData.description,
           updatedBy: LOGGED_IN_EMPLOYEE_ID,
         }),
-      });
+      })
 
-      const result = await response.json();
+      const result = await response.json()
 
       if (!response.ok) {
-        throw new Error(result.message || "Failed to update department");
+        throw new Error(result.message || "Failed to update department")
       }
 
       setDepartments((prev) =>
@@ -215,20 +305,19 @@ export default function DepartmentPage() {
                 updatedBy: LOGGED_IN_EMPLOYEE_ID,
                 lastUpdated: new Date().toISOString(),
               }
-            : dept,
-        ),
-      );
+            : dept
+        )
+      )
 
-      setSubmitMessage("Department updated successfully!");
+      setSubmitMessage("Department updated successfully!")
     } catch (err) {
-      setSubmitMessage(err.message);
+      setSubmitMessage(err.message)
     } finally {
-      setEditingDepartment(null);
-      setIsSubmitting(false);
-      setTimeout(() => setSubmitMessage(""), 3000);
+      setEditingDepartment(null)
+      setIsSubmitting(false)
+      setTimeout(() => setSubmitMessage(""), 3000)
     }
-  };
-
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
@@ -390,14 +479,14 @@ export default function DepartmentPage() {
                           <SelectValue placeholder="Select approval ID" />
                         </SelectTrigger>
                         <SelectContent>
-                          {mockApprovalHistory
+                          {approvalList
                             .filter(
                               (approval) =>
-                                approval.approvalFor === "department_budget" && approval.status === "approved",
+                                approval.approvalfor === "Department Budget" && approval.status === "Approved"
                             )
                             .map((approval) => (
-                              <SelectItem key={approval.approvalId} value={approval.approvalId}>
-                                {approval.approvalId} - ₹{approval.expenseRange} ({approval.reason.substring(0, 50)}...)
+                              <SelectItem key={approval.approval_id} value={approval.approval_id}>
+                                {approval.approval_id} - ₹{approval.min_expense} - ₹{approval.max_expense} ({approval.reason.substring(0, 50)}...)
                               </SelectItem>
                             ))}
                         </SelectContent>
@@ -655,7 +744,6 @@ export default function DepartmentPage() {
   )
 }
 
-// Department Edit Form Component
 function DepartmentEditForm({ department, onSave, onCancel }) {
   const [formData, setFormData] = useState({
     name: department.name,
