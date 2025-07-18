@@ -50,64 +50,80 @@ const createApproval = asyncHandler(async (req, res) => {
 })
 
 const getApprovalReceived = asyncHandler(async (req, res) => {
-    const {id} = req.params
-    const {priority} = req.query
+  const { priority } = req.query;
+  const emp = req.employee;
 
-    const emp = await Employee.findOne({
-        employeeId: { $regex: `^${id}$`, $options: "i" }
-    });
+  const query = {
+    approval_to: emp.employeeId,
+    status: { $ne: "Approved" } // exclude already approved
+  };
 
-    if (!emp) {
-        throw new ApiErr(404, "No employee found with the given custom ID");
-    }
+  if (priority) {
+    query.priority = new RegExp(`^${priority}$`, "i");
+  }
 
-    const query = {approval_to: emp._id}
-    if(priority){
-        query.priority = priority
-    }
+  const approvals = await Approval.find(query);
 
-    const approvals = await Approval.find(query)
-    .populate("approval_created_by", "name role")
-    .populate("approval_to", "name employeeId")
+  if (!approvals || approvals.length === 0) {
+    throw new ApiErr(404, "No pending approval requests found");
+  }
 
-    if(!approvals || approvals.length===0){
-        throw new ApiErr(400, "No approval request found")
-    }
+  const enrichedApprovals = await Promise.all(
+    approvals.map(async (approval) => {
+      const creator = await Employee.findOne(
+        { employeeId: approval.approval_created_by },
+        "employeeName role"
+      );
+      const recipient = await Employee.findOne(
+        { employeeId: approval.approval_to },
+        "employeeName employeeId"
+      );
 
-    return res
+      return {
+        ...approval.toObject(),
+        approval_created_by: {
+          employeeId: approval.approval_created_by,
+          name: creator?.employeeName || "Unknown",
+          role: creator?.role || "Unknown",
+        },
+        approval_to: {
+          employeeId: approval.approval_to,
+          name: recipient?.employeeName || "Unknown",
+        },
+      };
+    })
+  );
+
+  return res
     .status(200)
-    .json(
-        new ApiResponse(200, approvals, "Approval requests fetched successfully")
-    )
+    .json(new ApiResponse(200, enrichedApprovals, "Approval requests fetched successfully"));
 })
 
 const getApprovalHistory = asyncHandler(async (req, res) => {
-    try{
-        const {id} = req.params
-        const { status, sort = "desc"} = req.query
+  try {
+    const { status, sort = "desc" } = req.query;
+    const employee = req.employee;
 
-        const employee = await Employee.findOne({
-            employeeId: { $regex: `^${id}$`, $options: "i" }
-        });
+    const query = {
+      $or: [
+        { approval_created_by: employee.employeeId },
+        { approval_to: employee.employeeId }
+      ]
+    };
 
-        if (!employee) {
-            throw new ApiErr(404, "Employee not found");
-        }
+    if (status) query.status = status;
 
-        const query = { approval_created_by: employee._id}
-        if(status) query.status = status
+    const approvals = await Approval.find(query).sort({
+      createdAt: sort === "asc" ? 1 : -1,
+    });
 
-        const approvals = await Approval.find(query).sort({createdAt: sort==="asc" ? 1:-1})
-
-        return res
-        .status(200)
-        .json(
-            new ApiResponse(200, approvals, "Approval History fetched successfully")
-        )
-    }catch(error){
-        console.error("Error fetching approval history:", error);
-        return res.status(500).json({ success: false, message: "Server error" });
-    }
+    return res
+      .status(200)
+      .json(new ApiResponse(200, approvals, "Approval History fetched successfully"));
+  } catch (error) {
+    console.error("Error fetching approval history:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
 })
 
 const updateApprovalStatus = asyncHandler(async (req, res) => {
