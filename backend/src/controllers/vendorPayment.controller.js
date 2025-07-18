@@ -65,30 +65,53 @@ const createVendorPayment = asyncHandler(async (req, res) => {
 })
 
 const getAllVendorPayments = asyncHandler(async (req, res) => {
-    const payment = await VendorPayment.find()
-    .populate("vendor_id", "company_Name")
-    .sort({createdAt: -1})
+    const payments = await VendorPayment.find().sort({ createdAt: -1 });
+
+    const enrichedPayments = await Promise.all(
+        payments.map(async (payment) => {
+            const vendor = await Vendor.findOne(
+                { vendor_id: payment.vendor_id },
+                "vendor_id company_Name"
+            );
+
+            return {
+                ...payment.toObject(),
+                vendorDetails: vendor || null
+            };
+        })
+    );
 
     return res
-    .status(200)
-    .json(
-        new ApiResponse(200, payment, "Vendor payments fetched")
-    )
+        .status(200)
+        .json(
+            new ApiResponse(200, enrichedPayments, "Vendor payments fetched")
+        );
 })
 
 const getVendorPaymentById = asyncHandler(async (req, res) => {
-    const {id} = req.params
-    const payment = await VendorPayment.findById(id).populate("vendor_id", "company_Name vendor_id")
+    const { id } = req.params;
 
-    if(!payment){
-        throw new ApiErr(400, "Payment not found")
+    // Find vendor payment by custom ObjectId
+    const payment = await VendorPayment.findOne({payment_id: id})
+    if (!payment) {
+        throw new ApiErr(400, "Payment not found");
     }
 
-    return res
-    .status(200)
-    .json(
-        new ApiResponse(200, payment, "Vendor found")
-    )
+    // Find vendor by custom vendor_id (string)
+    const vendor = await Vendor.findOne(
+        { vendor_id: payment.vendor_id },
+        "vendor_id company_Name"
+    );
+
+    // Attach vendor details to the response
+    const responseData = {
+        ...payment.toObject(),
+        vendorDetails: vendor || null
+    };
+
+    return res.status(200).json(
+        new ApiResponse(200, responseData, "Vendor payment found")
+    );
 })
 
 const updateVendorPayment = asyncHandler(async (req, res) => {
@@ -126,15 +149,16 @@ const deleteVendorPayment = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, deleted, "Vendor payment deleted"));
 });
 
-const searchVendorPayment = asyncHandler(async (req, res)=>{
-    const {company_Name, vendor_id, payment_id, status} = req.query
-    const query = {}
+const searchVendorPayment = asyncHandler(async (req, res) => {
+    const { company_Name, vendor_id, payment_id, status } = req.query;
+    const query = {};
 
-    if(status) query.status = status
-    if(payment_id) query.payment_id = payment_id.trim()
-    if(vendor_id) query.vendor_id = vendor_id
+    if (status) query.status = status;
+    if (payment_id) query.payment_id = payment_id.trim();
+    if (vendor_id) query.vendor_id = vendor_id;
 
-    if(company_Name){
+    // Handle search by company name
+    if (company_Name) {
         const vendors = await Vendor.find(
             {
                 company_Name: {
@@ -143,28 +167,40 @@ const searchVendorPayment = asyncHandler(async (req, res)=>{
                 }
             },
             "vendor_id"
-        )
+        );
 
-        const vendorIds = vendors.map(v => v.payment_id)
-        
-        if(vendorIds.length>0){
-            query.vendor_id = {
-                $in: vendorIds
-            }
-        }else{
+        const vendorIds = vendors.map(v => v.vendor_id); // Custom IDs like VEN-00001
+
+        if (vendorIds.length > 0) {
+            query.vendor_id = { $in: vendorIds };
+        } else {
             return res.status(200).json(
                 new ApiResponse(200, [], "No vendor payment found for given company name")
-            )
+            );
         }
     }
 
-    const payment = await VendorPayment.find(query).populate("vendor_id", "company_Name vendor_id")
+    // Fetch payments using custom vendor_id (string)
+    const payments = await VendorPayment.find(query);
 
-    return res
-    .status(200)
-    .json(
-        new ApiResponse(200, payment, "Vendor Payment details found")
-    )
+    // Manually join vendor info
+    const enrichedPayments = await Promise.all(
+        payments.map(async (payment) => {
+            const vendor = await Vendor.findOne(
+                { vendor_id: payment.vendor_id },
+                "vendor_id company_Name"
+            );
+
+            return {
+                ...payment.toObject(),
+                vendorDetails: vendor || null,
+            };
+        })
+    );
+
+    return res.status(200).json(
+        new ApiResponse(200, enrichedPayments, "Vendor Payment details found")
+    );
 })
 
 const getVendorsForDropDown = asyncHandler(async (req, res) => {
