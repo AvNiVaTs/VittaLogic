@@ -15,10 +15,6 @@ const router = Router()
 
 router.route("/register").post(verifyEmployeeJWT, populateCreatedByUpdatedBy, registerDepartment)
 router.route("/alldepts").get(getAllDepartments)
-router.route("/test-dept").get((req, res) => {
-  console.log("✅ /test-dept hit")
-  res.send("Test route working!")
-})
 router.route("/current").get(getDeptEntry)
 router.route("/edit").patch(verifyEmployeeJWT, populateCreatedByUpdatedBy, editDeptEntry)
 router.route("/search").get(searchDeptByName)
