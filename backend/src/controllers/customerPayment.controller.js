@@ -76,15 +76,27 @@ const createCustomerPayment = asyncHandler(async (req, res) => {
 })
 
 const getAllCustomerPayments = asyncHandler(async (req, res) => {
-    const payments = await CustomerPayment.find()
-    .populate("customer_id", "company_Name customer_id")
-    .sort({createdAt: -1})
+    const payments = await CustomerPayment.find().sort({ createdAt: -1 });
+
+    const enrichedPayments = await Promise.all(
+        payments.map(async (payment) => {
+            const customer = await Customer.findOne(
+                { customer_id: payment.customer_id },
+                "customer_id company_Name"
+            );
+
+            return {
+                ...payment.toObject(),
+                customerDetails: customer || null
+            };
+        })
+    );
 
     return res
-    .status(200)
-    .json(
-        new ApiResponse(200, payments, "Payments fetched successfully")
-    )
+        .status(200)
+        .json(
+            new ApiResponse(200, enrichedPayments, "Payments fetched successfully")
+        );
 })
 
 const updateCustomerPayment = asyncHandler(async (req, res) => {
@@ -131,21 +143,34 @@ const deleteCustomerPayment = asyncHandler(async (req, res) => {
     )
 })
 
-const filterPaymentByStatus = asyncHandler(async (req, res) =>{
-    const {status} = req.query
+const filterPaymentByStatus = asyncHandler(async (req, res) => {
+    const { status } = req.query;
 
-    if(!status){
-        throw new ApiErr(400, "Status query parameter is required")
+    if (!status) {
+        throw new ApiErr(400, "Status query parameter is required");
     }
 
-    const payments = await CustomerPayment.find({status})
-    .populate("customer_id", "company_Name customer_Id")
+    const payments = await CustomerPayment.find({ status });
+
+    const enrichedPayments = await Promise.all(
+        payments.map(async (payment) => {
+            const customer = await Customer.findOne(
+                { customer_id: payment.customer_id },
+                "customer_id company_Name"
+            );
+
+            return {
+                ...payment.toObject(),
+                customerDetails: customer || null
+            };
+        })
+    );
 
     return res
-    .status(200)
-    .json(
-        new ApiResponse(200, payments, `Payments with status '${status}' fetched`)
-    )
+        .status(200)
+        .json(
+            new ApiResponse(200, enrichedPayments, `Payments with status '${status}' fetched`)
+        );
 })
 
 const getCustomerDropDownOptions = asyncHandler(async (req, res) => {
