@@ -111,50 +111,52 @@ const editDeptEntry = asyncHandler(async (req, res) => {
 })
 
 const searchDeptByName = asyncHandler(async (req, res) => {
-    const {name} = req.query
+  const { name } = req.query;
 
-    if(!name || name.trim()===""){
-        throw new ApiErr(400, "Department name required to search")
+  if (!name || name.trim() === "") {
+    throw new ApiErr(400, "Department name required to search");
+  }
+
+  const departments = await Department.find({
+    departmentName: {
+      $regex: new RegExp(name.trim(), "i") // case-insensitive search
     }
+  })
+    .populate({
+      path: "createdBy",
+      model: "Employee",
+      select: "employeeName", // `fullName` is not in schema; likely meant `employeeName`
+      localField: "createdBy",
+      foreignField: "employeeId",
+      justOne: true
+    });
 
-    const departments = await Department.find({
-        departmentName: {
-            $regex: name.trim(),
-            $options: "i"
-        }//case-insensitive
-    }).populate("createdBy", "fullName")//populate by creatorName
+  if (departments.length === 0) {
+    throw new ApiErr(404, "No departments found matching the search term");
+  }
 
-    if(departments.length === 0){
-        throw new ApiErr(404, "No departments found matching the search term")
-    }
-
-    return res
-    .status(200)
-    .json(
-        new ApiResponse(200, departments, "Department details fetched Successfully")
-    )
+  return res.status(200).json(
+    new ApiResponse(200, departments, "Department details fetched successfully")
+  );
 })
 
 const getDeptOptions = asyncHandler(async (req, res) => {
-    const usedDeptIds = await DepartmentBudget.distinct("departmentId")
+  const usedDeptIds = await DepartmentBudget.distinct("departmentId");
 
-    const depts = await Department.find({
-        _id: {
-            $in: usedDeptIds
-        }
-    }, "_id department_id departmentName")
+  const depts = await Department.find({
+    department_id: { $in: usedDeptIds }
+  }, "department_id departmentName");
 
-    const options = depts.map(dep => ({
-        value: dep._id,
-        label: `${dep.departmentId} - ${dep.departName}`
-    }))
+  const options = depts.map(dep => ({
+    value: dep.department_id,
+    label: `${dep.department_id} - ${dep.departmentName}`
+  }));
 
-    return res
-    .status(200)
-    .json(
-        new ApiResponse(200, options, "Department with budget fetched successfully")
-    )
-})
+  return res.status(200).json(
+    new ApiResponse(200, options, "Departments with budget fetched successfully")
+  );
+});
+
 
 export {
     registerDepartment,

@@ -7,7 +7,7 @@ import {
     getDeptOptions,
     editDeptEntry
 } from "../controllers/department.controller.js"
-import { registerBudget, getDeptBudget } from "../controllers/departmentBudget.controller.js"
+import { registerBudget, getDeptBudget, getApprovalDropdownForBudget } from "../controllers/departmentBudget.controller.js"
 import { verifyEmployeeJWT } from "../middleware/verifyEmployeeJWT.js"
 import { populateCreatedByUpdatedBy } from "../middleware/populateEmpInfo.middleware.js"
 
@@ -22,5 +22,6 @@ router.route("/dropdown-options").get(getDeptOptions)
 
 router.route("/budget/create").post(verifyEmployeeJWT, populateCreatedByUpdatedBy, registerBudget)
 router.route("/budget/").get(getDeptBudget)
+router.route("/budget/approval").get(getApprovalDropdownForBudget)
 
 export default router

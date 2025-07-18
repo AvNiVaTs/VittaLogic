@@ -105,46 +105,93 @@ const updateSalaryDetails = asyncHandler(async (req, res) => {
     );
 });
 
+const getEmpSalaryDetails = asyncHandler(async (req, res) => {
+  const { employeeId } = req.params;
 
-const getEmpSalaryDetails = asyncHandler(async (req, res) =>{
-    const {employeeId} = req.params
+  const salaryRecords = await EmployeeSalary.find({ employee: employeeId }).sort({ payMonth: -1 });
 
-    const salaryRec = await EmployeeSalary.find({employee: employeeId})
-    .populate("department", "departmentName")
-    .populate("role", "designation")
-    .sort({payMonth: -1})
+  if (!salaryRecords.length) {
+    return res.status(404).json(new ApiResponse(404, [], "No salary records found"));
+  }
 
-    return res
-    .status(200)
-    .json(
-        new ApiResponse(200, salaryRec, "Salary details fetched")
-    )
-})
+  // Collect all unique department_ids from the salary records
+  const departmentIds = [...new Set(salaryRecords.map(sal => sal.department))];
 
-const searchSalaryByEmpName = asyncHandler(async (req, res)=>{
-    const {name} = req.query
+  // Fetch departmentName using department_id
+  const departments = await Department.find(
+    { department_id: { $in: departmentIds } },
+    "department_id departmentName"
+  );
 
-    const matchedEmps = await Employee.find({
-        employeeName: {
-            $regex: name,
-            $options: "i"
-        }
-    }).select("employeeId")
+  // Create a lookup map
+  const deptMap = Object.fromEntries(
+    departments.map(dept => [dept.department_id, dept.departmentName])
+  );
 
-    const salaryRec = await EmployeeSalary.find({
-        employee: {
-            $in: matchedEmps.map(emp=>emp.employeeId)
-        }
-    })
-    .populate("employee", "employeeName")
-    .populate("department", "departmentName")
+  // Build the final response
+  const populatedRecords = salaryRecords.map(record => ({
+    ...record.toObject(),
+    department: {
+      department_id: record.department,
+      departmentName: deptMap[record.department] || "Unknown"
+    },
+    role: record.role // Just return it as-is from the record
+  }));
 
-    return res
-    .status(200)
-    .json(
-        new ApiResponse(200, salaryRec, "Salary of employee successfully fetched")
-    )
-})
+  return res.status(200).json(
+    new ApiResponse(200, populatedRecords, "Salary details fetched")
+  );
+});
+
+const searchSalaryByEmpName = asyncHandler(async (req, res) => {
+  const { name } = req.query;
+
+  // Step 1: Find matching employees
+  const matchedEmps = await Employee.find({
+    employeeName: { $regex: name, $options: "i" }
+  }).select("employeeId employeeName");
+
+  const employeeIdNameMap = Object.fromEntries(
+    matchedEmps.map(emp => [emp.employeeId, emp.employeeName])
+  );
+
+  const employeeIds = matchedEmps.map(emp => emp.employeeId);
+
+  // Step 2: Find salary records
+  const salaryRec = await EmployeeSalary.find({
+    employee: { $in: employeeIds }
+  });
+
+  // Step 3: Get unique department IDs
+  const departmentIds = [...new Set(salaryRec.map(sal => sal.department))];
+
+  // Step 4: Fetch department names
+  const departments = await Department.find(
+    { department_id: { $in: departmentIds } },
+    "department_id departmentName"
+  );
+
+  const deptMap = Object.fromEntries(
+    departments.map(dept => [dept.department_id, dept.departmentName])
+  );
+
+  // Step 5: Assemble response manually
+  const finalRecords = salaryRec.map(record => ({
+    ...record.toObject(),
+    employee: {
+      employeeId: record.employee,
+      employeeName: employeeIdNameMap[record.employee] || "Unknown"
+    },
+    department: {
+      department_id: record.department,
+      departmentName: deptMap[record.department] || "Unknown"
+    }
+  }));
+
+  return res.status(200).json(
+    new ApiResponse(200, finalRecords, "Salary of employee successfully fetched")
+  );
+});
 
 const getEligibleEmpForSalary = asyncHandler(async (req, res) => {
     const {payMonth} = req.query
@@ -168,10 +215,10 @@ const getEligibleEmpForSalary = asyncHandler(async (req, res) => {
 })
 
 const getDropDownData = asyncHandler(async (req, res) => {
-    const departments = await Department.find().select("departmentId departmentName")
+    const departments = await Department.find().select("department_id departmentName")
     const departmentOptions = departments.map(d => ({
-        label: `${d.departmentId} - ${d.departmentName}`,
-        value: d.departmentId
+        label: `${d.department_id} - ${d.departmentName}`,
+        value: d.department_id
     }))
 
     const employees = await Employee.find().select("employeeId employeeName")
