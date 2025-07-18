@@ -1,5 +1,6 @@
 import { Approval } from "../models/approval.model.js"
 import { Employee } from "../models/employee.model.js"
+import { Department } from "../models/department.model.js"
 import { ApiErr } from "../utils/ApiError.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
@@ -55,7 +56,7 @@ const getApprovalReceived = asyncHandler(async (req, res) => {
 
   const query = {
     approval_to: emp.employeeId,
-    status: { $ne: "Approved" } // exclude already approved
+    status: { $ne: "Approved" }, // exclude already approved
   };
 
   if (priority) {
@@ -72,8 +73,17 @@ const getApprovalReceived = asyncHandler(async (req, res) => {
     approvals.map(async (approval) => {
       const creator = await Employee.findOne(
         { employeeId: approval.approval_created_by },
-        "employeeName role"
+        "employeeName role department employeeId"
       );
+
+      let department = null;
+      if (creator?.department) {
+        department = await Department.findById(
+          creator.department,
+          "departmentName"
+        );
+      }
+
       const recipient = await Employee.findOne(
         { employeeId: approval.approval_to },
         "employeeName employeeId"
@@ -82,9 +92,10 @@ const getApprovalReceived = asyncHandler(async (req, res) => {
       return {
         ...approval.toObject(),
         approval_created_by: {
-          employeeId: approval.approval_created_by,
+          employeeId: creator?.employeeId || approval.approval_created_by,
           name: creator?.employeeName || "Unknown",
           role: creator?.role || "Unknown",
+          department: department?.departmentName || "Unknown",
         },
         approval_to: {
           employeeId: approval.approval_to,
@@ -94,9 +105,9 @@ const getApprovalReceived = asyncHandler(async (req, res) => {
     })
   );
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, enrichedApprovals, "Approval requests fetched successfully"));
+  return res.status(200).json(
+    new ApiResponse(200, enrichedApprovals, "Approval requests fetched successfully")
+  );
 })
 
 const getApprovalHistory = asyncHandler(async (req, res) => {
