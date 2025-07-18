@@ -12,8 +12,8 @@ import { populateCreatedByUpdatedBy } from "../middleware/populateEmpInfo.middle
 const router = Router()
 
 router.route("/createApproval").post(verifyEmployeeJWT, populateCreatedByUpdatedBy, createApproval)
-router.route("/received/:id").get(getApprovalReceived)
-router.route("/history/:id").get(getApprovalHistory)
+router.route("/received").get(verifyEmployeeJWT, getApprovalReceived)
+router.route("/history").get(verifyEmployeeJWT, getApprovalHistory)
 router.route("/update-status/:id").patch(verifyEmployeeJWT, populateCreatedByUpdatedBy, updateApprovalStatus)
 router.route("/eligible-approvers").get(getEligibleApprovers)
 

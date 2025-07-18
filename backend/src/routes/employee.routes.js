@@ -1,15 +1,16 @@
 import { Router } from "express"
 import {
-    assignPermissions,
-    changeCurrPassword,
-    deleteEmp,
-    getDepartmentsForDropdown,
+    registerEmployee,
     loginEmp,
     logoutEmp,
     refreshAccessToken,
-    registerEmployee,
+    changeCurrPassword,
+    updatedEmpDetails,
+    deleteEmp,
+    assignPermissions,
+    getAllEmployees,
     searchEmpDept,
-    updatedEmpDetails
+    getDepartmentsForDropdown
 } from "../controllers/employee.controller.js"
 import {
     getDropDownData,
@@ -32,12 +33,14 @@ router.route("/refresh-token").post(refreshAccessToken)
 //Protected Routes
 router.route("/registerEmp").post(verifyEmployeeJWT, populateCreatedByUpdatedBy, registerEmployee)
 router.route("/logout").post(verifyEmployeeJWT, logoutEmp)
+router.route("/refresh-token").post(refreshAccessToken)
 router.route("/change-password").post(verifyEmployeeJWT, populateCreatedByUpdatedBy, changeCurrPassword)
 router.route("/update/:employee_id").patch(verifyEmployeeJWT, populateCreatedByUpdatedBy, updatedEmpDetails)
 router.route("/delete/:id").delete(deleteEmp)
 router.route("/assign-permissions/:id").patch(verifyEmployeeJWT, populateCreatedByUpdatedBy, assignPermissions)
+router.route("/allEmps").get(getAllEmployees)
 router.route("/search-by-dept/:departmentName").get(searchEmpDept)
-router.route("/dropdown").get(getDepartmentsForDropdown)
+router.route("/dropdown").get(verifyEmployeeJWT, getDepartmentsForDropdown)
 
 router.route("/salary/register").post(verifyEmployeeJWT, populateCreatedByUpdatedBy, registerSalary)
 router.route("/salary/update/:salaryId").patch(verifyEmployeeJWT, populateCreatedByUpdatedBy, updateSalaryDetails)

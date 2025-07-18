@@ -56,55 +56,67 @@ const registerBudget = asyncHandler(async (req, res) => {
 })
 
 const getDeptBudget = asyncHandler(async (req, res) => {
-    const { departmentId } = req.query
+  const { departmentId } = req.query;
 
-    if (!departmentId) {
-        throw new ApiErr(400, "Department ID is required");
+  if (!departmentId) {
+    throw new ApiErr(400, "Department ID is required");
+  }
+
+  const budget = await DepartmentBudget.find({ departmentId })
+    .populate({
+      path: "createdBy",
+      select: "employeeId",
+      localField: "createdBy",
+      foreignField: "employeeId",
+      model: "Employee",
+      justOne: true
+    })
+    .populate({
+      path: "updatedBy",
+      select: "employeeId",
+      localField: "updatedBy",
+      foreignField: "employeeId",
+      model: "Employee",
+      justOne: true
+    });
+
+  if (!budget || budget.length === 0) {
+    throw new ApiErr(404, "No budget found for the given department");
+  }
+
+  const department = await Department.findOne({ department_id: departmentId });
+
+  if (!department) {
+    throw new ApiErr(404, "Department not found");
+  }
+
+  const enrichedBudgets = budget.map((b) => ({
+    ...b.toObject(),
+    department: {
+      department_id: department.department_id,
+      departmentName: department.departmentName
     }
+  }));
 
-    const budget = await DepartmentBudget.find({departmentId})
-    .populate("createdBy", "employeeId")
-    .populate("updatedBy", "employeeId")
-
-    if(!budget || budget.length==0){
-        throw new ApiErr(404, "No budget found for the given department")
-    }
-
-    const department = await Department.findOne({ department_id: departmentId });
-
-    if (!department){
-        throw new ApiErr(404, "Department not found");
-    }
-
-    const enrichedBudgets = budget.map((b) => ({
-        ...b.toObject(),
-        department: {
-          department_id: department.department_id,
-          departmentName: department.departmentName,
-        },
-      }));
-
-    return res
-    .status(200)
-    .json(
-        new ApiResponse(200, enrichedBudgets, "Department budgets fetched successfully")
-    )
-})
+  return res.status(200).json(
+    new ApiResponse(200, enrichedBudgets, "Department budgets fetched successfully")
+  );
+});
 
 const getApprovalDropdownForBudget = asyncHandler(async (req, res) => {
-    const approvals = await Approval.find({approvalfor: "Department Budget"}).select("approval_id reason min_expense max_expense")
-    
-    const formattedApprovals = approvals.map(a => ({
-        approval_id: a.approval_id,
-        displayText: `${a.approval_id} - ${a.reason}\n₹${parseFloat(a.min_expense.toString())} - ₹${parseFloat(a.max_expense.toString())}`
-    }));
+  const approvals = await Approval.find({ approvalfor: "Department Budget" })
+    .select("approval_id reason min_expense max_expense");
 
-    return res
-    .status(200)
-    .json(
-        new ApiResponse(200, formattedApprovals, "Approval dropdown options fetched")
-    );
-})
+  const formattedApprovals = approvals.map(a => ({
+    approval_id: a.approval_id,
+    displayText: `${a.approval_id} - ${a.reason}\n₹${parseFloat(a.min_expense.toString())} - ₹${parseFloat(a.max_expense.toString())}`
+  }));
+
+  return res.status(200).json(
+    new ApiResponse(200, formattedApprovals, "Approval dropdown options fetched")
+  );
+});
+
 
 export {
     registerBudget,

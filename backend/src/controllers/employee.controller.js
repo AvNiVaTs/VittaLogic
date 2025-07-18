@@ -157,7 +157,7 @@ const logoutEmp = asyncHandler(async (req, res) => {
 })
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
-    const incomingRefreshToken = req.cookies.refreshToken1 || req.body.refreshToken1
+    const incomingRefreshToken = req.cookies.empRefreshToken || req.body.empRefreshToken
 
     if(!incomingRefreshToken){
         throw new ApiErr(401, "Unauthorized Access")
@@ -296,6 +296,43 @@ const assignPermissions = asyncHandler(async (req, res) => {
     )
 })
 
+const getAllEmployees = asyncHandler(async (req, res) => {
+    // Step 1: Fetch all employees
+    const employees = await Employee.find({})
+        .select("employeeId employeeName emailAddress contactNumber designation dateOfJoining department role level");
+
+    if (!employees || employees.length === 0) {
+        throw new ApiErr(404, "No employees found");
+    }
+
+    // Step 2: Get unique department IDs from employees
+    const departmentIds = [...new Set(employees.map(emp => emp.department))];
+
+    // Step 3: Fetch department details manually
+    const departments = await Department.find({
+        department_id: { $in: departmentIds }
+    }).select("department_id departmentName");
+
+    // Step 4: Map departments by ID for quick lookup
+    const deptMap = {};
+    departments.forEach(dep => {
+        deptMap[dep.department_id] = dep.departmentName;
+    });
+
+    // Step 5: Attach departmentName to each employee
+    const enrichedEmployees = employees.map(emp => ({
+        ...emp.toObject(),
+        department: {
+            department_id: emp.department,
+            departmentName: deptMap[emp.department] || "Unknown"
+        }
+    }));
+
+    return res.status(200).json(
+        new ApiResponse(200, enrichedEmployees, "All employees fetched successfully")
+    );
+})
+
 const searchEmpDept = asyncHandler(async (req, res) => {
     const {departmentName} = req.params
     console.log("Searching for department name:", departmentName);
@@ -341,8 +378,16 @@ const getDepartmentsForDropdown = asyncHandler(async (req, res) => {
 });
 
 export {
-    assignPermissions, changeCurrPassword, deleteEmp, getDepartmentsForDropdown, loginEmp,
+    registerEmployee,
+    loginEmp,
     logoutEmp,
-    refreshAccessToken, registerEmployee, searchEmpDept, updatedEmpDetails
+    refreshAccessToken,
+    changeCurrPassword,
+    updatedEmpDetails,
+    deleteEmp,
+    assignPermissions,
+    getAllEmployees,
+    searchEmpDept,
+    getDepartmentsForDropdown
 }
 
