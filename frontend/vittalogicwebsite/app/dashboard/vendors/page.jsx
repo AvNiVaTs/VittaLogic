@@ -2,47 +2,59 @@
 
 import {
   ArrowLeft,
+  Banknote,
+  Building,
   Building2,
   CreditCard,
-  List,
-  Plus,
-  Search,
-  Filter,
   Edit,
-  Trash2,
+  Filter,
+  List,
+  Mail,
   MapPin,
   Phone,
-  Mail,
+  Plus,
+  Search,
+  Trash2,
   User,
-  Building,
-  Banknote,
 } from "lucide-react"
 import Link from "next/link"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
+import { Textarea } from "@/components/ui/textarea"
+
+const employee = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("loggedInEmployee")) : null
+const LOGGED_IN_EMPLOYEE_ID = employee?.employeeId || null
+const TOKEN = typeof window !== "undefined" ? localStorage.getItem("token") : null
 
 export default function VendorsPage() {
   const [activeTab, setActiveTab] = useState("add-vendor")
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
   const [successMessage, setSuccessMessage] = useState("")
+  const [vendors, setVendors] = useState([])
+  const [payments, setPayments] = useState([])
+  const [vendorSearchTerm, setVendorSearchTerm] = useState("")
+  const [vendorTypeFilter, setVendorTypeFilter] = useState("All")
+  const [paymentSearchTerm, setPaymentSearchTerm] = useState("")
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState("All")
+  const [editVendorDialog, setEditVendorDialog] = useState(false)
+  const [editPaymentDialog, setEditPaymentDialog] = useState(false)
+  const [selectedVendor, setSelectedVendor] = useState(null)
+  const [selectedPayment, setSelectedPayment] = useState(null)
+  const [editVendorForm, setEditVendorForm] = useState({})
+  const [editPaymentForm, setEditPaymentForm] = useState({})
 
-  // Mock user ID for "Created By" and "Updated By" fields
-  const currentUserId = "EMP001" // This would typically come from an authentication context
-
-  // Add Vendor Form State
   const [vendorForm, setVendorForm] = useState({
-    vendorId: `VEN-${Date.now()}`,
+    vendorId: "",
     companyName: "",
     address: "",
     vendorTypes: [],
@@ -50,9 +62,8 @@ export default function VendorsPage() {
     contactPersonEmail: "",
     contactPersonNumber: "",
     location: "",
-    createdBy: currentUserId,
-    updatedBy: currentUserId, // Added Updated By field
-    // Indian Bank Details
+    createdBy: LOGGED_IN_EMPLOYEE_ID,
+    updatedBy: LOGGED_IN_EMPLOYEE_ID,
     bankAccountNumber: "",
     bankName: "",
     bankBranch: "",
@@ -60,7 +71,6 @@ export default function VendorsPage() {
     accountHolderName: "",
     taxId: "",
     panNumber: "",
-    // International Bank Details
     countryName: "",
     intBankName: "",
     ibanAccountNumber: "",
@@ -71,9 +81,8 @@ export default function VendorsPage() {
     iecCode: "",
   })
 
-  // Vendor Payment Form State
   const [paymentForm, setPaymentForm] = useState({
-    paymentId: `PAY-${Date.now()}`,
+    paymentId: "",
     vendorId: "",
     paymentAmountVendorCurrency: "",
     exchangeRateAgainstINR: "",
@@ -82,12 +91,79 @@ export default function VendorsPage() {
     dueDate: "",
     paymentMethod: "",
     status: "",
-    createdBy: currentUserId,
-    updatedBy: currentUserId, // Added Updated By field
+    createdBy: LOGGED_IN_EMPLOYEE_ID,
+    updatedBy: LOGGED_IN_EMPLOYEE_ID,
   })
 
+  const vendorTypeOptions = [
+    "Technology",
+    "Manufacturing",
+    "Software",
+    "Hardware",
+    "Services",
+    "Consulting",
+    "Export",
+    "Import",
+    "Retail",
+    "Wholesale",
+    "Construction",
+    "Healthcare",
+    "Liability",
+    "Other",
+  ]
+
+  const paymentMethods = ["Bank Transfer", "Wire Transfer", "Check", "Cash", "Online Payment", "UPI", "NEFT", "RTGS"]
+  const paymentStatuses = ["Pending", "Processing", "Completed", "Failed", "Cancelled", "On Hold"]
+  const currencies = ["USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "CNY", "SGD", "AED"]
+
+  // Fetch vendors for dropdown and list
+  useEffect(() => {
+    fetchVendors()
+    fetchPayments()
+  }, [])
+
+  const fetchVendors = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/api/v1/vendor", {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${employee?.token || ""}`,
+        },
+        credentials: "include",
+      })
+      if (!response.ok) throw new Error("Failed to fetch vendors")
+      const data = await response.json()
+      setVendors(data.data)
+    } catch (error) {
+      console.error("Error fetching vendors:", error)
+      setSuccessMessage("Failed to fetch vendors")
+      setShowSuccessMessage(true)
+      setTimeout(() => setShowSuccessMessage(false), 3000)
+    }
+  }
+
+  const fetchPayments = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/api/v1/vendor/payment", {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${employee?.token || ""}`,
+        },
+        credentials: "include",
+      })
+      if (!response.ok) throw new Error("Failed to fetch payments")
+      const data = await response.json()
+      setPayments(data.data)
+    } catch (error) {
+      console.error("Error fetching payments:", error)
+      setSuccessMessage("Failed to fetch payments")
+      setShowSuccessMessage(true)
+      setTimeout(() => setShowSuccessMessage(false), 3000)
+    }
+  }
+
   const getSelectedVendor = () => {
-    return vendors.find((v) => v.vendorId === paymentForm.vendorId)
+    return vendors.find((v) => v.vendor_id === paymentForm.vendorId)
   }
 
   const calculateINRAmount = () => {
@@ -116,123 +192,6 @@ export default function VendorsPage() {
     })
   }
 
-  // Mock Data
-  const [vendors, setVendors] = useState([
-    {
-      vendorId: "VEN-1703123456789",
-      companyName: "Tech Solutions Pvt Ltd",
-      address: "123 Business Park, Mumbai, Maharashtra",
-      vendorTypes: ["Technology", "Software"],
-      contactPersonName: "Rajesh Kumar",
-      contactPersonEmail: "rajesh@techsolutions.com",
-      contactPersonNumber: "+91-9876543210",
-      location: "Indian",
-      bankName: "HDFC Bank",
-      bankBranch: "Andheri West",
-      ifscCode: "HDFC0001234",
-      createdAt: "2024-01-15",
-      currency: "INR",
-      bankAccountNumber: "1234567890",
-      accountHolderName: "Rajesh Kumar",
-      taxId: "GST123456789",
-      panNumber: "ABCDE1234F",
-      createdBy: "EMP001",
-      updatedBy: "EMP001", // Added updatedBy
-    },
-    {
-      vendorId: "VEN-1703123456790",
-      companyName: "Global Supplies Inc",
-      address: "456 International Plaza, New York, USA",
-      vendorTypes: ["Manufacturing", "Export"],
-      contactPersonName: "John Smith",
-      contactPersonEmail: "john@globalsupplies.com",
-      contactPersonNumber: "+1-555-123-4567",
-      location: "International",
-      countryName: "United States",
-      intBankName: "Chase Bank",
-      currency: "USD",
-      exchangeRate: "83.25",
-      createdAt: "2024-01-10",
-      swiftBicCode: "CHASUS33",
-      ibanAccountNumber: "US64CHAS9876543210",
-      beneficiaryName: "John Smith",
-      bankAddress: "123 Wall Street, New York, NY 10005",
-      iecCode: "IEC1234567890",
-      createdBy: "EMP002",
-      updatedBy: "EMP002", // Added updatedBy
-    },
-  ])
-
-  const [payments, setPayments] = useState([
-    {
-      paymentId: "PAY-1703123456789",
-      vendorId: "VEN-1703123456789",
-      vendorName: "Tech Solutions Pvt Ltd",
-      purchaseAmount: "60000",
-      paidAmount: "50000",
-      outstandingAmount: "10000",
-      purpose: "Software License Payment",
-      dueDate: "2024-02-15",
-      paymentMethod: "Bank Transfer",
-      status: "Pending",
-      createdAt: "2024-01-15",
-      createdBy: "EMP001",
-      updatedBy: "EMP001", // Added updatedBy
-    },
-    {
-      paymentId: "PAY-1703123456790",
-      vendorId: "VEN-1703123456790",
-      vendorName: "Global Supplies Inc",
-      purchaseAmount: "150000",
-      paidAmount: "125000",
-      outstandingAmount: "25000",
-      purpose: "Equipment Purchase",
-      dueDate: "2024-02-20",
-      paymentMethod: "Wire Transfer",
-      status: "Completed",
-      createdAt: "2024-01-12",
-      createdBy: "EMP002",
-      updatedBy: "EMP002", // Added updatedBy
-    },
-  ])
-
-  // Search and Filter States
-  const [vendorSearchTerm, setVendorSearchTerm] = useState("")
-  const [vendorTypeFilter, setVendorTypeFilter] = useState("All")
-  const [paymentSearchTerm, setPaymentSearchTerm] = useState("")
-  const [paymentStatusFilter, setPaymentStatusFilter] = useState("All")
-
-  // Edit Dialog States
-  const [editVendorDialog, setEditVendorDialog] = useState(false)
-  const [editPaymentDialog, setEditPaymentDialog] = useState(false)
-  const [selectedVendor, setSelectedVendor] = useState(null)
-  const [selectedPayment, setSelectedPayment] = useState(null)
-  const [editVendorForm, setEditVendorForm] = useState({})
-  const [editPaymentForm, setEditPaymentForm] = useState({}) // Added state for editing payment
-
-  const vendorTypeOptions = [
-    "Technology",
-    "Manufacturing",
-    "Software",
-    "Hardware",
-    "Services",
-    "Consulting",
-    "Export",
-    "Import",
-    "Retail",
-    "Wholesale",
-    "Construction",
-    "Healthcare",
-    "Liability",
-    "Other",
-  ]
-
-  const paymentMethods = ["Bank Transfer", "Wire Transfer", "Check", "Cash", "Online Payment", "UPI", "NEFT", "RTGS"]
-
-  const paymentStatuses = ["Pending", "Processing", "Completed", "Failed", "Cancelled", "On Hold"]
-
-  const currencies = ["USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "CNY", "SGD", "AED"]
-
   const handleVendorTypeChange = (type, checked) => {
     if (checked) {
       setVendorForm((prev) => ({
@@ -251,158 +210,343 @@ export default function VendorsPage() {
     if (checked) {
       setEditVendorForm((prev) => ({
         ...prev,
-        vendorTypes: [...(prev.vendorTypes || []), type],
+        vendor_type: [...(prev.vendor_type || []), type],
       }))
     } else {
       setEditVendorForm((prev) => ({
         ...prev,
-        vendorTypes: (prev.vendorTypes || []).filter((t) => t !== type),
+        vendor_type: (prev.vendor_type || []).filter((t) => t !== type),
       }))
     }
   }
 
-  const handleAddVendor = (e) => {
+  const handleAddVendor = async (e) => {
     e.preventDefault()
-    const newVendor = {
-      ...vendorForm,
-      createdAt: new Date().toISOString().split("T")[0],
-      createdBy: currentUserId,
-      updatedBy: currentUserId, // Set updatedBy on creation
+    try {
+      const payload = {
+        company_Name: vendorForm.companyName,
+        company_Address: vendorForm.address,
+        vendor_type: vendorForm.vendorTypes,
+        contactPerson: {
+          name: vendorForm.contactPersonName,
+          email: vendorForm.contactPersonEmail,
+          number: vendorForm.contactPersonNumber,
+        },
+        vendor_location: vendorForm.location,
+        createdBy: LOGGED_IN_EMPLOYEE_ID,
+        updatedBy: LOGGED_IN_EMPLOYEE_ID,
+        indianBankDetails: vendorForm.location === "Indian" ? {
+          bankAccountNumber: vendorForm.bankAccountNumber.trim(),
+          bankName: vendorForm.bankName,
+          bankBranch: vendorForm.bankBranch,
+          ifscCode: vendorForm.ifscCode,
+          accountHolderName: vendorForm.accountHolderName,
+          taxId: vendorForm.taxId,
+          panNumber: vendorForm.panNumber,
+        } : undefined,
+        internationalBankDetails: vendorForm.location === "International" ? {
+          countryName: vendorForm.countryName,
+          bankName: vendorForm.intBankName,
+          ibanOrAccountNumber: vendorForm.ibanAccountNumber,
+          swiftBicCode: vendorForm.swiftBicCode,
+          bankAddress: vendorForm.bankAddress,
+          beneficiaryName: vendorForm.beneficiaryName,
+          currency: vendorForm.currency,
+          iecCode: vendorForm.iecCode,
+        } : undefined,
+      }
+
+      const response = await fetch("http://localhost:8000/api/v1/vendor/registerVendor", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${employee?.token || ""}`,
+        },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      })
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || "Failed to add vendor")
+      }
+      const data = await response.json()
+      setVendors((prev) => [...prev, data.data])
+      setVendorForm({
+        vendorId: "",
+        companyName: "",
+        address: "",
+        vendorTypes: [],
+        contactPersonName: "",
+        contactPersonEmail: "",
+        contactPersonNumber: "",
+        location: "",
+        createdBy: LOGGED_IN_EMPLOYEE_ID,
+        updatedBy: LOGGED_IN_EMPLOYEE_ID,
+        bankAccountNumber: "",
+        bankName: "",
+        bankBranch: "",
+        ifscCode: "",
+        accountHolderName: "",
+        taxId: "",
+        panNumber: "",
+        countryName: "",
+        intBankName: "",
+        ibanAccountNumber: "",
+        swiftBicCode: "",
+        bankAddress: "",
+        beneficiaryName: "",
+        currency: "",
+        iecCode: "",
+      })
+      setSuccessMessage("Vendor added successfully!")
+      setShowSuccessMessage(true)
+      setTimeout(() => setShowSuccessMessage(false), 3000)
+    } catch (error) {
+      console.error("Error adding vendor:", error)
+      setSuccessMessage(error.message || "Failed to add vendor")
+      setShowSuccessMessage(true)
+      setTimeout(() => setShowSuccessMessage(false), 3000)
     }
-    setVendors((prev) => [...prev, newVendor])
-    setVendorForm({
-      vendorId: `VEN-${Date.now()}`,
-      companyName: "",
-      address: "",
-      vendorTypes: [],
-      contactPersonName: "",
-      contactPersonEmail: "",
-      contactPersonNumber: "",
-      location: "",
-      createdBy: currentUserId,
-      updatedBy: currentUserId, // Reset for next form
-      bankAccountNumber: "",
-      bankName: "",
-      bankBranch: "",
-      ifscCode: "",
-      accountHolderName: "",
-      taxId: "",
-      panNumber: "",
-      countryName: "",
-      intBankName: "",
-      ibanAccountNumber: "",
-      swiftBicCode: "",
-      bankAddress: "",
-      beneficiaryName: "",
-      currency: "",
-      iecCode: "",
-    })
-    setSuccessMessage("Vendor added successfully!")
-    setShowSuccessMessage(true)
-    setTimeout(() => setShowSuccessMessage(false), 3000)
   }
 
-  const handleAddPayment = (e) => {
+  const handleAddPayment = async (e) => {
     e.preventDefault()
-    const vendor = vendors.find((v) => v.vendorId === paymentForm.vendorId)
-    const newPayment = {
-      ...paymentForm,
-      vendorName: vendor?.companyName || "Unknown Vendor",
-      purchaseAmount: paymentForm.paymentAmountINR,
-      paidAmount: "0",
-      outstandingAmount: paymentForm.paymentAmountINR,
-      createdAt: new Date().toISOString().split("T")[0],
-      createdBy: currentUserId,
-      updatedBy: currentUserId, // Set updatedBy on creation
+    try {
+      const payload = {
+        vendor_id: paymentForm.vendorId,
+        payment_amount_in_vendor_currency: paymentForm.paymentAmountVendorCurrency,
+        exchangeRate: paymentForm.exchangeRateAgainstINR,
+        due_date: paymentForm.dueDate,
+        purpose: paymentForm.purpose,
+        payment_method: paymentForm.paymentMethod,
+        status: paymentForm.status,
+        createdBy: LOGGED_IN_EMPLOYEE_ID,
+        updatedBy: LOGGED_IN_EMPLOYEE_ID,
+      }
+
+      const response = await fetch("/http://localhost:8000/api/v1/vendor/payment/registerVendorPay", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${employee?.token || ""}`,
+        },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      })
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || "Failed to create payment")
+      }
+      const data = await response.json()
+      setPayments((prev) => [...prev, data.data])
+      setPaymentForm({
+        paymentId: "",
+        vendorId: "",
+        paymentAmountVendorCurrency: "",
+        exchangeRateAgainstINR: "",
+        paymentAmountINR: "",
+        purpose: "",
+        dueDate: "",
+        paymentMethod: "",
+        status: "",
+        createdBy: LOGGED_IN_EMPLOYEE_ID,
+        updatedBy: LOGGED_IN_EMPLOYEE_ID,
+      })
+      setSuccessMessage("Payment record created successfully!")
+      setShowSuccessMessage(true)
+      setTimeout(() => setShowSuccessMessage(false), 3000)
+    } catch (error) {
+      console.error("Error adding payment:", error)
+      setSuccessMessage(error.message || "Failed to create payment")
+      setShowSuccessMessage(true)
+      setTimeout(() => setShowSuccessMessage(false), 3000)
     }
-    setPayments((prev) => [...prev, newPayment])
-    setPaymentForm({
-      paymentId: `PAY-${Date.now()}`,
-      vendorId: "",
-      paymentAmountVendorCurrency: "",
-      exchangeRateAgainstINR: "",
-      paymentAmountINR: "",
-      purpose: "",
-      dueDate: "",
-      paymentMethod: "",
-      status: "",
-      createdBy: currentUserId,
-      updatedBy: currentUserId, // Reset for next form
-    })
-    setSuccessMessage("Payment record created successfully!")
-    setShowSuccessMessage(true)
-    setTimeout(() => setShowSuccessMessage(false), 3000)
   }
 
   const handleEditVendor = (vendor) => {
     setSelectedVendor(vendor)
-    setEditVendorForm({ ...vendor })
+    setEditVendorForm({
+      vendor_id: vendor.vendor_id,
+      company_Name: vendor.company_Name,
+      company_Address: vendor.company_Address,
+      vendor_type: vendor.vendor_type,
+      contactPerson: vendor.contactPerson,
+      vendor_location: vendor.vendor_location,
+      indianBankDetails: vendor.indianBankDetails,
+      internationalBankDetails: vendor.internationalBankDetails,
+      createdBy: vendor.createdBy,
+      updatedBy: LOGGED_IN_EMPLOYEE_ID,
+    })
     setEditVendorDialog(true)
   }
 
-  const handleSaveVendorEdit = () => {
-    setVendors((prev) =>
-      prev.map((vendor) =>
-        vendor.vendorId === selectedVendor.vendorId
-          ? { ...editVendorForm, updatedBy: currentUserId } // Update updatedBy on edit
-          : vendor,
-      ),
-    )
-    setEditVendorDialog(false)
-    setSuccessMessage("Vendor updated successfully!")
-    setShowSuccessMessage(true)
-    setTimeout(() => setShowSuccessMessage(false), 3000)
+  const handleSaveVendorEdit = async () => {
+    try {
+      const payload = {
+        company_Name: editVendorForm.company_Name,
+        company_Address: editVendorForm.company_Address,
+        vendor_type: editVendorForm.vendor_type,
+        contactPerson: editVendorForm.contactPerson,
+        vendor_location: editVendorForm.vendor_location,
+        indianBankDetails: editVendorForm.vendor_location === "Indian" ? editVendorForm.indianBankDetails : undefined,
+        internationalBankDetails: editVendorForm.vendor_location === "International" ? editVendorForm.internationalBankDetails : undefined,
+        updatedBy: LOGGED_IN_EMPLOYEE_ID,
+      }
+
+      const response = await fetch(`http://localhost:8000/api/v1/vendor/update/${editVendorForm.vendor_id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${employee?.token || ""}`,
+        },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      })
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || "Failed to update vendor")
+      }
+      const data = await response.json()
+      setVendors((prev) =>
+        prev.map((vendor) =>
+          vendor.vendor_id === editVendorForm.vendor_id ? data.data : vendor
+        )
+      )
+      setEditVendorDialog(false)
+      setSuccessMessage("Vendor updated successfully!")
+      setShowSuccessMessage(true)
+      setTimeout(() => setShowSuccessMessage(false), 3000)
+    } catch (error) {
+      console.error("Error updating vendor:", error)
+      setSuccessMessage(error.message || "Failed to update vendor")
+      setShowSuccessMessage(true)
+      setTimeout(() => setShowSuccessMessage(false), 3000)
+    }
   }
 
   const handleEditPayment = (payment) => {
     setSelectedPayment(payment)
-    setEditPaymentForm({ ...payment }) // Initialize editPaymentForm
+    setEditPaymentForm({
+      payment_id: payment.payment_id,
+      vendor_id: payment.vendor_id,
+      vendorName: payment.vendor_id.company_Name,
+      currency: payment.currency,
+      payment_amount_in_vendor_currency: payment.payment_amount_in_vendor_currency,
+      exchangeRate: payment.exchangeRate,
+      payment_amount_in_indian_currency: payment.payment_amount_in_indian_currency,
+      due_date: payment.due_date,
+      purpose: payment.purpose,
+      payment_method: payment.payment_method,
+      status: payment.status,
+      createdBy: payment.createdBy,
+      updatedBy: LOGGED_IN_EMPLOYEE_ID,
+    })
     setEditPaymentDialog(true)
   }
 
-  const handleSavePaymentEdit = () => {
-    setPayments((prev) =>
-      prev.map((payment) =>
-        payment.paymentId === selectedPayment.paymentId
-          ? { ...editPaymentForm, updatedBy: currentUserId } // Update updatedBy on edit
-          : payment,
-      ),
-    )
-    setEditPaymentDialog(false)
-    setSuccessMessage("Payment updated successfully!")
-    setShowSuccessMessage(true)
-    setTimeout(() => setShowSuccessMessage(false), 3000)
+  const handleSavePaymentEdit = async () => {
+    try {
+      const payload = {
+        due_date: editPaymentForm.due_date,
+        status: editPaymentForm.status,
+        updatedBy: LOGGED_IN_EMPLOYEE_ID,
+      }
+
+      const response = await fetch(`http://localhost:8000/api/v1/vendor/payment/update/${editPaymentForm.payment_id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${employee?.token || ""}`,
+        },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      })
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || "Failed to update payment")
+      }
+      const data = await response.json()
+      setPayments((prev) =>
+        prev.map((payment) =>
+          payment.payment_id === editPaymentForm.payment_id ? data.data : payment
+        )
+      )
+      setEditPaymentDialog(false)
+      setSuccessMessage("Payment updated successfully!")
+      setShowSuccessMessage(true)
+      setTimeout(() => setShowSuccessMessage(false), 3000)
+    } catch (error) {
+      console.error("Error updating payment:", error)
+      setSuccessMessage(error.message || "Failed to update payment")
+      setShowSuccessMessage(true)
+      setTimeout(() => setShowSuccessMessage(false), 3000)
+    }
   }
 
-  const handleDeleteVendor = (vendorId) => {
-    setVendors((prev) => prev.filter((v) => v.vendorId !== vendorId))
-    setSuccessMessage("Vendor deleted successfully!")
-    setShowSuccessMessage(true)
-    setTimeout(() => setShowSuccessMessage(false), 3000)
+  const handleDeleteVendor = async (vendorId) => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/v1/vendor/delete/${vendorId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${employee?.token || ""}`,
+        },
+      })
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || "Failed to delete vendor")
+      }
+      setVendors((prev) => prev.filter((v) => v.vendor_id !== vendorId))
+      setSuccessMessage("Vendor deleted successfully!")
+      setShowSuccessMessage(true)
+      setTimeout(() => setShowSuccessMessage(false), 3000)
+    } catch (error) {
+      console.error("Error deleting vendor:", error)
+      setSuccessMessage(error.message || "Failed to delete vendor")
+      setShowSuccessMessage(true)
+      setTimeout(() => setShowSuccessMessage(false), 3000)
+    }
   }
 
-  const handleDeletePayment = (paymentId) => {
-    setPayments((prev) => prev.filter((p) => p.paymentId !== paymentId))
-    setSuccessMessage("Payment record deleted successfully!")
-    setShowSuccessMessage(true)
-    setTimeout(() => setShowSuccessMessage(false), 3000)
+  const handleDeletePayment = async (paymentId) => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/v1/vendor/payment/delete/${paymentId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${employee?.token || ""}`,
+        },
+        credentials: "include"
+      })
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || "Failed to delete payment")
+      }
+      setPayments((prev) => prev.filter((p) => p.payment_id !== paymentId))
+      setSuccessMessage("Payment record deleted successfully!")
+      setShowSuccessMessage(true)
+      setTimeout(() => setShowSuccessMessage(false), 3000)
+    } catch (error) {
+      console.error("Error deleting payment:", error)
+      setSuccessMessage(error.message || "Failed to delete payment")
+      setShowSuccessMessage(true)
+      setTimeout(() => setShowSuccessMessage(false), 3000)
+    }
   }
 
   const filteredVendors = vendors.filter((vendor) => {
     const matchesSearch =
-      vendor.companyName.toLowerCase().includes(vendorSearchTerm.toLowerCase()) ||
-      vendor.vendorId.toLowerCase().includes(vendorSearchTerm.toLowerCase())
-
-    const matchesType = vendorTypeFilter === "All" || vendor.vendorTypes.includes(vendorTypeFilter)
-
+      vendor.company_Name.toLowerCase().includes(vendorSearchTerm.toLowerCase()) ||
+      vendor.vendor_id.toLowerCase().includes(vendorSearchTerm.toLowerCase())
+    const matchesType = vendorTypeFilter === "All" || vendor.vendor_type.includes(vendorTypeFilter)
     return matchesSearch && matchesType
   })
 
   const filteredPayments = payments.filter((payment) => {
     const matchesSearch =
-      payment.vendorName.toLowerCase().includes(paymentSearchTerm.toLowerCase()) ||
-      payment.paymentId.toLowerCase().includes(paymentSearchTerm.toLowerCase()) ||
-      payment.vendorId.toLowerCase().includes(paymentSearchTerm.toLowerCase())
+      payment.vendor_id.company_Name.toLowerCase().includes(paymentSearchTerm.toLowerCase()) ||
+      payment.payment_id.toLowerCase().includes(paymentSearchTerm.toLowerCase()) ||
+      payment.vendor_id.toLowerCase().includes(paymentSearchTerm.toLowerCase())
     const matchesStatus = paymentStatusFilter === "All" || payment.status === paymentStatusFilter
     return matchesSearch && matchesStatus
   })
@@ -488,12 +632,7 @@ export default function VendorsPage() {
                     {/* Basic Information */}
                     <div className="space-y-4">
                       <h3 className="text-lg font-semibold">Basic Information</h3>
-
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="vendorId">Vendor ID</Label>
-                          <Input id="vendorId" value={vendorForm.vendorId} readOnly className="bg-gray-50" />
-                        </div>
                         <div className="space-y-2">
                           <Label htmlFor="companyName">Company Name *</Label>
                           <Input
@@ -504,7 +643,6 @@ export default function VendorsPage() {
                           />
                         </div>
                       </div>
-
                       <div className="space-y-2">
                         <Label htmlFor="address">Company Address *</Label>
                         <Textarea
@@ -514,7 +652,6 @@ export default function VendorsPage() {
                           required
                         />
                       </div>
-
                       <div className="space-y-2">
                         <Label>Vendor Types *</Label>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
@@ -525,20 +662,16 @@ export default function VendorsPage() {
                                 checked={vendorForm.vendorTypes.includes(type)}
                                 onCheckedChange={(checked) => handleVendorTypeChange(type, checked)}
                               />
-                              <Label htmlFor={type} className="text-sm">
-                                {type}
-                              </Label>
+                              <Label htmlFor={type} className="text-sm">{type}</Label>
                             </div>
                           ))}
                         </div>
                       </div>
-                      {/* Created By Field */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label htmlFor="createdByVendor">Created By</Label>
                           <Input id="createdByVendor" value={vendorForm.createdBy} readOnly className="bg-gray-50" />
                         </div>
-                        {/* Updated By Field */}
                         <div className="space-y-2">
                           <Label htmlFor="updatedByVendor">Updated By</Label>
                           <Input id="updatedByVendor" value={vendorForm.updatedBy} readOnly className="bg-gray-50" />
@@ -551,7 +684,6 @@ export default function VendorsPage() {
                     {/* Contact Person Details */}
                     <div className="space-y-4">
                       <h3 className="text-lg font-semibold">Contact Person Details</h3>
-
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="space-y-2">
                           <Label htmlFor="contactPersonName">Contact Person Name *</Label>
@@ -577,9 +709,7 @@ export default function VendorsPage() {
                           <Input
                             id="contactPersonNumber"
                             value={vendorForm.contactPersonNumber}
-                            onChange={(e) =>
-                              setVendorForm((prev) => ({ ...prev, contactPersonNumber: e.target.value }))
-                            }
+                            onChange={(e) => setVendorForm((prev) => ({ ...prev, contactPersonNumber: e.target.value }))}
                             required
                           />
                         </div>
@@ -591,7 +721,6 @@ export default function VendorsPage() {
                     {/* Location and Bank Details */}
                     <div className="space-y-4">
                       <h3 className="text-lg font-semibold">Location & Bank Details</h3>
-
                       <div className="space-y-2">
                         <Label htmlFor="location">Vendor Location *</Label>
                         <Select
@@ -608,7 +737,6 @@ export default function VendorsPage() {
                         </Select>
                       </div>
 
-                      {/* Indian Bank Details */}
                       {vendorForm.location === "Indian" && (
                         <div className="space-y-4 p-4 border rounded-lg bg-blue-50">
                           <h4 className="font-medium text-blue-900">Indian Bank Details</h4>
@@ -618,9 +746,7 @@ export default function VendorsPage() {
                               <Input
                                 id="bankAccountNumber"
                                 value={vendorForm.bankAccountNumber}
-                                onChange={(e) =>
-                                  setVendorForm((prev) => ({ ...prev, bankAccountNumber: e.target.value }))
-                                }
+                                onChange={(e) => setVendorForm((prev) => ({ ...prev, bankAccountNumber: e.target.value }))}
                                 required
                               />
                             </div>
@@ -656,9 +782,7 @@ export default function VendorsPage() {
                               <Input
                                 id="accountHolderName"
                                 value={vendorForm.accountHolderName}
-                                onChange={(e) =>
-                                  setVendorForm((prev) => ({ ...prev, accountHolderName: e.target.value }))
-                                }
+                                onChange={(e) => setVendorForm((prev) => ({ ...prev, accountHolderName: e.target.value }))}
                                 required
                               />
                             </div>
@@ -682,7 +806,6 @@ export default function VendorsPage() {
                         </div>
                       )}
 
-                      {/* International Bank Details */}
                       {vendorForm.location === "International" && (
                         <div className="space-y-4 p-4 border rounded-lg bg-green-50">
                           <h4 className="font-medium text-green-900">International Bank Details</h4>
@@ -710,9 +833,7 @@ export default function VendorsPage() {
                               <Input
                                 id="ibanAccountNumber"
                                 value={vendorForm.ibanAccountNumber}
-                                onChange={(e) =>
-                                  setVendorForm((prev) => ({ ...prev, ibanAccountNumber: e.target.value }))
-                                }
+                                onChange={(e) => setVendorForm((prev) => ({ ...prev, ibanAccountNumber: e.target.value }))}
                                 required
                               />
                             </div>
@@ -739,9 +860,7 @@ export default function VendorsPage() {
                               <Input
                                 id="beneficiaryName"
                                 value={vendorForm.beneficiaryName}
-                                onChange={(e) =>
-                                  setVendorForm((prev) => ({ ...prev, beneficiaryName: e.target.value }))
-                                }
+                                onChange={(e) => setVendorForm((prev) => ({ ...prev, beneficiaryName: e.target.value }))}
                                 required
                               />
                             </div>
@@ -826,21 +945,20 @@ export default function VendorsPage() {
 
                     <div className="grid gap-4">
                       {filteredVendors.map((vendor) => (
-                        <Card key={vendor.vendorId} className="border-l-4 border-l-blue-500">
+                        <Card key={vendor.vendor_id} className="border-l-4 border-l-blue-500">
                           <CardContent className="p-6">
                             <div className="flex justify-between items-start mb-4">
                               <div>
-                                <h3 className="text-lg font-semibold">{vendor.companyName}</h3>
-                                <p className="text-sm text-gray-600">ID: {vendor.vendorId}</p>
+                                <h3 className="text-lg font-semibold">{vendor.company_Name}</h3>
+                                <p className="text-sm text-gray-600">ID: {vendor.vendor_id}</p>
                                 <p className="text-sm text-gray-600">Created By: {vendor.createdBy}</p>
-                                <p className="text-sm text-gray-600">Updated By: {vendor.updatedBy}</p>{" "}
-                                {/* Display Updated By */}
+                                <p className="text-sm text-gray-600">Updated By: {vendor.updatedBy}</p>
                               </div>
                               <div className="flex space-x-2">
                                 <Button size="sm" variant="outline" onClick={() => handleEditVendor(vendor)}>
                                   <Edit className="h-4 w-4" />
                                 </Button>
-                                <Button size="sm" variant="outline" onClick={() => handleDeleteVendor(vendor.vendorId)}>
+                                <Button size="sm" variant="outline" onClick={() => handleDeleteVendor(vendor.vendor_id)}>
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
@@ -850,79 +968,73 @@ export default function VendorsPage() {
                               <div className="space-y-2">
                                 <div className="flex items-center text-sm">
                                   <MapPin className="h-4 w-4 mr-2 text-gray-400" />
-                                  {vendor.address}
+                                  {vendor.company_Address}
                                 </div>
                                 <div className="flex items-center text-sm">
                                   <User className="h-4 w-4 mr-2 text-gray-400" />
-                                  {vendor.contactPersonName}
+                                  {vendor.contactPerson.name}
                                 </div>
                                 <div className="flex items-center text-sm">
                                   <Mail className="h-4 w-4 mr-2 text-gray-400" />
-                                  {vendor.contactPersonEmail}
+                                  {vendor.contactPerson.email}
                                 </div>
                                 <div className="flex items-center text-sm">
                                   <Phone className="h-4 w-4 mr-2 text-gray-400" />
-                                  {vendor.contactPersonNumber}
+                                  {vendor.contactPerson.number}
                                 </div>
                               </div>
                               <div className="space-y-2">
                                 <div className="flex items-center text-sm">
                                   <Building className="h-4 w-4 mr-2 text-gray-400" />
-                                  Location: {vendor.location}
+                                  Location: {vendor.vendor_location}
                                 </div>
-
-                                {/* Bank Details Section */}
-                                {vendor.location === "Indian" && vendor.bankName && (
+                                {vendor.vendor_location === "Indian" && vendor.indianBankDetails && (
                                   <div className="space-y-1 p-2 bg-blue-50 rounded border-l-2 border-blue-200">
                                     <p className="text-xs font-medium text-blue-800 mb-1">Bank Details</p>
                                     <div className="flex items-center text-xs">
                                       <Building2 className="h-3 w-3 mr-1 text-blue-600" />
-                                      {vendor.bankName}
+                                      {vendor.indianBankDetails.bankName}
                                     </div>
-                                    {vendor.bankBranch && (
-                                      <div className="text-xs text-blue-700">Branch: {vendor.bankBranch}</div>
+                                    {vendor.indianBankDetails.bankBranch && (
+                                      <div className="text-xs text-blue-700">Branch: {vendor.indianBankDetails.bankBranch}</div>
                                     )}
-                                    {vendor.ifscCode && (
-                                      <div className="text-xs text-blue-700">IFSC: {vendor.ifscCode}</div>
+                                    {vendor.indianBankDetails.ifscCode && (
+                                      <div className="text-xs text-blue-700">IFSC: {vendor.indianBankDetails.ifscCode}</div>
                                     )}
-                                    {vendor.bankAccountNumber && (
-                                      <div className="text-xs text-blue-700">A/C: {vendor.bankAccountNumber}</div>
+                                    {vendor.indianBankDetails.bankAccountNumber && (
+                                      <div className="text-xs text-blue-700">A/C: {vendor.indianBankDetails.bankAccountNumber}</div>
                                     )}
-                                    {vendor.accountHolderName && (
-                                      <div className="text-xs text-blue-700">Holder: {vendor.accountHolderName}</div>
+                                    {vendor.indianBankDetails.accountHolderName && (
+                                      <div className="text-xs text-blue-700">Holder: {vendor.indianBankDetails.accountHolderName}</div>
                                     )}
                                   </div>
                                 )}
-
-                                {vendor.location === "International" && vendor.intBankName && (
+                                {vendor.vendor_location === "International" && vendor.internationalBankDetails && (
                                   <div className="space-y-1 p-2 bg-green-50 rounded border-l-2 border-green-200">
                                     <p className="text-xs font-medium text-green-800 mb-1">Bank Details</p>
                                     <div className="flex items-center text-xs">
                                       <Building2 className="h-3 w-3 mr-1 text-green-600" />
-                                      {vendor.intBankName}
+                                      {vendor.internationalBankDetails.bankName}
                                     </div>
-                                    {vendor.countryName && (
-                                      <div className="text-xs text-green-700">Country: {vendor.countryName}</div>
+                                    {vendor.internationalBankDetails.countryName && (
+                                      <div className="text-xs text-green-700">Country: {vendor.internationalBankDetails.countryName}</div>
                                     )}
-                                    {vendor.swiftBicCode && (
-                                      <div className="text-xs text-green-700">SWIFT: {vendor.swiftBicCode}</div>
+                                    {vendor.internationalBankDetails.swiftBicCode && (
+                                      <div className="text-xs text-green-700">SWIFT: {vendor.internationalBankDetails.swiftBicCode}</div>
                                     )}
-                                    {vendor.ibanAccountNumber && (
-                                      <div className="text-xs text-green-700">IBAN: {vendor.ibanAccountNumber}</div>
+                                    {vendor.internationalBankDetails.ibanOrAccountNumber && (
+                                      <div className="text-xs text-green-700">IBAN: {vendor.internationalBankDetails.ibanOrAccountNumber}</div>
                                     )}
-                                    {vendor.currency && (
-                                      <div className="text-xs text-green-700">Currency: {vendor.currency}</div>
+                                    {vendor.internationalBankDetails.currency && (
+                                      <div className="text-xs text-green-700">Currency: {vendor.internationalBankDetails.currency}</div>
                                     )}
-                                    {vendor.beneficiaryName && (
-                                      <div className="text-xs text-green-700">
-                                        Beneficiary: {vendor.beneficiaryName}
-                                      </div>
+                                    {vendor.internationalBankDetails.beneficiaryName && (
+                                      <div className="text-xs text-green-700">Beneficiary: {vendor.internationalBankDetails.beneficiaryName}</div>
                                     )}
                                   </div>
                                 )}
-
                                 <div className="flex flex-wrap gap-1 mt-2">
-                                  {vendor.vendorTypes.map((type) => (
+                                  {vendor.vendor_type.map((type) => (
                                     <Badge key={type} variant="secondary" className="text-xs">
                                       {type}
                                     </Badge>
@@ -959,10 +1071,6 @@ export default function VendorsPage() {
                   <form onSubmit={handleAddPayment} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="paymentId">Payment ID</Label>
-                        <Input id="paymentId" value={paymentForm.paymentId} readOnly className="bg-gray-50" />
-                      </div>
-                      <div className="space-y-2">
                         <Label htmlFor="vendorIdPayment">Vendor ID *</Label>
                         <Select
                           value={paymentForm.vendorId}
@@ -973,34 +1081,30 @@ export default function VendorsPage() {
                           </SelectTrigger>
                           <SelectContent>
                             {vendors.map((vendor) => (
-                              <SelectItem key={vendor.vendorId} value={vendor.vendorId}>
-                                {vendor.vendorId} - {vendor.companyName}
+                              <SelectItem key={vendor.vendor_id} value={vendor.vendor_id}>
+                                {vendor.vendor_id} - {vendor.company_Name}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </div>
                     </div>
-
-                    {/* Created By Field for Payment */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="createdByPayment">Created By</Label>
                         <Input id="createdByPayment" value={paymentForm.createdBy} readOnly className="bg-gray-50" />
                       </div>
-                      {/* Updated By Field for Payment */}
                       <div className="space-y-2">
                         <Label htmlFor="updatedByPayment">Updated By</Label>
                         <Input id="updatedByPayment" value={paymentForm.updatedBy} readOnly className="bg-gray-50" />
                       </div>
                     </div>
-
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="vendorCurrency">Vendor Currency</Label>
                         <Input
                           id="vendorCurrency"
-                          value={getSelectedVendor()?.currency || ""}
+                          value={getSelectedVendor()?.internationalBankDetails?.currency || getSelectedVendor()?.currency || ""}
                           readOnly
                           className="bg-gray-50"
                           placeholder="Select vendor first"
@@ -1019,11 +1123,10 @@ export default function VendorsPage() {
                           required
                         />
                         <p className="text-xs text-gray-500">
-                          Amount in {getSelectedVendor()?.currency || "vendor currency"}
+                          Amount in {getSelectedVendor()?.internationalBankDetails?.currency || getSelectedVendor()?.currency || "vendor currency"}
                         </p>
                       </div>
                     </div>
-
                     <div className="space-y-2">
                       <Label htmlFor="exchangeRateAgainstINR">Exchange Rate (against INR) *</Label>
                       <Input
@@ -1035,9 +1138,8 @@ export default function VendorsPage() {
                         placeholder="Enter exchange rate"
                         required
                       />
-                      <p className="text-xs text-gray-500">1 {getSelectedVendor()?.currency || "Currency"} = ? INR</p>
+                      <p className="text-xs text-gray-500">1 {getSelectedVendor()?.internationalBankDetails?.currency || getSelectedVendor()?.currency || "Currency"} = ? INR</p>
                     </div>
-
                     <div className="space-y-2">
                       <Label htmlFor="paymentAmountINR">Payment Amount (in INR)</Label>
                       <div className="relative">
@@ -1052,7 +1154,6 @@ export default function VendorsPage() {
                         />
                       </div>
                     </div>
-
                     <div className="space-y-2">
                       <Label htmlFor="purpose">Purpose</Label>
                       <Textarea
@@ -1062,7 +1163,6 @@ export default function VendorsPage() {
                         placeholder="Enter payment purpose (optional)"
                       />
                     </div>
-
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="dueDate">Due Date *</Label>
@@ -1111,7 +1211,6 @@ export default function VendorsPage() {
                         </Select>
                       </div>
                     </div>
-
                     <Button type="submit" className="w-full">
                       <CreditCard className="h-4 w-4 mr-2" />
                       Create Payment Record
@@ -1162,16 +1261,15 @@ export default function VendorsPage() {
 
                     <div className="grid gap-4">
                       {filteredPayments.map((payment) => (
-                        <Card key={payment.paymentId} className="border-l-4 border-l-green-500">
+                        <Card key={payment.payment_id} className="border-l-4 border-l-green-500">
                           <CardContent className="p-6">
                             <div className="flex justify-between items-start mb-4">
                               <div>
-                                <h3 className="text-lg font-semibold">{payment.vendorName}</h3>
-                                <p className="text-sm text-gray-600">Payment ID: {payment.paymentId}</p>
-                                <p className="text-sm text-gray-600">Vendor ID: {payment.vendorId}</p>
+                                <h3 className="text-lg font-semibold">{payment.vendor_id.company_Name}</h3>
+                                <p className="text-sm text-gray-600">Payment ID: {payment.payment_id}</p>
+                                <p className="text-sm text-gray-600">Vendor ID: {payment.vendor_id.vendor_id}</p>
                                 <p className="text-sm text-gray-600">Created By: {payment.createdBy}</p>
-                                <p className="text-sm text-gray-600">Updated By: {payment.updatedBy}</p>{" "}
-                                {/* Display Updated By */}
+                                <p className="text-sm text-gray-600">Updated By: {payment.updatedBy}</p>
                               </div>
                               <div className="flex items-center space-x-2">
                                 <Badge
@@ -1193,36 +1291,34 @@ export default function VendorsPage() {
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  onClick={() => handleDeletePayment(payment.paymentId)}
+                                  onClick={() => handleDeletePayment(payment.payment_id)}
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
                             </div>
-
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                               <div className="space-y-1">
                                 <p className="text-sm font-medium text-gray-500">Purchase Amount</p>
-                                <p className="text-lg font-semibold text-blue-600">₹{payment.purchaseAmount}</p>
+                                <p className="text-lg font-semibold text-blue-600">₹{payment.payment_amount_in_indian_currency}</p>
                               </div>
                               <div className="space-y-1">
                                 <p className="text-sm font-medium text-gray-500">Paid Amount</p>
-                                <p className="text-lg font-semibold text-green-600">₹{payment.paidAmount}</p>
+                                <p className="text-lg font-semibold text-green-600">₹0</p>
                               </div>
                               <div className="space-y-1">
                                 <p className="text-sm font-medium text-gray-500">Outstanding Amount</p>
-                                <p className="text-lg font-semibold text-red-600">₹{payment.outstandingAmount}</p>
+                                <p className="text-lg font-semibold text-red-600">₹{payment.payment_amount_in_indian_currency}</p>
                               </div>
                               <div className="space-y-1">
                                 <p className="text-sm font-medium text-gray-500">Due Date</p>
-                                <p className="text-sm">{payment.dueDate}</p>
+                                <p className="text-sm">{payment.due_date}</p>
                               </div>
                               <div className="space-y-1">
                                 <p className="text-sm font-medium text-gray-500">Payment Method</p>
-                                <p className="text-sm">{payment.paymentMethod}</p>
+                                <p className="text-sm">{payment.payment_method}</p>
                               </div>
                             </div>
-
                             {payment.purpose && (
                               <div className="mt-4">
                                 <p className="text-sm font-medium text-gray-500">Purpose</p>
@@ -1256,27 +1352,26 @@ export default function VendorsPage() {
           </DialogHeader>
           {selectedVendor && (
             <div className="space-y-6 pr-2">
-              {/* Basic Information */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Basic Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Vendor ID</Label>
-                    <Input value={editVendorForm.vendorId || ""} readOnly className="bg-gray-50" />
+                    <Input value={editVendorForm.vendor_id || ""} readOnly className="bg-gray-50" />
                   </div>
                   <div className="space-y-2">
                     <Label>Company Name</Label>
                     <Input
-                      value={editVendorForm.companyName || ""}
-                      onChange={(e) => setEditVendorForm((prev) => ({ ...prev, companyName: e.target.value }))}
+                      value={editVendorForm.company_Name || ""}
+                      onChange={(e) => setEditVendorForm((prev) => ({ ...prev, company_Name: e.target.value }))}
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label>Address</Label>
                   <Textarea
-                    value={editVendorForm.address || ""}
-                    onChange={(e) => setEditVendorForm((prev) => ({ ...prev, address: e.target.value }))}
+                    value={editVendorForm.company_Address || ""}
+                    onChange={(e) => setEditVendorForm((prev) => ({ ...prev, company_Address: e.target.value }))}
                   />
                 </div>
                 <div className="space-y-2">
@@ -1286,57 +1381,60 @@ export default function VendorsPage() {
                       <div key={type} className="flex items-center space-x-2">
                         <Checkbox
                           id={`edit-${type}`}
-                          checked={(editVendorForm.vendorTypes || []).includes(type)}
+                          checked={(editVendorForm.vendor_type || []).includes(type)}
                           onCheckedChange={(checked) => handleEditVendorTypeChange(type, checked)}
                         />
-                        <Label htmlFor={`edit-${type}`} className="text-sm">
-                          {type}
-                        </Label>
+                        <Label htmlFor={`edit-${type}`} className="text-sm">{type}</Label>
                       </div>
                     ))}
                   </div>
                 </div>
-                {/* Created By Field in Edit Dialog */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Created By</Label>
                     <Input value={editVendorForm.createdBy || ""} readOnly className="bg-gray-50" />
                   </div>
-                  {/* Updated By Field in Edit Dialog */}
                   <div className="space-y-2">
                     <Label>Updated By</Label>
-                    <Input value={currentUserId} readOnly className="bg-gray-50" />{" "}
-                    {/* Always show current user for updatedBy */}
+                    <Input value={LOGGED_IN_EMPLOYEE_ID} readOnly className="bg-gray-50" />
                   </div>
                 </div>
               </div>
 
               <Separator />
 
-              {/* Contact Person Details */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Contact Person Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label>Contact Person Name</Label>
                     <Input
-                      value={editVendorForm.contactPersonName || ""}
-                      onChange={(e) => setEditVendorForm((prev) => ({ ...prev, contactPersonName: e.target.value }))}
+                      value={editVendorForm.contactPerson?.name || ""}
+                      onChange={(e) => setEditVendorForm((prev) => ({
+                        ...prev,
+                        contactPerson: { ...prev.contactPerson, name: e.target.value }
+                      }))}
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>Contact Person Email</Label>
                     <Input
                       type="email"
-                      value={editVendorForm.contactPersonEmail || ""}
-                      onChange={(e) => setEditVendorForm((prev) => ({ ...prev, contactPersonEmail: e.target.value }))}
+                      value={editVendorForm.contactPerson?.email || ""}
+                      onChange={(e) => setEditVendorForm((prev) => ({
+                        ...prev,
+                        contactPerson: { ...prev.contactPerson, email: e.target.value }
+                      }))}
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>Contact Person Number</Label>
                     <Input
-                      value={editVendorForm.contactPersonNumber || ""}
-                      onChange={(e) => setEditVendorForm((prev) => ({ ...prev, contactPersonNumber: e.target.value }))}
+                      value={editVendorForm.contactPerson?.number || ""}
+                      onChange={(e) => setEditVendorForm((prev) => ({
+                        ...prev,
+                        contactPerson: { ...prev.contactPerson, number: e.target.value }
+                      }))}
                     />
                   </div>
                 </div>
@@ -1344,14 +1442,13 @@ export default function VendorsPage() {
 
               <Separator />
 
-              {/* Location and Bank Details */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Location & Bank Details</h3>
                 <div className="space-y-2">
                   <Label>Vendor Location</Label>
                   <Select
-                    value={editVendorForm.location || ""}
-                    onValueChange={(value) => setEditVendorForm((prev) => ({ ...prev, location: value }))}
+                    value={editVendorForm.vendor_location || ""}
+                    onValueChange={(value) => setEditVendorForm((prev) => ({ ...prev, vendor_location: value }))}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select vendor location" />
@@ -1363,122 +1460,156 @@ export default function VendorsPage() {
                   </Select>
                 </div>
 
-                {/* Indian Bank Details */}
-                {editVendorForm.location === "Indian" && (
+                {editVendorForm.vendor_location === "Indian" && (
                   <div className="space-y-4 p-4 border rounded-lg bg-blue-50">
                     <h4 className="font-medium text-blue-900">Indian Bank Details</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Bank Account Number</Label>
                         <Input
-                          value={editVendorForm.bankAccountNumber || ""}
-                          onChange={(e) =>
-                            setEditVendorForm((prev) => ({ ...prev, bankAccountNumber: e.target.value }))
-                          }
+                          value={editVendorForm.indianBankDetails?.bankAccountNumber || ""}
+                          onChange={(e) => setEditVendorForm((prev) => ({
+                            ...prev,
+                            indianBankDetails: { ...prev.indianBankDetails, bankAccountNumber: e.target.value }
+                          }))}
                         />
                       </div>
                       <div className="space-y-2">
                         <Label>Bank Name</Label>
                         <Input
-                          value={editVendorForm.bankName || ""}
-                          onChange={(e) => setEditVendorForm((prev) => ({ ...prev, bankName: e.target.value }))}
+                          value={editVendorForm.indianBankDetails?.bankName || ""}
+                          onChange={(e) => setEditVendorForm((prev) => ({
+                            ...prev,
+                            indianBankDetails: { ...prev.indianBankDetails, bankName: e.target.value }
+                          }))}
                         />
                       </div>
                       <div className="space-y-2">
                         <Label>Bank Branch</Label>
                         <Input
-                          value={editVendorForm.bankBranch || ""}
-                          onChange={(e) => setEditVendorForm((prev) => ({ ...prev, bankBranch: e.target.value }))}
+                          value={editVendorForm.indianBankDetails?.bankBranch || ""}
+                          onChange={(e) => setEditVendorForm((prev) => ({
+                            ...prev,
+                            indianBankDetails: { ...prev.indianBankDetails, bankBranch: e.target.value }
+                          }))}
                         />
                       </div>
                       <div className="space-y-2">
                         <Label>IFSC Code</Label>
                         <Input
-                          value={editVendorForm.ifscCode || ""}
-                          onChange={(e) => setEditVendorForm((prev) => ({ ...prev, ifscCode: e.target.value }))}
+                          value={editVendorForm.indianBankDetails?.ifscCode || ""}
+                          onChange={(e) => setEditVendorForm((prev) => ({
+                            ...prev,
+                            indianBankDetails: { ...prev.indianBankDetails, ifscCode: e.target.value }
+                          }))}
                         />
                       </div>
                       <div className="space-y-2">
                         <Label>Account Holder Name</Label>
                         <Input
-                          value={editVendorForm.accountHolderName || ""}
-                          onChange={(e) =>
-                            setEditVendorForm((prev) => ({ ...prev, accountHolderName: e.target.value }))
-                          }
+                          value={editVendorForm.indianBankDetails?.accountHolderName || ""}
+                          onChange={(e) => setEditVendorForm((prev) => ({
+                            ...prev,
+                            indianBankDetails: { ...prev.indianBankDetails, accountHolderName: e.target.value }
+                          }))}
                         />
                       </div>
                       <div className="space-y-2">
                         <Label>Tax ID</Label>
                         <Input
-                          value={editVendorForm.taxId || ""}
-                          onChange={(e) => setEditVendorForm((prev) => ({ ...prev, taxId: e.target.value }))}
+                          value={editVendorForm.indianBankDetails?.taxId || ""}
+                          onChange={(e) => setEditVendorForm((prev) => ({
+                            ...prev,
+                            indianBankDetails: { ...prev.indianBankDetails, taxId: e.target.value }
+                          }))}
                         />
                       </div>
                       <div className="space-y-2">
                         <Label>PAN Number</Label>
                         <Input
-                          value={editVendorForm.panNumber || ""}
-                          onChange={(e) => setEditVendorForm((prev) => ({ ...prev, panNumber: e.target.value }))}
+                          value={editVendorForm.indianBankDetails?.panNumber || ""}
+                          onChange={(e) => setEditVendorForm((prev) => ({
+                            ...prev,
+                            indianBankDetails: { ...prev.indianBankDetails, panNumber: e.target.value }
+                          }))}
                         />
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* International Bank Details */}
-                {editVendorForm.location === "International" && (
+                {editVendorForm.vendor_location === "International" && (
                   <div className="space-y-4 p-4 border rounded-lg bg-green-50">
                     <h4 className="font-medium text-green-900">International Bank Details</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Country Name</Label>
                         <Input
-                          value={editVendorForm.countryName || ""}
-                          onChange={(e) => setEditVendorForm((prev) => ({ ...prev, countryName: e.target.value }))}
+                          value={editVendorForm.internationalBankDetails?.countryName || ""}
+                          onChange={(e) => setEditVendorForm((prev) => ({
+                            ...prev,
+                            internationalBankDetails: { ...prev.internationalBankDetails, countryName: e.target.value }
+                          }))}
                         />
                       </div>
                       <div className="space-y-2">
                         <Label>Bank Name</Label>
                         <Input
-                          value={editVendorForm.intBankName || ""}
-                          onChange={(e) => setEditVendorForm((prev) => ({ ...prev, intBankName: e.target.value }))}
+                          value={editVendorForm.internationalBankDetails?.bankName || ""}
+                          onChange={(e) => setEditVendorForm((prev) => ({
+                            ...prev,
+                            internationalBankDetails: { ...prev.internationalBankDetails, bankName: e.target.value }
+                          }))}
                         />
                       </div>
                       <div className="space-y-2">
                         <Label>IBAN/Bank Account Number</Label>
                         <Input
-                          value={editVendorForm.ibanAccountNumber || ""}
-                          onChange={(e) =>
-                            setEditVendorForm((prev) => ({ ...prev, ibanAccountNumber: e.target.value }))
-                          }
+                          value={editVendorForm.internationalBankDetails?.ibanOrAccountNumber || ""}
+                          onChange={(e) => setEditVendorForm((prev) => ({
+                            ...prev,
+                            internationalBankDetails: { ...prev.internationalBankDetails, ibanOrAccountNumber: e.target.value }
+                          }))}
                         />
                       </div>
                       <div className="space-y-2">
                         <Label>SWIFT/BIC Code</Label>
                         <Input
-                          value={editVendorForm.swiftBicCode || ""}
-                          onChange={(e) => setEditVendorForm((prev) => ({ ...prev, swiftBicCode: e.target.value }))}
+                          value={editVendorForm.internationalBankDetails?.swiftBicCode || ""}
+                          onChange={(e) => setEditVendorForm((prev) => ({
+                            ...prev,
+                            internationalBankDetails: { ...prev.internationalBankDetails, swiftBicCode: e.target.value }
+                          }))}
                         />
                       </div>
                       <div className="space-y-2">
                         <Label>Bank Address</Label>
                         <Input
-                          value={editVendorForm.bankAddress || ""}
-                          onChange={(e) => setEditVendorForm((prev) => ({ ...prev, bankAddress: e.target.value }))}
+                          value={editVendorForm.internationalBankDetails?.bankAddress || ""}
+                          onChange={(e) => setEditVendorForm((prev) => ({
+                            ...prev,
+                            internationalBankDetails: { ...prev.internationalBankDetails, bankAddress: e.target.value }
+                          }))}
                         />
                       </div>
                       <div className="space-y-2">
                         <Label>Beneficiary Name</Label>
                         <Input
-                          value={editVendorForm.beneficiaryName || ""}
-                          onChange={(e) => setEditVendorForm((prev) => ({ ...prev, beneficiaryName: e.target.value }))}
+                          value={editVendorForm.internationalBankDetails?.beneficiaryName || ""}
+                          onChange={(e) => setEditVendorForm((prev) => ({
+                            ...prev,
+                            internationalBankDetails: { ...prev.internationalBankDetails, beneficiaryName: e.target.value }
+                          }))}
                         />
                       </div>
                       <div className="space-y-2">
                         <Label>Currency</Label>
                         <Select
-                          value={editVendorForm.currency || ""}
-                          onValueChange={(value) => setEditVendorForm((prev) => ({ ...prev, currency: value }))}
+                          value={editVendorForm.internationalBankDetails?.currency || ""}
+                          onValueChange={(value) => setEditVendorForm((prev) => ({
+                            ...prev,
+                            internationalBankDetails: { ...prev.internationalBankDetails, currency: value }
+                          }))}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select currency" />
@@ -1495,8 +1626,11 @@ export default function VendorsPage() {
                       <div className="space-y-2">
                         <Label>Importer Exporter Code (IEC)</Label>
                         <Input
-                          value={editVendorForm.iecCode || ""}
-                          onChange={(e) => setEditVendorForm((prev) => ({ ...prev, iecCode: e.target.value }))}
+                          value={editVendorForm.internationalBankDetails?.iecCode || ""}
+                          onChange={(e) => setEditVendorForm((prev) => ({
+                            ...prev,
+                            internationalBankDetails: { ...prev.internationalBankDetails, iecCode: e.target.value }
+                          }))}
                         />
                       </div>
                     </div>
@@ -1526,7 +1660,7 @@ export default function VendorsPage() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label>Payment ID</Label>
-                <Input value={editPaymentForm.paymentId || ""} className="bg-gray-50" readOnly />
+                <Input value={editPaymentForm.payment_id || ""} className="bg-gray-50" readOnly />
               </div>
               <div className="space-y-2">
                 <Label>Vendor Name</Label>
@@ -1538,48 +1672,14 @@ export default function VendorsPage() {
               </div>
               <div className="space-y-2">
                 <Label>Updated By</Label>
-                <Input value={currentUserId} className="bg-gray-50" readOnly />{" "}
-                {/* Always show current user for updatedBy */}
-              </div>
-              <div className="space-y-2">
-                <Label>Purchase Amount</Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
-                  <Input
-                    value={editPaymentForm.purchaseAmount || ""}
-                    onChange={(e) => setEditPaymentForm((prev) => ({ ...prev, purchaseAmount: e.target.value }))}
-                    className="pl-8"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Paid Amount</Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
-                  <Input
-                    value={editPaymentForm.paidAmount || ""}
-                    onChange={(e) => setEditPaymentForm((prev) => ({ ...prev, paidAmount: e.target.value }))}
-                    className="pl-8"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Outstanding Amount</Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
-                  <Input
-                    value={editPaymentForm.outstandingAmount || ""}
-                    onChange={(e) => setEditPaymentForm((prev) => ({ ...prev, outstandingAmount: e.target.value }))}
-                    className="pl-8"
-                  />
-                </div>
+                <Input value={LOGGED_IN_EMPLOYEE_ID} className="bg-gray-50" readOnly />
               </div>
               <div className="space-y-2">
                 <Label>Due Date</Label>
                 <Input
                   type="date"
-                  value={editPaymentForm.dueDate || ""}
-                  onChange={(e) => setEditPaymentForm((prev) => ({ ...prev, dueDate: e.target.value }))}
+                  value={editPaymentForm.due_date || ""}
+                  onChange={(e) => setEditPaymentForm((prev) => ({ ...prev, due_date: e.target.value }))}
                 />
               </div>
               <div className="space-y-2">
@@ -1599,31 +1699,6 @@ export default function VendorsPage() {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Payment Method</Label>
-                <Select
-                  value={editPaymentForm.paymentMethod || ""}
-                  onValueChange={(value) => setEditPaymentForm((prev) => ({ ...prev, paymentMethod: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {paymentMethods.map((method) => (
-                      <SelectItem key={method} value={method}>
-                        {method}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Purpose</Label>
-                <Textarea
-                  value={editPaymentForm.purpose || ""}
-                  onChange={(e) => setEditPaymentForm((prev) => ({ ...prev, purpose: e.target.value }))}
-                />
               </div>
               <div className="flex justify-end space-x-2">
                 <Button variant="outline" onClick={() => setEditPaymentDialog(false)}>

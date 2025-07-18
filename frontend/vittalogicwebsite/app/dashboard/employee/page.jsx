@@ -101,7 +101,7 @@ export default function EmployeePage() {
 
     const fetchRoles = async () => {
       try {
-        const res = await fetch(`http://localhost:8000/api/v1/emp/salary/roles-employees`);
+        const res = await fetch(`http://localhost:8000/api/v1/emp/salary/dropdown-data`);
         const data = await res.json();
         if (data.success) {
           setAvailableRoles(data.data.roles);
@@ -122,7 +122,7 @@ export default function EmployeePage() {
     const fetchEmployees = async () => {
       try {
         const res = await fetch(
-          `http://localhost:8000/api/v1/emp/salary/roles-employees`
+          `http://localhost:8000/api/v1/emp/salary/dropdown-data`
         );
         const data = await res.json();
         if (data.success) {

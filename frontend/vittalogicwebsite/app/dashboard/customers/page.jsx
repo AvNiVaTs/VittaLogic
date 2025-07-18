@@ -1,19 +1,9 @@
 "use client"
 
-import { DialogTrigger } from "@/components/ui/dialog"
-
-import { ArrowLeft, Users, CreditCard, Info, Plus, Save, Search, Edit, Trash2 } from "lucide-react"
-import Link from "next/link"
-import { useState, useEffect } from "react"
-
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
@@ -21,129 +11,25 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
+  DialogTitle, DialogTrigger
 } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
+import { ArrowLeft, CreditCard, Edit, Info, Plus, Save, Search, Trash2, Users } from "lucide-react"
+import Link from "next/link"
+import { useEffect, useState } from "react"
 
-// Mock logged-in user
-const LOGGED_IN_EMPLOYEE_ID = "EMP001"
-
-// Mock existing customers with payments
-const mockCustomers = [
-  {
-    id: "CUST_1703123456789",
-    companyName: "Tech Solutions Ltd",
-    address: "123 Business Park, Mumbai, MH 400001",
-    email: "contact@techsolutions.com",
-    types: ["Technology", "B2B"],
-    contactPerson: {
-      name: "Rajesh Kumar",
-      email: "rajesh@techsolutions.com",
-      number: "+91-9876543210",
-    },
-    location: "indian",
-    createdBy: "EMP001",
-    updatedBy: "EMP001", // Added updatedBy
-    createdAt: "2024-01-15",
-    indianDetails: {
-      industry: "Information Technology",
-      billingAddress: "123 Business Park, Mumbai, MH 400001",
-      state: "Maharashtra",
-      receiverName: "Rajesh Kumar",
-      receiverContact: "+91-9876543210",
-      shippingAddresses: ["123 Business Park, Mumbai", "456 Tech Center, Pune"],
-      priority: "high",
-      shippingMethod: "road",
-      bankAccount: "1234567890",
-      bankName: "HDFC Bank",
-      bankBranch: "Mumbai Central",
-      ifscCode: "HDFC0001234",
-      accountHolder: "Tech Solutions Ltd",
-      gstin: "27ABCDE1234F1Z5",
-      panNumber: "ABCDE1234F",
-    },
-    payments: [
-      {
-        paymentId: "PAY_1703123456790",
-        createdBy: "EMP001", // Added createdBy
-        updatedBy: "EMP001", // Added updatedBy
-        purchaseAmount: 75000,
-        paidAmount: 25000,
-        amount: 50000,
-        purpose: "Software License Payment",
-        dueDate: "2024-02-15",
-        status: "pending",
-        creditLimit: 100000,
-        creditDays: 30,
-        outstandingAmount: 75000,
-        receivablesAging: "0-30",
-        currency: "INR",
-        exchangeRate: 1,
-        paymentCreationDate: "2024-01-15T10:30:00Z",
-      },
-    ],
-  },
-  {
-    id: "CUST_1703123456791",
-    companyName: "Global Manufacturing Inc",
-    address: "456 Industrial Zone, New York, NY 10001",
-    email: "info@globalmanufacturing.com",
-    types: ["Manufacturing", "B2B", "Enterprise"],
-    contactPerson: {
-      name: "John Smith",
-      email: "john@globalmanufacturing.com",
-      number: "+1-555-123-4567",
-    },
-    location: "international",
-    createdBy: "EMP002",
-    updatedBy: "EMP002", // Added updatedBy
-    createdAt: "2024-01-20",
-    internationalDetails: {
-      billingAddress: "456 Industrial Zone, New York, NY 10001",
-      industry: "Manufacturing",
-      tinVatEin: "US123456789",
-      receiverName: "John Smith",
-      receiverContact: "+1-555-123-4567",
-      shippingAddresses: ["456 Industrial Zone, New York", "789 Warehouse District, Chicago"],
-      priority: "high",
-      shippingMethod: "air",
-      currency: "USD",
-      taxProfile: "VAT",
-      country: "United States",
-      bankName: "Chase Bank",
-      ibanAccount: "US1234567890123456",
-      swiftBic: "CHASUS33",
-      bankAddress: "123 Wall Street, New York, NY",
-      beneficiaryName: "Global Manufacturing Inc",
-      iec: "IEC1234567890",
-    },
-    payments: [
-      {
-        paymentId: "PAY_1703123456792",
-        createdBy: "EMP002", // Added createdBy
-        updatedBy: "EMP002", // Added updatedBy
-        purchaseAmount: 175000,
-        paidAmount: 25000,
-        amount: 25000,
-        purpose: "Equipment Purchase",
-        dueDate: "2024-03-01",
-        status: "completed",
-        creditLimit: 200000,
-        creditDays: 45,
-        outstandingAmount: 150000,
-        receivablesAging: "31-60",
-        currency: "USD",
-        exchangeRate: 83.25,
-        paymentCreationDate: "2024-01-20T14:15:00Z",
-      },
-    ],
-  },
-]
+// Authenticated employee ID
+const employee = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("loggedInEmployee")) : null
+const LOGGED_IN_EMPLOYEE_ID = employee?.employeeId || null
 
 export default function CustomersPage() {
   const [activeSection, setActiveSection] = useState("add-customer")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitMessage, setSubmitMessage] = useState("")
-  const [customers, setCustomers] = useState(mockCustomers)
+  const [customers, setCustomers] = useState([])
   const [searchTerm, setSearchTerm] = useState("")
   const [editingPayment, setEditingPayment] = useState(null)
   const [editDialogStates, setEditDialogStates] = useState({})
@@ -161,16 +47,16 @@ export default function CustomersPage() {
   const [contactPersonName, setContactPersonName] = useState("")
   const [contactPersonEmail, setContactPersonEmail] = useState("")
   const [contactPersonNumber, setContactPersonNumber] = useState("")
-  const [customerLocation, setCustomerLocation] = useState("indian")
-
-  // Indian Customer Details
-  const [industry, setIndustry] = useState("")
+  const [customerLocation, setCustomerLocation] = useState("Indian")
   const [billingAddress, setBillingAddress] = useState("")
-  const [state, setState] = useState("")
   const [receiverName, setReceiverName] = useState("")
   const [receiverContact, setReceiverContact] = useState("")
   const [shippingAddresses, setShippingAddresses] = useState([""])
   const [priority, setPriority] = useState("")
+
+  // Indian Customer Details
+  const [industry, setIndustry] = useState("")
+  const [state, setState] = useState("")
   const [shippingMethod, setShippingMethod] = useState("")
   const [bankAccount, setBankAccount] = useState("")
   const [bankName, setBankName] = useState("")
@@ -181,13 +67,9 @@ export default function CustomersPage() {
   const [panNumber, setPanNumber] = useState("")
 
   // International Customer Details
-  const [intlBillingAddress, setIntlBillingAddress] = useState("")
+
   const [intlIndustry, setIntlIndustry] = useState("")
   const [tinVatEin, setTinVatEin] = useState("")
-  const [intlReceiverName, setIntlReceiverName] = useState("")
-  const [intlReceiverContact, setIntlReceiverContact] = useState("")
-  const [intlShippingAddresses, setIntlShippingAddresses] = useState([""])
-  const [intlPriority, setIntlPriority] = useState("")
   const [intlShippingMethod, setIntlShippingMethod] = useState("")
   const [currency, setCurrency] = useState("")
   const [taxProfile, setTaxProfile] = useState("")
@@ -231,179 +113,216 @@ export default function CustomersPage() {
     "SME",
     "Others",
   ]
-  const priorities = ["low", "medium", "high"]
+  const priorities = ["Low", "Medium", "High"]
   const shippingMethods = {
-    indian: ["road", "rail", "air"],
-    international: ["road", "rail", "air", "ship"],
+    Indian: [
+  "Road", 
+  "Rail", 
+  "Air"],
+  
+    International: [
+  "Road", 
+  "Rail", 
+  "Air", 
+  "Ship"],
   }
   const currencies = ["USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "CNY", "INR"]
   const taxProfiles = ["VAT", "Sales Tax"]
   const paymentStatuses = ["pending", "completed", "overdue", "cancelled", "processing"]
   const agingCategories = ["0-30", "31-60", "61-90", "90+"]
 
-  // Generate unique ID based on timestamp
+  // Generate unique ID based on timestamp for UI purposes
   const generateTimestampId = (prefix) => {
     return `${prefix}_${Date.now()}`
   }
 
-  // Generate IDs when component mounts or when creating new entries
+  // Fetch customers on mount
   useEffect(() => {
+    fetchCustomers()
     setCustomerId(generateTimestampId("CUST"))
     setPaymentId(generateTimestampId("PAY"))
     setPaymentCreationDate(new Date().toISOString())
   }, [activeSection])
 
-  // Filter customers based on search term
+  // Fetch all customers
+  const fetchCustomers = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/api/v1/customer/", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      })
+      const data = await response.json()
+      if (data.statusCode === 200) {
+        setCustomers(data.data)
+      } else {
+        setSubmitMessage("Error fetching customers")
+        setTimeout(() => setSubmitMessage(""), 3000)
+      }
+    } catch (error) {
+      setSubmitMessage("Error fetching customers")
+      setTimeout(() => setSubmitMessage(""), 3000)
+    }
+  }
+
+  // Filter customers based on search term and priority
   const filteredCustomers = customers
     .filter(
       (customer) =>
-        customer.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.id.toLowerCase().includes(searchTerm.toLowerCase()),
+        customer.company_Name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        customer.customer_Id.toLowerCase().includes(searchTerm.toLowerCase()),
     )
     .filter((customer) => {
       if (customerPriorityFilter === "all") return true
-      // Check priority in both indian and international details
-      const priority =
-        customer.location === "indian" ? customer.indianDetails?.priority : customer.internationalDetails?.priority
-      return priority === customerPriorityFilter
+      return customer.customerPriority === customerPriorityFilter
     })
 
-  // Get all payments from all customers
+  // Get all payments
   const allPayments = customers.flatMap((customer) =>
-    customer.payments.map((payment) => ({
+    (customer.payments || []).map((payment) => ({
       ...payment,
-      customerName: customer.companyName,
-      customerId: customer.id,
+      customerName: customer.company_Name,
+      customerId: customer.customer_Id,
     })),
   )
 
   const filteredPayments = allPayments.filter((payment) => {
     const matchesSearch =
       payment.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.paymentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payment.customer_payment_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       payment.customerId.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = paymentStatusFilter === "all" || payment.status === paymentStatusFilter
     return matchesSearch && matchesStatus
   })
 
-  const handleCustomerSubmit = async (e) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-    setSubmitMessage("")
+const handleCustomerSubmit = async (e) => {
+  e.preventDefault();
+  setIsSubmitting(true);
+  setSubmitMessage("");
 
-    const newCustomer = {
-      id: customerId,
-      companyName,
-      address,
-      email,
-      types: customerTypes,
-      contactPerson: {
-        name: contactPersonName,
-        email: contactPersonEmail,
-        number: contactPersonNumber,
+  const customerData = {
+    company_Name: companyName,
+    address,
+    company_Email: email,
+    customer_Types: customerTypes,
+    contact_Person: {
+      name: contactPersonName,
+      email: contactPersonEmail,
+      number: contactPersonNumber,
+    },
+    customer_Location: customerLocation,
+    industry_Sector: industry,
+    billing_Address: billingAddress,
+    receiver_Name: receiverName,
+    receiver_ContactNo: receiverContact,
+    shipping_Addresses: shippingAddresses
+      .map((addr) => addr.address?.trim())
+      .filter((addr) => addr !== ""),
+    customerPriority: priority,
+    createdBy: LOGGED_IN_EMPLOYEE_ID,
+    updatedBy: LOGGED_IN_EMPLOYEE_ID,
+    ...(customerLocation === "Indian"
+      ? {
+        indianDetails: {
+          industry_Sector: industry,
+          stateProvince: state,
+          preferred_Shipping_Method: shippingMethod,
+          bank_AccountNumber: bankAccount,
+          bank_Name: bankName,
+          bank_Branch: bankBranch,
+          ifsc_Code: ifscCode,
+          account_HolderName: accountHolder,
+          gstin,
+          panNumber,
       },
-      location: customerLocation,
-      createdBy: LOGGED_IN_EMPLOYEE_ID,
-      updatedBy: LOGGED_IN_EMPLOYEE_ID, // Set updatedBy on creation
-      createdAt: new Date().toISOString().split("T")[0],
-      payments: [],
-      ...(customerLocation === "indian"
-        ? {
-            indianDetails: {
-              industry,
-              billingAddress,
-              state,
-              receiverName,
-              receiverContact,
-              shippingAddresses: shippingAddresses.filter((addr) => addr.trim() !== ""),
-              priority,
-              shippingMethod,
-              bankAccount,
-              bankName,
-              bankBranch,
-              ifscCode,
-              accountHolder,
-              gstin,
-              panNumber,
-            },
-          }
-        : {
-            internationalDetails: {
-              billingAddress: intlBillingAddress,
-              industry: intlIndustry,
-              tinVatEin,
-              receiverName: intlReceiverName,
-              receiverContact: intlReceiverContact,
-              shippingAddresses: intlShippingAddresses.filter((addr) => addr.trim() !== ""),
-              priority: intlPriority,
-              shippingMethod: intlShippingMethod,
-              currency,
-              taxProfile,
-              country,
-              bankName: intlBankName,
-              ibanAccount,
-              swiftBic,
-              bankAddress: intlBankAddress,
-              beneficiaryName,
-              iec,
-            },
-          }),
     }
+      : {
+          internationalDetails: {
+            industry_Sector: intlIndustry,
+            tinVatEin,
+            shippingMethod: intlShippingMethod,
+            defaultCurrency: currency,
+            taxProfile,
+            country,
+            bankName: intlBankName,
+            ibanAccount,
+            swiftBic,
+            bankAddress: intlBankAddress,
+            beneficiaryName,
+            iec,
+          },
+        }),
+  };
 
-    // Simulate API call
-    setTimeout(() => {
-      setCustomers((prev) => [...prev, newCustomer])
-      setSubmitMessage("Customer created successfully!")
-
-      // Reset form
-      resetCustomerForm()
-      setIsSubmitting(false)
-
-      // Clear message after 3 seconds
-      setTimeout(() => setSubmitMessage(""), 3000)
-    }, 1000)
+  try {
+    const response = await fetch("http://localhost:8000/api/v1/customer/registerCustomer", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("employeeToken")}`,
+      },
+      credentials: "include",
+      body: JSON.stringify(customerData),
+    });
+    const data = await response.json();
+    if (data.statusCode === 200) {
+      setCustomers((prev) => [...prev, data.data]);
+      setSubmitMessage("Customer created successfully!");
+      resetCustomerForm();
+    } else {
+      setSubmitMessage(data.message || "Error creating customer");
+    }
+  } catch (error) {
+    setSubmitMessage("Error creating customer");
+  } finally {
+    setIsSubmitting(false);
+    setTimeout(() => setSubmitMessage(""), 3000);
   }
+};
 
   const handlePaymentSubmit = async (e) => {
     e.preventDefault()
     setIsSubmitting(true)
     setSubmitMessage("")
 
-    const newPayment = {
-      paymentId,
-      createdBy: LOGGED_IN_EMPLOYEE_ID, // Set createdBy on creation
-      updatedBy: LOGGED_IN_EMPLOYEE_ID, // Set updatedBy on creation
-      amount: Number.parseFloat(paymentAmountINR), // Use INR amount
-      customerCurrencyAmount: Number.parseFloat(paymentAmount), // Store customer currency amount
+    const paymentData = {
+      customer_id: paymentCustomerId,
+      payment_amount: Number.parseFloat(paymentAmount),
       purpose,
-      dueDate,
-      status: paymentStatus,
-      creditLimit: Number.parseFloat(creditLimit),
-      creditDays: Number.parseInt(creditDays),
-      outstandingAmount: Number.parseFloat(outstandingAmount),
-      receivablesAging,
-      currency: paymentCurrency,
-      exchangeRate: Number.parseFloat(exchangeRate),
-      paymentCreationDate,
+      due_date: dueDate,
+      credit_days: Number.parseInt(creditDays),
+      outstanding_amount: Number.parseFloat(outstandingAmount),
+      exchange_rate: Number.parseFloat(exchangeRate),
+      createdBy: LOGGED_IN_EMPLOYEE_ID,
+      updatedBy: LOGGED_IN_EMPLOYEE_ID,
     }
 
-    // Simulate API call
-    setTimeout(() => {
-      setCustomers((prev) =>
-        prev.map((customer) =>
-          customer.id === paymentCustomerId ? { ...customer, payments: [...customer.payments, newPayment] } : customer,
-        ),
-      )
-
-      setSubmitMessage("Customer payment created successfully!")
-
-      // Reset form
-      resetPaymentForm()
+    try {
+      const response = await fetch("http://localhost:8000/api/v1/customer/payment/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("employeeToken")}`,
+        },
+        credentials: "include",
+        body: JSON.stringify(paymentData),
+      })
+      const data = await response.json()
+      if (data.statusCode === 200) {
+        await fetchCustomers() // Refresh customers to include new payment
+        setSubmitMessage("Customer payment created successfully!")
+        resetPaymentForm()
+      } else {
+        setSubmitMessage(data.message || "Error creating payment")
+      }
+    } catch (error) {
+      setSubmitMessage("Error creating payment")
+    } finally {
       setIsSubmitting(false)
-
-      // Clear message after 3 seconds
       setTimeout(() => setSubmitMessage(""), 3000)
-    }, 1000)
+    }
   }
 
   const resetCustomerForm = () => {
@@ -415,9 +334,7 @@ export default function CustomersPage() {
     setContactPersonName("")
     setContactPersonEmail("")
     setContactPersonNumber("")
-    setCustomerLocation("indian")
-
-    // Reset Indian details
+    setCustomerLocation("Indian")
     setIndustry("")
     setBillingAddress("")
     setState("")
@@ -433,15 +350,8 @@ export default function CustomersPage() {
     setAccountHolder("")
     setGstin("")
     setPanNumber("")
-
-    // Reset International details
-    setIntlBillingAddress("")
     setIntlIndustry("")
     setTinVatEin("")
-    setIntlReceiverName("")
-    setIntlReceiverContact("")
-    setIntlShippingAddresses([""])
-    setIntlPriority("")
     setIntlShippingMethod("")
     setCurrency("")
     setTaxProfile("")
@@ -471,48 +381,97 @@ export default function CustomersPage() {
     setPaymentCreationDate(new Date().toISOString())
   }
 
-  const handleDeleteCustomer = (customerId) => {
-    setCustomers((prev) => prev.filter((customer) => customer.id !== customerId))
-    setSubmitMessage("Customer deleted successfully!")
-    setTimeout(() => setSubmitMessage(""), 3000)
+  const handleDeleteCustomer = async (customerId) => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/v1/customer/delete/${customerId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      })
+      const data = await response.json()
+      if (data.statusCode === 200) {
+        setCustomers((prev) => prev.filter((customer) => customer.customer_Id !== customerId))
+        setSubmitMessage("Customer deleted successfully!")
+      } else {
+        setSubmitMessage(data.message || "Error deleting customer")
+      }
+    } catch (error) {
+      setSubmitMessage("Error deleting customer")
+    } finally {
+      setTimeout(() => setSubmitMessage(""), 3000)
+    }
   }
 
-  const handleEditPayment = (customerId, paymentId, updatedPayment) => {
-    setCustomers((prev) =>
-      prev.map((customer) =>
-        customer.id === customerId
-          ? {
-              ...customer,
-              payments: customer.payments.map(
-                (payment) =>
-                  payment.paymentId === paymentId
-                    ? { ...payment, ...updatedPayment, updatedBy: LOGGED_IN_EMPLOYEE_ID }
-                    : payment, // Set updatedBy on edit
-              ),
-            }
-          : customer,
-      ),
-    )
-    setEditingPayment(null)
-    setSubmitMessage("Payment updated successfully!")
-    setTimeout(() => setSubmitMessage(""), 3000)
+  const handleEditPayment = async (customerId, paymentId, updatedPayment) => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/v1/customer/payment/update/${paymentId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("employeeToken")}`,
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          due_date: updatedPayment.dueDate,
+          status: updatedPayment.status,
+          receivables_aging: updatedPayment.receivablesAging,
+          credit_days: updatedPayment.creditDays,
+          updatedBy: LOGGED_IN_EMPLOYEE_ID,
+        }),
+      })
+      const data = await response.json()
+      if (data.statusCode === 200) {
+        await fetchCustomers() // Refresh customers to include updated payment
+        setEditingPayment(null)
+        setSubmitMessage("Payment updated successfully!")
+      } else {
+        setSubmitMessage(data.message || "Error updating payment")
+      }
+    } catch (error) {
+      setSubmitMessage("Error updating payment")
+    } finally {
+      setTimeout(() => setSubmitMessage(""), 3000)
+    }
   }
 
-  const handleEditCustomer = (customerId, updatedCustomer) => {
-    setCustomers(
-      (prev) =>
-        prev.map((customer) =>
-          customer.id === customerId ? { ...customer, ...updatedCustomer, updatedBy: LOGGED_IN_EMPLOYEE_ID } : customer,
-        ), // Set updatedBy on edit
-    )
-    setEditingCustomer(null)
-    setSubmitMessage("Customer updated successfully!")
-    setTimeout(() => setSubmitMessage(""), 3000)
+  const handleEditCustomer = async (customerId, updatedCustomer) => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/v1/customer/update/${customerId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("employeeToken")}`,
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          ...updatedCustomer,
+          updatedBy: LOGGED_IN_EMPLOYEE_ID,
+        }),
+      })
+      const data = await response.json()
+      if (data.statusCode === 200) {
+        setCustomers((prev) =>
+          prev.map((customer) =>
+            customer.customer_Id === customerId ? data.data : customer,
+          )
+        )
+        setEditingCustomer(null)
+        setSubmitMessage("Customer updated successfully!")
+      } else {
+        setSubmitMessage(data.message || "Error updating customer")
+      }
+    } catch (error) {
+      setSubmitMessage("Error updating customer")
+    } finally {
+      setTimeout(() => setSubmitMessage(""), 3000)
+    }
   }
 
   const addShippingAddress = (isInternational = false) => {
     if (isInternational) {
-      setIntlShippingAddresses([...intlShippingAddresses, ""])
+      setShippingAddresses([...shippingAddresses, ""])
     } else {
       setShippingAddresses([...shippingAddresses, ""])
     }
@@ -520,8 +479,8 @@ export default function CustomersPage() {
 
   const removeShippingAddress = (index, isInternational = false) => {
     if (isInternational) {
-      const newAddresses = intlShippingAddresses.filter((_, i) => i !== index)
-      setIntlShippingAddresses(newAddresses.length > 0 ? newAddresses : [""])
+      const newAddresses = shippingAddresses.filter((_, i) => i !== index)
+      setShippingAddresses(newAddresses.length > 0 ? newAddresses : [""])
     } else {
       const newAddresses = shippingAddresses.filter((_, i) => i !== index)
       setShippingAddresses(newAddresses.length > 0 ? newAddresses : [""])
@@ -530,9 +489,9 @@ export default function CustomersPage() {
 
   const updateShippingAddress = (index, value, isInternational = false) => {
     if (isInternational) {
-      const newAddresses = [...intlShippingAddresses]
+      const newAddresses = [...shippingAddresses]
       newAddresses[index] = value
-      setIntlShippingAddresses(newAddresses)
+      setShippingAddresses(newAddresses)
     } else {
       const newAddresses = [...shippingAddresses]
       newAddresses[index] = value
@@ -694,7 +653,6 @@ export default function CustomersPage() {
                       </div>
                     </div>
 
-                    {/* Contact Person Details */}
                     <div className="space-y-4">
                       <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">
                         Contact Person Details
@@ -741,19 +699,17 @@ export default function CustomersPage() {
                           <SelectValue placeholder="Select customer location" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="indian">Indian</SelectItem>
-                          <SelectItem value="international">International</SelectItem>
+                          <SelectItem value="Indian">Indian</SelectItem>
+                          <SelectItem value="International">International</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
-                    {/* Conditional Fields Based on Location */}
-                    {customerLocation === "indian" ? (
+                    {customerLocation === "Indian" ? (
                       <div className="space-y-6">
                         <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">
                           Indian Customer Details
                         </h3>
-
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div className="space-y-2">
                             <Label htmlFor="industry">Industry/Sector</Label>
@@ -822,7 +778,7 @@ export default function CustomersPage() {
                                 <SelectValue placeholder="Select shipping method" />
                               </SelectTrigger>
                               <SelectContent>
-                                {shippingMethods.indian.map((method) => (
+                                {shippingMethods.Indian.map((method) => (
                                   <SelectItem key={method} value={method}>
                                     {method.charAt(0).toUpperCase() + method.slice(1)}
                                   </SelectItem>
@@ -831,8 +787,6 @@ export default function CustomersPage() {
                             </Select>
                           </div>
                         </div>
-
-                        {/* Shipping Addresses */}
                         <div className="space-y-4">
                           <div className="flex items-center justify-between">
                             <Label>Shipping Addresses</Label>
@@ -867,8 +821,6 @@ export default function CustomersPage() {
                             </div>
                           ))}
                         </div>
-
-                        {/* Bank Details */}
                         <div className="space-y-4">
                           <h4 className="text-md font-semibold text-gray-800">Bank Details</h4>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -943,14 +895,13 @@ export default function CustomersPage() {
                         <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">
                           International Customer Details
                         </h3>
-
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div className="space-y-2">
                             <Label htmlFor="intlBillingAddress">Billing Address</Label>
                             <Textarea
                               id="intlBillingAddress"
-                              value={intlBillingAddress}
-                              onChange={(e) => setIntlBillingAddress(e.target.value)}
+                              value={billingAddress}
+                              onChange={(e) => setBillingAddress(e.target.value)}
                               placeholder="Enter billing address"
                             />
                           </div>
@@ -976,8 +927,8 @@ export default function CustomersPage() {
                             <Label htmlFor="intlReceiverName">Receiver Name</Label>
                             <Input
                               id="intlReceiverName"
-                              value={intlReceiverName}
-                              onChange={(e) => setIntlReceiverName(e.target.value)}
+                              value={receiverName}
+                              onChange={(e) => setReceiverName(e.target.value)}
                               placeholder="Enter receiver name"
                             />
                           </div>
@@ -985,14 +936,14 @@ export default function CustomersPage() {
                             <Label htmlFor="intlReceiverContact">Receiver Contact No.</Label>
                             <Input
                               id="intlReceiverContact"
-                              value={intlReceiverContact}
-                              onChange={(e) => setIntlReceiverContact(e.target.value)}
+                              value={receiverContact}
+                              onChange={(e) => setReceiverContact(e.target.value)}
                               placeholder="Enter receiver contact number"
                             />
                           </div>
                           <div className="space-y-2">
                             <Label htmlFor="intlPriority">Customer Priority</Label>
-                            <Select value={intlPriority} onValueChange={setIntlPriority}>
+                            <Select value={priority} onValueChange={setPriority}>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select customer priority" />
                               </SelectTrigger>
@@ -1007,12 +958,12 @@ export default function CustomersPage() {
                           </div>
                           <div className="space-y-2">
                             <Label htmlFor="intlShippingMethod">Preferred Shipping Method</Label>
-                            <Select value={intlShippingMethod} onValueChange={setIntlShippingMethod}>
+                            <Select value={shippingMethod} onValueChange={setShippingMethod}>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select shipping method" />
                               </SelectTrigger>
                               <SelectContent>
-                                {shippingMethods.international.map((method) => (
+                                {shippingMethods.International.map((method) => (
                                   <SelectItem key={method} value={method}>
                                     {method.charAt(0).toUpperCase() + method.slice(1)}
                                   </SelectItem>
@@ -1051,8 +1002,6 @@ export default function CustomersPage() {
                             </Select>
                           </div>
                         </div>
-
-                        {/* International Shipping Addresses */}
                         <div className="space-y-4">
                           <div className="flex items-center justify-between">
                             <Label>Shipping Addresses</Label>
@@ -1067,14 +1016,14 @@ export default function CustomersPage() {
                               Add Address
                             </Button>
                           </div>
-                          {intlShippingAddresses.map((address, index) => (
+                          {shippingAddresses.map((address, index) => (
                             <div key={index} className="flex items-center gap-2">
                               <Input
                                 value={address}
                                 onChange={(e) => updateShippingAddress(index, e.target.value, true)}
                                 placeholder={`Shipping address ${index + 1}`}
                               />
-                              {intlShippingAddresses.length > 1 && (
+                              {shippingAddresses.length > 1 && (
                                 <Button
                                   type="button"
                                   variant="outline"
@@ -1087,8 +1036,6 @@ export default function CustomersPage() {
                             </div>
                           ))}
                         </div>
-
-                        {/* International Bank Details */}
                         <div className="space-y-4">
                           <h4 className="text-md font-semibold text-gray-800">Bank Details</h4>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1212,19 +1159,16 @@ export default function CustomersPage() {
                         value={paymentCustomerId}
                         onValueChange={(value) => {
                           setPaymentCustomerId(value)
-                          // Reset amounts when customer changes
                           setPaymentAmount("")
                           setPaymentAmountINR("")
-
-                          // Auto-populate currency based on selected customer
-                          const selectedCustomer = customers.find((customer) => customer.id === value)
+                          const selectedCustomer = customers.find((customer) => customer.customer_Id === value)
                           if (selectedCustomer) {
-                            if (selectedCustomer.location === "indian") {
+                            if (selectedCustomer.customer_Location === "Indian") {
                               setPaymentCurrency("INR")
                               setExchangeRate("1")
-                            } else if (selectedCustomer.internationalDetails?.currency) {
-                              setPaymentCurrency(selectedCustomer.internationalDetails.currency)
-                              setExchangeRate("") // Reset exchange rate for international customers
+                            } else if (selectedCustomer.internationalDetails?.defaultCurrency) {
+                              setPaymentCurrency(selectedCustomer.internationalDetails.defaultCurrency)
+                              setExchangeRate("")
                             }
                           }
                         }}
@@ -1235,8 +1179,8 @@ export default function CustomersPage() {
                         </SelectTrigger>
                         <SelectContent>
                           {customers.map((customer) => (
-                            <SelectItem key={customer.id} value={customer.id}>
-                              {customer.id} - {customer.companyName}
+                            <SelectItem key={customer.customer_Id} value={customer.customer_Id}>
+                              {customer.customer_Id} - {customer.company_Name}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -1268,7 +1212,6 @@ export default function CustomersPage() {
                           value={exchangeRate}
                           onChange={(e) => {
                             setExchangeRate(e.target.value)
-                            // Auto-calculate INR amount
                             if (paymentAmount && e.target.value) {
                               const inrAmount = Number.parseFloat(paymentAmount) * Number.parseFloat(e.target.value)
                               setPaymentAmountINR(inrAmount.toFixed(2))
@@ -1300,7 +1243,6 @@ export default function CustomersPage() {
                           value={paymentAmount}
                           onChange={(e) => {
                             setPaymentAmount(e.target.value)
-                            // Auto-calculate INR amount
                             if (e.target.value && exchangeRate) {
                               const inrAmount = Number.parseFloat(e.target.value) * Number.parseFloat(exchangeRate)
                               setPaymentAmountINR(inrAmount.toFixed(2))
@@ -1336,12 +1278,13 @@ export default function CustomersPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="purpose">Purpose (Optional)</Label>
+                      <Label htmlFor="purpose">Purpose *</Label>
                       <Input
                         id="purpose"
                         value={purpose}
                         onChange={(e) => setPurpose(e.target.value)}
                         placeholder="Enter payment purpose"
+                        required
                       />
                     </div>
 
@@ -1385,6 +1328,19 @@ export default function CustomersPage() {
                     </div>
 
                     <div className="space-y-2">
+                      <Label htmlFor="outstandingAmount">Outstanding Amount</Label>
+                      <Input
+                        id="outstandingAmount"
+                        type="number"
+                        value={outstandingAmount}
+                        onChange={(e) => setOutstandingAmount(e.target.value)}
+                        placeholder="Enter outstanding amount"
+                        min="0"
+                        step="0.01"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
                       <Label htmlFor="paymentCreationDate">Payment Creation Date *</Label>
                       <Input
                         id="paymentCreationDate"
@@ -1421,7 +1377,6 @@ export default function CustomersPage() {
                   <CardDescription>View and manage existing customers</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {/* Search Bar */}
                   <div className="mb-6">
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -1451,7 +1406,6 @@ export default function CustomersPage() {
                     </Select>
                   </div>
 
-                  {/* Customer Cards */}
                   <div className="space-y-4">
                     {filteredCustomers.length === 0 ? (
                       <div className="text-center py-8 text-gray-500">
@@ -1459,162 +1413,106 @@ export default function CustomersPage() {
                       </div>
                     ) : (
                       filteredCustomers.map((customer) => (
-                        <Card key={customer.id} className="border-l-4 border-l-blue-500">
+                        <Card key={customer.customer_Id} className="border-l-4 border-l-blue-500">
                           <CardHeader>
                             <div className="flex justify-between items-start">
                               <div className="flex-1">
-                                <CardTitle className="text-lg">{customer.companyName}</CardTitle>
+                                <CardTitle className="text-lg">{customer.company_Name}</CardTitle>
                                 <CardDescription className="mt-1">
-                                  ID: {customer.id} | Created by: {customer.createdBy} | Updated by:{" "}
-                                  {customer.updatedBy} | Date: {customer.createdAt}
+                                  ID: {customer.customer_Id} | Created by: {customer.createdBy} | Updated by: {customer.updatedBy} | Date: {customer.createdAt.split("T")[0]}
                                 </CardDescription>
                                 <div className="flex items-center gap-2 mt-2">
-                                  <Badge variant={customer.location === "indian" ? "default" : "secondary"}>
-                                    {customer.location === "indian" ? "Indian" : "International"}
+                                  <Badge variant={customer.customer_Location === "Indian" ? "default" : "secondary"}>
+                                    {customer.customer_Location}
                                   </Badge>
-                                  {customer.types.map((type) => (
+                                  {customer.customer_Types.map((type) => (
                                     <Badge key={type} variant="outline" className="text-xs">
                                       {type}
                                     </Badge>
                                   ))}
                                 </div>
                                 <div className="mt-3 text-sm text-gray-600 grid grid-cols-1 md:grid-cols-2 gap-2">
-                                  <p>
-                                    <strong>Email:</strong> {customer.email}
-                                  </p>
-                                  <p>
-                                    <strong>Contact:</strong> {customer.contactPerson.name}
-                                  </p>
-                                  <p>
-                                    <strong>Contact Email:</strong> {customer.contactPerson.email}
-                                  </p>
-                                  <p>
-                                    <strong>Contact Number:</strong> {customer.contactPerson.number}
-                                  </p>
-                                  <p className="md:col-span-2">
-                                    <strong>Address:</strong> {customer.address}
-                                  </p>
-                                  {customer.location === "indian" && customer.indianDetails && (
+                                  <p><strong>Email:</strong> {customer.company_Email}</p>
+                                  <p><strong>Contact:</strong> {customer.contact_Person.name}</p>
+                                  <p><strong>Contact Email:</strong> {customer.contact_Person.email}</p>
+                                  <p><strong>Contact Number:</strong> {customer.contact_Person.number}</p>
+                                  <p className="md:col-span-2"><strong>Address:</strong> {customer.address}</p>
+                                  {customer.customer_Location === "Indian" && customer.indianDetails && (
                                     <>
-                                      <p>
-                                        <strong>Industry:</strong> {customer.indianDetails.industry}
-                                      </p>
-                                      <p>
-                                        <strong>State:</strong> {customer.indianDetails.state}
-                                      </p>
-                                      <p>
-                                        <strong>Priority:</strong> {customer.indianDetails.priority}
-                                      </p>
-                                      <p>
-                                        <strong>Shipping Method:</strong> {customer.indianDetails.shippingMethod}
-                                      </p>
+                                      <p><strong>Industry:</strong> {customer.indianDetails.industry_Sector}</p>
+                                      <p><strong>State:</strong> {customer.indianDetails.state}</p>
+                                      <p><strong>Priority:</strong> {customer.indianDetails.customerPriority}</p>
+                                      <p><strong>Shipping Method:</strong> {customer.indianDetails.shippingMethod}</p>
                                       {customer.indianDetails.gstin && (
-                                        <p>
-                                          <strong>GSTIN:</strong> {customer.indianDetails.gstin}
-                                        </p>
+                                        <p><strong>GSTIN:</strong> {customer.indianDetails.gstin}</p>
                                       )}
                                       {customer.indianDetails.panNumber && (
-                                        <p>
-                                          <strong>PAN:</strong> {customer.indianDetails.panNumber}
-                                        </p>
+                                        <p><strong>PAN:</strong> {customer.indianDetails.panNumber}</p>
                                       )}
                                     </>
                                   )}
-                                  {customer.location === "international" && customer.internationalDetails && (
+                                  {customer.customer_Location === "International" && customer.internationalDetails && (
                                     <>
-                                      <p>
-                                        <strong>Industry:</strong> {customer.internationalDetails.industry}
-                                      </p>
-                                      <p>
-                                        <strong>Country:</strong> {customer.internationalDetails.country}
-                                      </p>
-                                      <p>
-                                        <strong>Priority:</strong> {customer.internationalDetails.priority}
-                                      </p>
-                                      <p>
-                                        <strong>Currency:</strong> {customer.internationalDetails.currency}
-                                      </p>
-                                      <p>
-                                        <strong>Tax Profile:</strong> {customer.internationalDetails.taxProfile}
-                                      </p>
+                                      <p><strong>Industry:</strong> {customer.internationalDetails.industry_Sector}</p>
+                                      <p><strong>Country:</strong> {customer.internationalDetails.country}</p>
+                                      <p><strong>Priority:</strong> {customer.internationalDetails.customerPriority}</p>
+                                      <p><strong>Currency:</strong> {customer.internationalDetails.defaultCurrency}</p>
+                                      <p><strong>Tax Profile:</strong> {customer.internationalDetails.taxProfile}</p>
                                     </>
                                   )}
-                                  {customer.location === "indian" && customer.indianDetails && (
+                                  {customer.customer_Location === "Indian" && customer.indianDetails && (
                                     <>
                                       {customer.indianDetails.bankName && (
-                                        <p>
-                                          <strong>Bank Name:</strong> {customer.indianDetails.bankName}
-                                        </p>
+                                        <p><strong>Bank Name:</strong> {customer.indianDetails.bankName}</p>
                                       )}
                                       {customer.indianDetails.bankAccount && (
-                                        <p>
-                                          <strong>Bank Account:</strong> {customer.indianDetails.bankAccount}
-                                        </p>
+                                        <p><strong>Bank Account:</strong> {customer.indianDetails.bankAccount}</p>
                                       )}
                                       {customer.indianDetails.ifscCode && (
-                                        <p>
-                                          <strong>IFSC Code:</strong> {customer.indianDetails.ifscCode}
-                                        </p>
+                                        <p><strong>IFSC Code:</strong> {customer.indianDetails.ifscCode}</p>
                                       )}
                                       {customer.indianDetails.accountHolder && (
-                                        <p>
-                                          <strong>Account Holder:</strong> {customer.indianDetails.accountHolder}
+                                        <p><strong>Account Holder:</strong> {customer.indianDetails.accountHolder}</p>
+                                      )}
+                                      {customer.indianDetails.shipping_Addresses && customer.indianDetails.shipping_Addresses.length > 0 && (
+                                        <p className="md:col-span-2">
+                                          <strong>Shipping Addresses:</strong>{" "}
+                                          {customer.indianDetails.shipping_Addresses.filter((addr) => addr.trim()).join(", ")}
                                         </p>
                                       )}
-                                      {customer.indianDetails.shippingAddresses &&
-                                        customer.indianDetails.shippingAddresses.length > 0 && (
-                                          <p className="md:col-span-2">
-                                            <strong>Shipping Addresses:</strong>{" "}
-                                            {customer.indianDetails.shippingAddresses
-                                              .filter((addr) => addr.trim())
-                                              .join(", ")}
-                                          </p>
-                                        )}
                                     </>
                                   )}
-                                  {customer.location === "international" && customer.internationalDetails && (
+                                  {customer.customer_Location === "International" && customer.internationalDetails && (
                                     <>
                                       {customer.internationalDetails.bankName && (
-                                        <p>
-                                          <strong>Bank Name:</strong> {customer.internationalDetails.bankName}
-                                        </p>
+                                        <p><strong>Bank Name:</strong> {customer.internationalDetails.bankName}</p>
                                       )}
                                       {customer.internationalDetails.ibanAccount && (
-                                        <p>
-                                          <strong>IBAN/Account:</strong> {customer.internationalDetails.ibanAccount}
-                                        </p>
+                                        <p><strong>IBAN/Account:</strong> {customer.internationalDetails.ibanAccount}</p>
                                       )}
                                       {customer.internationalDetails.swiftBic && (
-                                        <p>
-                                          <strong>SWIFT/BIC:</strong> {customer.internationalDetails.swiftBic}
-                                        </p>
+                                        <p><strong>SWIFT/BIC:</strong> {customer.internationalDetails.swiftBic}</p>
                                       )}
                                       {customer.internationalDetails.beneficiaryName && (
-                                        <p>
-                                          <strong>Beneficiary Name:</strong>{" "}
-                                          {customer.internationalDetails.beneficiaryName}
+                                        <p><strong>Beneficiary Name:</strong> {customer.internationalDetails.beneficiaryName}</p>
+                                      )}
+                                      {customer.internationalDetails.shipping_Addresses && customer.internationalDetails.shipping_Addresses.length > 0 && (
+                                        <p className="md:col-span-2">
+                                          <strong>Shipping Addresses:</strong>{" "}
+                                          {customer.internationalDetails.shipping_Addresses.filter((addr) => addr.trim()).join(", ")}
                                         </p>
                                       )}
-                                      {customer.internationalDetails.shippingAddresses &&
-                                        customer.internationalDetails.shippingAddresses.length > 0 && (
-                                          <p className="md:col-span-2">
-                                            <strong>Shipping Addresses:</strong>{" "}
-                                            {customer.internationalDetails.shippingAddresses
-                                              .filter((addr) => addr.trim())
-                                              .join(", ")}
-                                          </p>
-                                        )}
                                     </>
                                   )}
                                 </div>
                               </div>
                               <div className="flex gap-2">
                                 <Dialog
-                                  open={customerEditDialogStates[customer.id] || false}
+                                  open={customerEditDialogStates[customer.customer_Id] || false}
                                   onOpenChange={(open) => {
                                     setCustomerEditDialogStates((prev) => ({
                                       ...prev,
-                                      [customer.id]: open,
+                                      [customer.customer_Id]: open,
                                     }))
                                   }}
                                 >
@@ -1628,23 +1526,23 @@ export default function CustomersPage() {
                                     <DialogHeader>
                                       <DialogTitle>Edit Customer</DialogTitle>
                                       <DialogDescription>
-                                        Update customer information for {customer.companyName}
+                                        Update customer information for {customer.company_Name}
                                       </DialogDescription>
                                     </DialogHeader>
                                     {editingCustomer && (
                                       <CustomerEditForm
                                         customer={editingCustomer}
                                         onSave={(updatedCustomer) => {
-                                          handleEditCustomer(customer.id, updatedCustomer)
+                                          handleEditCustomer(customer.customer_Id, updatedCustomer)
                                           setCustomerEditDialogStates((prev) => ({
                                             ...prev,
-                                            [customer.id]: false,
+                                            [customer.customer_Id]: false,
                                           }))
                                         }}
                                         onCancel={() => {
                                           setCustomerEditDialogStates((prev) => ({
                                             ...prev,
-                                            [customer.id]: false,
+                                            [customer.customer_Id]: false,
                                           }))
                                         }}
                                       />
@@ -1654,7 +1552,7 @@ export default function CustomersPage() {
                                 <Button
                                   variant="destructive"
                                   size="sm"
-                                  onClick={() => handleDeleteCustomer(customer.id)}
+                                  onClick={() => handleDeleteCustomer(customer.customer_Id)}
                                 >
                                   <Trash2 className="h-4 w-4 mr-1" />
                                   Delete
@@ -1680,7 +1578,6 @@ export default function CustomersPage() {
                   <CardDescription>View and manage all customer payment records</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {/* Search and Filter Bar */}
                   <div className="mb-6 space-y-4">
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -1714,7 +1611,6 @@ export default function CustomersPage() {
                     </div>
                   </div>
 
-                  {/* Payment Records */}
                   <div className="space-y-4">
                     {filteredPayments.length === 0 ? (
                       <div className="text-center py-8 text-gray-500">
@@ -1725,7 +1621,7 @@ export default function CustomersPage() {
                     ) : (
                       filteredPayments.map((payment) => (
                         <Card
-                          key={payment.paymentId}
+                          key={payment.customer_payment_id}
                           className="border border-gray-200 hover:shadow-md transition-shadow"
                         >
                           <CardContent className="p-6">
@@ -1733,11 +1629,9 @@ export default function CustomersPage() {
                               <div className="flex-1">
                                 <h3 className="text-lg font-semibold text-gray-900 mb-1">{payment.customerName}</h3>
                                 <div className="text-sm text-gray-600 space-y-1">
-                                  <p>Payment ID: {payment.paymentId}</p>
+                                  <p>Payment ID: {payment.customer_payment_id}</p>
                                   <p>Customer ID: {payment.customerId}</p>
-                                  <p>
-                                    Created by: {payment.createdBy} | Updated by: {payment.updatedBy}
-                                  </p>
+                                  <p>Created by: {payment.createdBy} | Updated by: {payment.updatedBy}</p>
                                 </div>
                               </div>
                               <div className="flex items-center gap-3">
@@ -1757,11 +1651,11 @@ export default function CustomersPage() {
                                 </Badge>
                                 <div className="flex gap-2">
                                   <Dialog
-                                    open={editDialogStates[payment.paymentId] || false}
+                                    open={editDialogStates[payment.customer_payment_id] || false}
                                     onOpenChange={(open) => {
                                       setEditDialogStates((prev) => ({
                                         ...prev,
-                                        [payment.paymentId]: open,
+                                        [payment.customer_payment_id]: open,
                                       }))
                                     }}
                                   >
@@ -1780,16 +1674,16 @@ export default function CustomersPage() {
                                       <PaymentEditForm
                                         payment={payment}
                                         onSave={(updatedPayment) => {
-                                          handleEditPayment(payment.customerId, payment.paymentId, updatedPayment)
+                                          handleEditPayment(payment.customerId, payment.customer_payment_id, updatedPayment)
                                           setEditDialogStates((prev) => ({
                                             ...prev,
-                                            [payment.paymentId]: false,
+                                            [payment.customer_payment_id]: false,
                                           }))
                                         }}
                                         onCancel={() => {
                                           setEditDialogStates((prev) => ({
                                             ...prev,
-                                            [payment.paymentId]: false,
+                                            [payment.customer_payment_id]: false,
                                           }))
                                         }}
                                       />
@@ -1798,22 +1692,27 @@ export default function CustomersPage() {
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => {
-                                      // Remove payment from customer
-                                      setCustomers((prev) =>
-                                        prev.map((customer) =>
-                                          customer.id === payment.customerId
-                                            ? {
-                                                ...customer,
-                                                payments: customer.payments.filter(
-                                                  (p) => p.paymentId !== payment.paymentId,
-                                                ),
-                                              }
-                                            : customer,
-                                        ),
-                                      )
-                                      setSubmitMessage("Payment deleted successfully!")
-                                      setTimeout(() => setSubmitMessage(""), 3000)
+                                    onClick={async () => {
+                                      try {
+                                        const response = await fetch(`http://localhost:8000/api/v1/customer/payment/delete/${payment.customer_payment_id}`, {
+                                          method: "DELETE",
+                                          headers: {
+                                            "Content-Type": "application/json",
+                                          },
+                                          credentials: "include",
+                                        })
+                                        const data = await response.json()
+                                        if (data.statusCode === 200) {
+                                          await fetchCustomers()
+                                          setSubmitMessage("Payment deleted successfully!")
+                                        } else {
+                                          setSubmitMessage(data.message || "Error deleting payment")
+                                        }
+                                      } catch (error) {
+                                        setSubmitMessage("Error deleting payment")
+                                      } finally {
+                                        setTimeout(() => setSubmitMessage(""), 3000)
+                                      }
                                     }}
                                   >
                                     <Trash2 className="h-4 w-4" />
@@ -1821,41 +1720,37 @@ export default function CustomersPage() {
                                 </div>
                               </div>
                             </div>
-
-                            {/* Payment Details Row */}
                             <div className="grid grid-cols-5 gap-6 mb-4">
                               <div>
                                 <p className="text-sm text-gray-600 mb-1">Purchase Amount</p>
                                 <p className="text-lg font-semibold text-blue-600">
                                   {payment.currency === "INR" ? "₹" : payment.currency + " "}
-                                  {payment.purchaseAmount?.toLocaleString() || "N/A"}
+                                  {payment.payment_amount_in_customer_currency?.toLocaleString() || "N/A"}
                                 </p>
                               </div>
                               <div>
                                 <p className="text-sm text-gray-600 mb-1">Paid Amount</p>
                                 <p className="text-lg font-semibold text-green-600">
                                   {payment.currency === "INR" ? "₹" : payment.currency + " "}
-                                  {payment.paidAmount?.toLocaleString() || "N/A"}
+                                  {payment.payment_amount_in_inr?.toLocaleString() || "N/A"}
                                 </p>
                               </div>
                               <div>
                                 <p className="text-sm text-gray-600 mb-1">Outstanding Amount</p>
                                 <p className="text-lg font-semibold text-red-600">
                                   {payment.currency === "INR" ? "₹" : payment.currency + " "}
-                                  {payment.outstandingAmount?.toLocaleString() || "N/A"}
+                                  {payment.outstanding_amount?.toLocaleString() || "N/A"}
                                 </p>
                               </div>
                               <div>
                                 <p className="text-sm text-gray-600 mb-1">Due Date</p>
-                                <p className="text-lg font-medium text-gray-900">{payment.dueDate || "N/A"}</p>
+                                <p className="text-lg font-medium text-gray-900">{payment.due_date || "N/A"}</p>
                               </div>
                               <div>
                                 <p className="text-sm text-gray-600 mb-1">Payment Method</p>
                                 <p className="text-lg font-medium text-gray-900">Bank Transfer</p>
                               </div>
                             </div>
-
-                            {/* Purpose */}
                             {payment.purpose && (
                               <div>
                                 <p className="text-sm text-gray-600 mb-1">Purpose</p>
@@ -1879,20 +1774,18 @@ export default function CustomersPage() {
 
 function PaymentEditForm({ payment, onSave, onCancel }) {
   const [formData, setFormData] = useState({
-    purchaseAmount: payment.purchaseAmount.toString(),
-    paidAmount: payment.paidAmount.toString(),
-    amount: payment.amount.toString(),
+    payment_amount_in_customer_currency: payment.payment_amount_in_customer_currency.toString(),
+    payment_amount_in_inr: payment.payment_amount_in_inr.toString(),
     purpose: payment.purpose || "",
-    dueDate: payment.dueDate,
+    due_date: payment.due_date,
     status: payment.status,
-    creditLimit: payment.creditLimit.toString(),
-    creditDays: payment.creditDays.toString(),
-    outstandingAmount: payment.outstandingAmount.toString(),
-    receivablesAging: payment.receivablesAging,
+    credit_days: payment.credit_days.toString(),
+    outstanding_amount: payment.outstanding_amount.toString(),
+    receivables_aging: payment.receivables_aging,
     currency: payment.currency,
-    exchangeRate: payment.exchangeRate.toString(),
-    createdBy: payment.createdBy, // Include createdBy
-    updatedBy: payment.updatedBy, // Include updatedBy
+    exchange_rate: payment.exchange_rate.toString(),
+    createdBy: payment.createdBy,
+    updatedBy: payment.updatedBy,
   })
 
   const paymentStatuses = ["pending", "completed", "overdue", "cancelled", "processing"]
@@ -1903,13 +1796,7 @@ function PaymentEditForm({ payment, onSave, onCancel }) {
     e.preventDefault()
     onSave({
       ...formData,
-      purchaseAmount: Number.parseFloat(formData.purchaseAmount),
-      paidAmount: Number.parseFloat(formData.paidAmount),
-      amount: Number.parseFloat(formData.amount),
-      creditLimit: Number.parseFloat(formData.creditLimit),
-      creditDays: Number.parseInt(formData.creditDays),
-      outstandingAmount: Number.parseFloat(formData.outstandingAmount),
-      exchangeRate: Number.parseFloat(formData.exchangeRate),
+      credit_days: Number.parseInt(formData.credit_days),
     })
   }
 
@@ -1930,13 +1817,15 @@ function PaymentEditForm({ payment, onSave, onCancel }) {
         <div className="space-y-2">
           <Label htmlFor="editPurchaseAmount">Purchase Amount</Label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+              {formData.currency}
+            </span>
             <Input
               id="editPurchaseAmount"
               type="number"
-              value={formData.purchaseAmount}
+              value={formData.payment_amount_in_customer_currency}
               readOnly
-              className="pl-8 bg-gray-50"
+              className="pl-10 bg-gray-50"
               min="0"
               step="0.01"
             />
@@ -1944,13 +1833,13 @@ function PaymentEditForm({ payment, onSave, onCancel }) {
           <p className="text-xs text-gray-500">This field is read-only.</p>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="editPaidAmount">Paid Amount</Label>
+          <Label htmlFor="editPaidAmount">Paid Amount (INR)</Label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
             <Input
               id="editPaidAmount"
               type="number"
-              value={formData.paidAmount}
+              value={formData.payment_amount_in_inr}
               readOnly
               className="pl-8 bg-gray-50"
               min="0"
@@ -1965,13 +1854,15 @@ function PaymentEditForm({ payment, onSave, onCancel }) {
         <div className="space-y-2">
           <Label htmlFor="editOutstandingAmount">Outstanding Amount</Label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+              {formData.currency}
+            </span>
             <Input
               id="editOutstandingAmount"
               type="number"
-              value={formData.outstandingAmount}
+              value={formData.outstanding_amount}
               readOnly
-              className="pl-8 bg-gray-50"
+              className="pl-10 bg-gray-50"
               min="0"
               step="0.01"
             />
@@ -1981,13 +1872,15 @@ function PaymentEditForm({ payment, onSave, onCancel }) {
         <div className="space-y-2">
           <Label htmlFor="editAmount">Payment Amount</Label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+              {formData.currency}
+            </span>
             <Input
               id="editAmount"
               type="number"
-              value={formData.amount}
+              value={formData.payment_amount_in_customer_currency}
               readOnly
-              className="pl-8 bg-gray-50"
+              className="pl-10 bg-gray-50"
               min="0"
               step="0.01"
               required
@@ -2018,8 +1911,8 @@ function PaymentEditForm({ payment, onSave, onCancel }) {
         <Input
           id="editDueDate"
           type="date"
-          value={formData.dueDate}
-          onChange={(e) => setFormData((prev) => ({ ...prev, dueDate: e.target.value }))}
+          value={formData.due_date}
+          onChange={(e) => setFormData((prev) => ({ ...prev, due_date: e.target.value }))}
           required
         />
       </div>
@@ -2029,8 +1922,8 @@ function PaymentEditForm({ payment, onSave, onCancel }) {
         <Input
           id="editCreditDays"
           type="number"
-          value={formData.creditDays}
-          onChange={(e) => setFormData((prev) => ({ ...prev, creditDays: e.target.value }))}
+          value={formData.credit_days}
+          onChange={(e) => setFormData((prev) => ({ ...prev, credit_days: e.target.value }))}
           min="0"
         />
       </div>
@@ -2049,26 +1942,10 @@ function PaymentEditForm({ payment, onSave, onCancel }) {
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="editCreditLimit">Credit Limit</Label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
-            <Input
-              id="editCreditLimit"
-              type="number"
-              value={formData.creditLimit}
-              readOnly
-              className="pl-8 bg-gray-50"
-              min="0"
-              step="0.01"
-            />
-          </div>
-          <p className="text-xs text-gray-500">This field is read-only.</p>
-        </div>
-        <div className="space-y-2">
           <Label htmlFor="editReceivablesAging">Receivables Aging</Label>
           <Select
-            value={formData.receivablesAging}
-            onValueChange={(value) => setFormData((prev) => ({ ...prev, receivablesAging: value }))}
+            value={formData.receivables_aging}
+            onValueChange={(value) => setFormData((prev) => ({ ...prev, receivables_aging: value }))}
           >
             <SelectTrigger>
               <SelectValue />
@@ -2081,15 +1958,12 @@ function PaymentEditForm({ payment, onSave, onCancel }) {
               ))}
             </SelectContent>
           </Select>
-          <p className="text-xs text-gray-500">This field is read-only.</p>
         </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="editCurrency">Currency</Label>
           <Select
             value={formData.currency}
+            disabled
             onValueChange={(value) => setFormData((prev) => ({ ...prev, currency: value }))}
           >
             <SelectTrigger>
@@ -2103,90 +1977,44 @@ function PaymentEditForm({ payment, onSave, onCancel }) {
               ))}
             </SelectContent>
           </Select>
-          <p className="text-xs text-gray-500">This field is read-only.</p>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="editExchangeRate">Exchange Rate (vs INR)</Label>
-          <Input
-            id="editExchangeRate"
-            type="number"
-            value={formData.exchangeRate}
-            readOnly
-            className="bg-gray-50"
-            min="0"
-            step="0.01"
-          />
-          <p className="text-xs text-gray-500">This field is read-only.</p>
+          <p className="text-xs text-gray-500">Currency is read-only and set by customer details.</p>
         </div>
       </div>
 
-      <DialogFooter className="gap-2">
+      <div className="space-y-2">
+        <Label htmlFor="editExchangeRate">Exchange Rate (vs INR)</Label>
+        <Input
+          id="editExchangeRate"
+          type="number"
+          value={formData.exchange_rate}
+          readOnly
+          className="bg-gray-50"
+          min="0"
+          step="0.01"
+        />
+        <p className="text-xs text-gray-500">Exchange rate is read-only.</p>
+      </div>
+
+      <DialogFooter className="mt-6">
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit">
-          <Save className="h-4 w-4 mr-2" />
-          Save Changes
-        </Button>
+        <Button type="submit">Save Changes</Button>
       </DialogFooter>
     </form>
   )
 }
 
-// Customer Edit Form Component
 function CustomerEditForm({ customer, onSave, onCancel }) {
   const [formData, setFormData] = useState({
-    companyName: customer.companyName,
+    company_Name: customer.company_Name,
     address: customer.address,
-    email: customer.email,
-    types: customer.types,
-    contactPerson: customer.contactPerson,
-    location: customer.location,
-    createdBy: customer.createdBy, // Include createdBy
-    updatedBy: customer.updatedBy, // Include updatedBy
-    ...(customer.location === "indian"
-      ? {
-          indianDetails: {
-            ...(customer.indianDetails || {}),
-            industry: customer.indianDetails?.industry || "",
-            billingAddress: customer.indianDetails?.billingAddress || "",
-            state: customer.indianDetails?.state || "",
-            receiverName: customer.indianDetails?.receiverName || "",
-            receiverContact: customer.indianDetails?.receiverContact || "",
-            shippingAddresses: customer.indianDetails?.shippingAddresses || [""],
-            priority: customer.indianDetails?.priority || "",
-            shippingMethod: customer.indianDetails?.shippingMethod || "",
-            bankAccount: customer.indianDetails?.bankAccount || "",
-            bankName: customer.indianDetails?.bankName || "",
-            bankBranch: customer.indianDetails?.bankBranch || "",
-            ifscCode: customer.indianDetails?.ifscCode || "",
-            accountHolder: customer.indianDetails?.accountHolder || "",
-            gstin: customer.indianDetails?.gstin || "",
-            panNumber: customer.indianDetails?.panNumber || "",
-          },
-        }
-      : {
-          internationalDetails: {
-            ...(customer.internationalDetails || {}),
-            billingAddress: customer.internationalDetails?.billingAddress || "",
-            industry: customer.internationalDetails?.industry || "",
-            tinVatEin: customer.internationalDetails?.tinVatEin || "",
-            receiverName: customer.internationalDetails?.receiverName || "",
-            receiverContact: customer.internationalDetails?.receiverContact || "",
-            shippingAddresses: customer.internationalDetails?.shippingAddresses || [""],
-            priority: customer.internationalDetails?.priority || "",
-            shippingMethod: customer.internationalDetails?.shippingMethod || "",
-            currency: customer.internationalDetails?.currency || "",
-            taxProfile: customer.internationalDetails?.taxProfile || "",
-            country: customer.internationalDetails?.country || "",
-            bankName: customer.internationalDetails?.bankName || "",
-            ibanAccount: customer.internationalDetails?.ibanAccount || "",
-            swiftBic: customer.internationalDetails?.swiftBic || "",
-            bankAddress: customer.internationalDetails?.bankAddress || "",
-            beneficiaryName: customer.internationalDetails?.beneficiaryName || "",
-            iec: customer.internationalDetails?.iec || "",
-          },
-        }),
+    company_Email: customer.company_Email,
+    customer_Types: customer.customer_Types,
+    contact_Person: { ...customer.contact_Person },
+    customer_Location: customer.customer_Location,
+    indianDetails: customer.customer_Location === "Indian" ? { ...customer.indianDetails } : null,
+    internationalDetails: customer.customer_Location === "International" ? { ...customer.internationalDetails } : null,
   })
 
   const availableCustomerTypes = [
@@ -2202,134 +2030,142 @@ function CustomerEditForm({ customer, onSave, onCancel }) {
     "SME",
     "Others",
   ]
-
   const priorities = ["low", "medium", "high"]
   const shippingMethods = {
-    indian: ["road", "rail", "air"],
-    international: ["road", "rail", "air", "ship"],
+    Indian: ["road", "rail", "air"],
+    International: ["road", "rail", "air", "ship"],
   }
   const currencies = ["USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "CNY", "INR"]
   const taxProfiles = ["VAT", "Sales Tax"]
+
+  const handleCustomerTypeChange = (type, checked) => {
+    setFormData((prev) => ({
+      ...prev,
+      customer_Types: checked
+        ? [...prev.customer_Types, type]
+        : prev.customer_Types.filter((t) => t !== type),
+    }))
+  }
+
+  const addShippingAddress = (isInternational = false) => {
+    if (isInternational) {
+      setFormData((prev) => ({
+        ...prev,
+        internationalDetails: {
+          ...prev.internationalDetails,
+          shipping_Addresses: [...prev.internationalDetails.shipping_Addresses, ""],
+        },
+      }))
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        indianDetails: {
+          ...prev.indianDetails,
+          shipping_Addresses: [...prev.indianDetails.shipping_Addresses, ""],
+        },
+      }))
+    }
+  }
+
+  const removeShippingAddress = (index, isInternational = false) => {
+    if (isInternational) {
+      const newAddresses = formData.internationalDetails.shipping_Addresses.filter((_, i) => i !== index)
+      setFormData((prev) => ({
+        ...prev,
+        internationalDetails: {
+          ...prev.internationalDetails,
+          shipping_Addresses: newAddresses.length > 0 ? newAddresses : [""],
+        },
+      }))
+    } else {
+      const newAddresses = formData.indianDetails.shipping_Addresses.filter((_, i) => i !== index)
+      setFormData((prev) => ({
+        ...prev,
+        indianDetails: {
+          ...prev.indianDetails,
+          shipping_Addresses: newAddresses.length > 0 ? newAddresses : [""],
+        },
+      }))
+    }
+  }
+
+  const updateShippingAddress = (index, value, isInternational = false) => {
+    if (isInternational) {
+      const newAddresses = [...formData.internationalDetails.shipping_Addresses]
+      newAddresses[index] = value
+      setFormData((prev) => ({
+        ...prev,
+        internationalDetails: {
+          ...prev.internationalDetails,
+          shipping_Addresses: newAddresses,
+        },
+      }))
+    } else {
+      const newAddresses = [...formData.indianDetails.shipping_Addresses]
+      newAddresses[index] = value
+      setFormData((prev) => ({
+        ...prev,
+        indianDetails: {
+          ...prev.indianDetails,
+          shipping_Addresses: newAddresses,
+        },
+      }))
+    }
+  }
 
   const handleSubmit = (e) => {
     e.preventDefault()
     onSave(formData)
   }
 
-  const handleCustomerTypeChange = (type, checked) => {
-    if (checked) {
-      setFormData((prev) => ({ ...prev, types: [...prev.types, type] }))
-    } else {
-      setFormData((prev) => ({ ...prev, types: prev.types.filter((t) => t !== type) }))
-    }
-  }
-
-  const handleShippingAddressChange = (index, value, isInternational = false) => {
-    setFormData((prev) => {
-      const locationDetailsKey = isInternational ? "internationalDetails" : "indianDetails"
-      const shippingAddressesKey = "shippingAddresses"
-
-      const updatedShippingAddresses = [
-        ...(prev[prev.location === "indian" ? "indianDetails" : "internationalDetails"]?.[shippingAddressesKey] || []),
-      ]
-      updatedShippingAddresses[index] = value
-
-      return {
-        ...prev,
-        [prev.location === "indian" ? "indianDetails" : "internationalDetails"]: {
-          ...(prev[prev.location === "indian" ? "indianDetails" : "internationalDetails"] || {}),
-          [shippingAddressesKey]: updatedShippingAddresses,
-        },
-      }
-    })
-  }
-
-  const addShippingAddress = (isInternational = false) => {
-    setFormData((prev) => {
-      const locationDetailsKey = isInternational ? "internationalDetails" : "indianDetails"
-      const shippingAddressesKey = "shippingAddresses"
-
-      const updatedShippingAddresses = [
-        ...(prev[prev.location === "indian" ? "indianDetails" : "internationalDetails"]?.[shippingAddressesKey] || []),
-        "",
-      ]
-
-      return {
-        ...prev,
-        [prev.location === "indian" ? "indianDetails" : "internationalDetails"]: {
-          ...(prev[prev.location === "indian" ? "indianDetails" : "internationalDetails"] || {}),
-          [shippingAddressesKey]: updatedShippingAddresses,
-        },
-      }
-    })
-  }
-
-  const removeShippingAddress = (index, isInternational = false) => {
-    setFormData((prev) => {
-      const locationDetailsKey = isInternational ? "internationalDetails" : "indianDetails"
-      const shippingAddressesKey = "shippingAddresses"
-
-      const updatedShippingAddresses = [
-        ...(prev[prev.location === "indian" ? "indianDetails" : "internationalDetails"]?.[shippingAddressesKey] || []),
-      ]
-      updatedShippingAddresses.splice(index, 1)
-
-      return {
-        ...prev,
-        [prev.location === "indian" ? "indianDetails" : "internationalDetails"]: {
-          ...(prev[prev.location === "indian" ? "indianDetails" : "internationalDetails"] || {}),
-          [shippingAddressesKey]: updatedShippingAddresses.length > 0 ? updatedShippingAddresses : [""],
-        },
-      }
-    })
-  }
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="editCompanyName">Company Name</Label>
-          <Input
-            id="editCompanyName"
-            value={formData.companyName}
-            onChange={(e) => setFormData((prev) => ({ ...prev, companyName: e.target.value }))}
-            required
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="editEmail">Company Email</Label>
-          <Input
-            id="editEmail"
-            type="email"
-            value={formData.email}
-            onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
-            required
-          />
-        </div>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="space-y-2">
+        <Label htmlFor="editCompanyName">Company Name *</Label>
+        <Input
+          id="editCompanyName"
+          value={formData.company_Name}
+          onChange={(e) => setFormData((prev) => ({ ...prev, company_Name: e.target.value }))}
+          placeholder="Enter company name"
+          required
+        />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="editAddress">Address</Label>
+        <Label htmlFor="editAddress">Address *</Label>
         <Textarea
           id="editAddress"
           value={formData.address}
           onChange={(e) => setFormData((prev) => ({ ...prev, address: e.target.value }))}
+          placeholder="Enter company address"
           rows={3}
           required
         />
       </div>
 
+      <div className="space-y-2">
+        <Label htmlFor="editEmail">Company Email *</Label>
+        <Input
+          id="editEmail"
+          type="email"
+          value={formData.company_Email}
+          onChange={(e) => setFormData((prev) => ({ ...prev, company_Email: e.target.value }))}
+          placeholder="Enter company email"
+          required
+        />
+      </div>
+
       <div className="space-y-4">
-        <Label>Customer Types</Label>
+        <Label>Customer Types *</Label>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {availableCustomerTypes.map((type) => (
             <div key={type} className="flex items-center space-x-2">
               <Checkbox
-                id={`edit-${type}`}
-                checked={formData.types.includes(type)}
+                id={`editType-${type}`}
+                checked={formData.customer_Types.includes(type)}
                 onCheckedChange={(checked) => handleCustomerTypeChange(type, checked)}
               />
-              <Label htmlFor={`edit-${type}`} className="text-sm">
+              <Label htmlFor={`editType-${type}`} className="text-sm">
                 {type}
               </Label>
             </div>
@@ -2338,48 +2174,53 @@ function CustomerEditForm({ customer, onSave, onCancel }) {
       </div>
 
       <div className="space-y-4">
-        <h4 className="font-semibold">Contact Person Details</h4>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">
+          Contact Person Details
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-2">
-            <Label htmlFor="editContactName">Contact Name</Label>
+            <Label htmlFor="editContactPersonName">Contact Person Name *</Label>
             <Input
-              id="editContactName"
-              value={formData.contactPerson.name}
+              id="editContactPersonName"
+              value={formData.contact_Person.name}
               onChange={(e) =>
                 setFormData((prev) => ({
                   ...prev,
-                  contactPerson: { ...prev.contactPerson, name: e.target.value },
+                  contact_Person: { ...prev.contact_Person, name: e.target.value },
                 }))
               }
+              placeholder="Enter contact person name"
               required
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="editContactEmail">Contact Email</Label>
+            <Label htmlFor="editContactPersonEmail">Contact Person Email *</Label>
             <Input
-              id="editContactEmail"
+              id="editContactPersonEmail"
               type="email"
-              value={formData.contactPerson.email}
+              value={formData.contact_Person.email}
               onChange={(e) =>
                 setFormData((prev) => ({
                   ...prev,
-                  contactPerson: { ...prev.contactPerson, email: e.target.value },
+                  contact_Person: { ...prev.contact_Person, email: e.target.value },
                 }))
               }
+              placeholder="Enter contact person email"
               required
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="editContactNumber">Contact Number</Label>
+            <Label htmlFor="editContactPersonNumber">Contact Person Number *</Label>
             <Input
-              id="editContactNumber"
-              value={formData.contactPerson.number}
+              id="editContactPersonNumber"
+              value={formData.contact_Person.number}
               onChange={(e) =>
                 setFormData((prev) => ({
                   ...prev,
-                  contactPerson: { ...prev.contactPerson, number: e.target.value },
+                  contact_Person: { ...prev.contact_Person, number: e.target.value },
                 }))
               }
+              placeholder="Enter contact person number"
               required
             />
           </div>
@@ -2387,35 +2228,44 @@ function CustomerEditForm({ customer, onSave, onCancel }) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="editCustomerLocation">Customer Location</Label>
+        <Label htmlFor="editCustomerLocation">Customer Location *</Label>
         <Select
-          value={formData.location}
-          onValueChange={(value) => setFormData((prev) => ({ ...prev, location: value }))}
+          value={formData.customer_Location}
+          onValueChange={(value) => {
+            setFormData((prev) => ({
+              ...prev,
+              customer_Location: value,
+              indianDetails: value === "Indian" ? prev.indianDetails || {} : null,
+              internationalDetails: value === "International" ? prev.internationalDetails || {} : null,
+            }))
+          }}
+          required
         >
           <SelectTrigger>
             <SelectValue placeholder="Select customer location" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="indian">Indian</SelectItem>
-            <SelectItem value="international">International</SelectItem>
+            <SelectItem value="Indian">Indian</SelectItem>
+            <SelectItem value="International">International</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      {formData.location === "indian" ? (
+      {formData.customer_Location === "Indian" && (
         <div className="space-y-6">
-          <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">Indian Customer Details</h3>
-
+          <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">
+            Indian Customer Details
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="editIndustry">Industry/Sector</Label>
               <Input
                 id="editIndustry"
-                value={formData.indianDetails?.industry || ""}
+                value={formData.indianDetails?.industry_Sector || ""}
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
-                    indianDetails: { ...prev.indianDetails, industry: e.target.value },
+                    indianDetails: { ...prev.indianDetails, industry_Sector: e.target.value },
                   }))
                 }
                 placeholder="Enter industry/sector"
@@ -2439,11 +2289,11 @@ function CustomerEditForm({ customer, onSave, onCancel }) {
               <Label htmlFor="editBillingAddress">Billing Address</Label>
               <Textarea
                 id="editBillingAddress"
-                value={formData.indianDetails?.billingAddress || ""}
+                value={formData.indianDetails?.billing_Address || ""}
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
-                    indianDetails: { ...prev.indianDetails, billingAddress: e.target.value },
+                    indianDetails: { ...prev.indianDetails, billing_Address: e.target.value },
                   }))
                 }
                 placeholder="Enter billing address"
@@ -2453,11 +2303,11 @@ function CustomerEditForm({ customer, onSave, onCancel }) {
               <Label htmlFor="editReceiverName">Receiver Name</Label>
               <Input
                 id="editReceiverName"
-                value={formData.indianDetails?.receiverName || ""}
+                value={formData.indianDetails?.receiver_Name || ""}
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
-                    indianDetails: { ...prev.indianDetails, receiverName: e.target.value },
+                    indianDetails: { ...prev.indianDetails, receiver_Name: e.target.value },
                   }))
                 }
                 placeholder="Enter receiver name"
@@ -2467,11 +2317,11 @@ function CustomerEditForm({ customer, onSave, onCancel }) {
               <Label htmlFor="editReceiverContact">Receiver Contact No.</Label>
               <Input
                 id="editReceiverContact"
-                value={formData.indianDetails?.receiverContact || ""}
+                value={formData.indianDetails?.receiver_ContactNo || ""}
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
-                    indianDetails: { ...prev.indianDetails, receiverContact: e.target.value },
+                    indianDetails: { ...prev.indianDetails, receiver_ContactNo: e.target.value },
                   }))
                 }
                 placeholder="Enter receiver contact number"
@@ -2480,11 +2330,11 @@ function CustomerEditForm({ customer, onSave, onCancel }) {
             <div className="space-y-2">
               <Label htmlFor="editPriority">Customer Priority</Label>
               <Select
-                value={formData.indianDetails?.priority || ""}
+                value={formData.indianDetails?.customerPriority || ""}
                 onValueChange={(value) =>
                   setFormData((prev) => ({
                     ...prev,
-                    indianDetails: { ...prev.indianDetails, priority: value },
+                    indianDetails: { ...prev.indianDetails, customerPriority: value },
                   }))
                 }
               >
@@ -2515,7 +2365,7 @@ function CustomerEditForm({ customer, onSave, onCancel }) {
                   <SelectValue placeholder="Select shipping method" />
                 </SelectTrigger>
                 <SelectContent>
-                  {shippingMethods.indian.map((method) => (
+                  {shippingMethods.Indian.map((method) => (
                     <SelectItem key={method} value={method}>
                       {method.charAt(0).toUpperCase() + method.slice(1)}
                     </SelectItem>
@@ -2524,8 +2374,6 @@ function CustomerEditForm({ customer, onSave, onCancel }) {
               </Select>
             </div>
           </div>
-
-          {/* Shipping Addresses */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <Label>Shipping Addresses</Label>
@@ -2540,23 +2388,26 @@ function CustomerEditForm({ customer, onSave, onCancel }) {
                 Add Address
               </Button>
             </div>
-            {(formData.indianDetails?.shippingAddresses || []).map((address, index) => (
+            {formData.indianDetails?.shipping_Addresses?.map((address, index) => (
               <div key={index} className="flex items-center gap-2">
                 <Input
                   value={address}
-                  onChange={(e) => handleShippingAddressChange(index, e.target.value, false)}
+                  onChange={(e) => updateShippingAddress(index, e.target.value, false)}
                   placeholder={`Shipping address ${index + 1}`}
                 />
-                {(formData.indianDetails?.shippingAddresses || []).length > 1 && (
-                  <Button type="button" variant="outline" size="sm" onClick={() => removeShippingAddress(index, false)}>
+                {formData.indianDetails.shipping_Addresses.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => removeShippingAddress(index, false)}
+                  >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 )}
               </div>
             ))}
           </div>
-
-          {/* Bank Details */}
           <div className="space-y-4">
             <h4 className="text-md font-semibold text-gray-800">Bank Details</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -2661,22 +2512,23 @@ function CustomerEditForm({ customer, onSave, onCancel }) {
             </div>
           </div>
         </div>
-      ) : (
+      )}
+
+      {formData.customer_Location === "International" && (
         <div className="space-y-6">
           <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">
             International Customer Details
           </h3>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="editIntlBillingAddress">Billing Address</Label>
               <Textarea
                 id="editIntlBillingAddress"
-                value={formData.internationalDetails?.billingAddress || ""}
+                value={formData.internationalDetails?.billing_Address || ""}
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
-                    internationalDetails: { ...prev.internationalDetails, billingAddress: e.target.value },
+                    internationalDetails: { ...prev.internationalDetails, billing_Address: e.target.value },
                   }))
                 }
                 placeholder="Enter billing address"
@@ -2686,11 +2538,11 @@ function CustomerEditForm({ customer, onSave, onCancel }) {
               <Label htmlFor="editIntlIndustry">Industry/Sector</Label>
               <Input
                 id="editIntlIndustry"
-                value={formData.internationalDetails?.industry || ""}
+                value={formData.internationalDetails?.industry_Sector || ""}
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
-                    internationalDetails: { ...prev.internationalDetails, industry: e.target.value },
+                    internationalDetails: { ...prev.internationalDetails, industry_Sector: e.target.value },
                   }))
                 }
                 placeholder="Enter industry/sector"
@@ -2714,11 +2566,11 @@ function CustomerEditForm({ customer, onSave, onCancel }) {
               <Label htmlFor="editIntlReceiverName">Receiver Name</Label>
               <Input
                 id="editIntlReceiverName"
-                value={formData.internationalDetails?.receiverName || ""}
+                value={formData.internationalDetails?.receiver_Name || ""}
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
-                    internationalDetails: { ...prev.internationalDetails, receiverName: e.target.value },
+                    internationalDetails: { ...prev.internationalDetails, receiver_Name: e.target.value },
                   }))
                 }
                 placeholder="Enter receiver name"
@@ -2728,11 +2580,11 @@ function CustomerEditForm({ customer, onSave, onCancel }) {
               <Label htmlFor="editIntlReceiverContact">Receiver Contact No.</Label>
               <Input
                 id="editIntlReceiverContact"
-                value={formData.internationalDetails?.receiverContact || ""}
+                value={formData.internationalDetails?.receiver_ContactNo || ""}
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
-                    internationalDetails: { ...prev.internationalDetails, receiverContact: e.target.value },
+                    internationalDetails: { ...prev.internationalDetails, receiver_ContactNo: e.target.value },
                   }))
                 }
                 placeholder="Enter receiver contact number"
@@ -2741,11 +2593,11 @@ function CustomerEditForm({ customer, onSave, onCancel }) {
             <div className="space-y-2">
               <Label htmlFor="editIntlPriority">Customer Priority</Label>
               <Select
-                value={formData.internationalDetails?.priority || ""}
+                value={formData.internationalDetails?.customerPriority || ""}
                 onValueChange={(value) =>
                   setFormData((prev) => ({
                     ...prev,
-                    internationalDetails: { ...prev.internationalDetails, priority: value },
+                    internationalDetails: { ...prev.internationalDetails, customerPriority: value },
                   }))
                 }
               >
@@ -2776,7 +2628,7 @@ function CustomerEditForm({ customer, onSave, onCancel }) {
                   <SelectValue placeholder="Select shipping method" />
                 </SelectTrigger>
                 <SelectContent>
-                  {shippingMethods.international.map((method) => (
+                  {shippingMethods.International.map((method) => (
                     <SelectItem key={method} value={method}>
                       {method.charAt(0).toUpperCase() + method.slice(1)}
                     </SelectItem>
@@ -2787,11 +2639,11 @@ function CustomerEditForm({ customer, onSave, onCancel }) {
             <div className="space-y-2">
               <Label htmlFor="editCurrency">Default Currency</Label>
               <Select
-                value={formData.internationalDetails?.currency || ""}
+                value={formData.internationalDetails?.defaultCurrency || ""}
                 onValueChange={(value) =>
                   setFormData((prev) => ({
                     ...prev,
-                    internationalDetails: { ...prev.internationalDetails, currency: value },
+                    internationalDetails: { ...prev.internationalDetails, defaultCurrency: value },
                   }))
                 }
               >
@@ -2831,8 +2683,6 @@ function CustomerEditForm({ customer, onSave, onCancel }) {
               </Select>
             </div>
           </div>
-
-          {/* International Shipping Addresses */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <Label>Shipping Addresses</Label>
@@ -2847,23 +2697,26 @@ function CustomerEditForm({ customer, onSave, onCancel }) {
                 Add Address
               </Button>
             </div>
-            {(formData.internationalDetails?.shippingAddresses || []).map((address, index) => (
+            {formData.internationalDetails?.shipping_Addresses?.map((address, index) => (
               <div key={index} className="flex items-center gap-2">
                 <Input
                   value={address}
-                  onChange={(e) => handleShippingAddressChange(index, e.target.value, true)}
+                  onChange={(e) => updateShippingAddress(index, e.target.value, true)}
                   placeholder={`Shipping address ${index + 1}`}
                 />
-                {(formData.internationalDetails?.shippingAddresses || []).length > 1 && (
-                  <Button type="button" variant="outline" size="sm" onClick={() => removeShippingAddress(index, true)}>
+                {formData.internationalDetails.shipping_Addresses.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => removeShippingAddress(index, true)}
+                  >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 )}
               </div>
             ))}
           </div>
-
-          {/* International Bank Details */}
           <div className="space-y-4">
             <h4 className="text-md font-semibold text-gray-800">Bank Details</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -2970,25 +2823,11 @@ function CustomerEditForm({ customer, onSave, onCancel }) {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="editCreatedBy">Created By</Label>
-          <Input id="editCreatedBy" value={formData.createdBy} readOnly className="bg-gray-50" />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="editUpdatedBy">Updated By</Label>
-          <Input id="editUpdatedBy" value={LOGGED_IN_EMPLOYEE_ID} readOnly className="bg-gray-50" />
-        </div>
-      </div>
-
-      <DialogFooter className="gap-2">
+      <DialogFooter className="mt-6">
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit">
-          <Save className="h-4 w-4 mr-2" />
-          Save Changes
-        </Button>
+        <Button type="submit">Save Changes</Button>
       </DialogFooter>
     </form>
   )
