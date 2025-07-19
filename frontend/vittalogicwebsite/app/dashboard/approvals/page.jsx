@@ -22,27 +22,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
 
-const employee = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("loggedInEmployee")) : null
-const LOGGED_IN_EMPLOYEE_ID = employee?.employeeId || null
-const TOKEN = typeof window !== "undefined" ? localStorage.getItem("token") : null
-
-
 // Function to get approval category display name
 const getApprovalCategoryName = (category) => {
   switch (category) {
-    case "asset":
+    case "Asset":
       return "Asset"
-    case "liability":
+    case "Liability":
       return "Liability"
-    case "customer_payment":
+    case "Customer Payment":
       return "Customer Payment"
-    case "vendor_payment":
+    case "Vendor Payment":
       return "Vendor Payment"
-    case "salary":
+    case "Salary":
       return "Salary"
-    case "department_budget":
+    case "Department Budget":
       return "Department Budget"
-    case "service":
+    case "Service":
       return "Service"
     default:
       return category
@@ -51,9 +46,10 @@ const getApprovalCategoryName = (category) => {
 
 // Function to get auth headers
 const getAuthHeaders = () => {
-  return TOKEN ? {
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
+  return token ? {
     "Content-Type": "application/json",
-    "Authorization": `Bearer ${TOKEN}`
+    "Authorization": `Bearer ${token}`
   } : { "Content-Type": "application/json" }
 }
 
@@ -64,178 +60,201 @@ export default function ApprovalsPage() {
   const [receivedApprovals, setReceivedApprovals] = useState([])
   const [approvalHistory, setApprovalHistory] = useState([])
   const [actionDialogOpen, setActionDialogOpen] = useState(false)
-  const [selectedApproval, setSelectedApproval] = useState("")
+  const [selectedApproval, setSelectedApproval] = useState(null)
   const [actionType, setActionType] = useState("")
   const [eligibleApprovers, setEligibleApprovers] = useState([])
-
-  // New Approval Form State
-  const [approval_id, setapproval_id] = useState("")
-  const [min_expense, setmin_expense] = useState("")
-  const [max_expense, setmax_expense] = useState("")
-  const [priority, setPriority] = useState("")
-  const [tentative_date, settentative_date] = useState("")
-  const [reason, setReason] = useState("")
-  const [approval_to, setapproval_to] = useState("")
-  const [approval_created_by, setapproval_created_by] = useState(LOGGED_IN_EMPLOYEE_ID)
-  const [approvalfor, setApprovalfor] = useState("")
-
-  // New state variables for approver lookup and notes
   const [actionNote, setActionNote] = useState("")
   const [detailDialogOpen, setDetailDialogOpen] = useState(false)
-  const [selectedApprovalDetail, setSelectedApprovalDetail] = useState("")
-
-  // Filter states for history
+  const [selectedApprovalDetail, setSelectedApprovalDetail] = useState(null)
   const [statusFilter, setStatusFilter] = useState("all")
   const [sortBy, setSortBy] = useState("newest")
   const [priorityFilter, setPriorityFilter] = useState("all")
 
-  const isFormValid = approval_to && approvalfor && min_expense >= 0 && max_expense >= min_expense && priority && tentative_date && reason && approval_created_by;
+  // Form state
+  const [approval_id, setApprovalId] = useState("")
+  const [min_expense, setMinExpense] = useState("")
+  const [max_expense, setMaxExpense] = useState("")
+  const [priority, setPriority] = useState("")
+  const [tentative_date, setTentativeDate] = useState("")
+  const [reason, setReason] = useState("")
+  const [approval_to, setApprovalTo] = useState("")
+  const [approvalfor, setApprovalfor] = useState("") // Added missing state
+  const [approval_created_by, setApprovalCreatedBy] = useState(
+    typeof window !== "undefined" ? JSON.parse(localStorage.getItem("loggedInEmployee"))?.employeeId || null : null
+  )
 
-  // Fetch eligible approvers on component mount
+  // Validate form
+  const isFormValid = approval_to && 
+                     approvalfor && 
+                     min_expense !== "" && 
+                     max_expense !== "" && 
+                     Number(min_expense) >= 0 && 
+                     Number(max_expense) >= Number(min_expense) && 
+                     priority && 
+                     tentative_date && 
+                     reason && 
+                     approval_created_by
+
+  // Fetch eligible approvers
   useEffect(() => {
     if (!approval_created_by) {
-      setSubmitMessage("Please log in to access this feature");
-      setTimeout(() => setSubmitMessage(""), 3000);
-      return;
+      setSubmitMessage("Please log in to access this feature")
+      setTimeout(() => setSubmitMessage(""), 3000)
+      return
     }
     const fetchEligibleApprovers = async () => {
       try {
-        console.log("Fetching eligible approvers for createdBy:", approval_created_by);
         const response = await fetch(`http://localhost:8000/api/v1/approval/eligible-approvers?createdBy=${approval_created_by}`, {
           method: "GET",
           headers: getAuthHeaders(),
-        });
-        console.log("Response status:", response.status);
-        const data = await response.json();
-        console.log("Full response data:", data);
-        if (data.statusCode === 200 && data.success === true) {
-          console.log("Raw data.data:", data.data);
-          if (!Array.isArray(data.data)) {
-            console.error("Invalid data format:", data.data);
-            setSubmitMessage("Invalid data format from server");
-            setTimeout(() => setSubmitMessage(""), 3000);
-            return;
-          }
+        })
+        const data = await response.json()
+        if (data.statusCode === 200 && data.success) {
           const adjustedData = (data.data || []).map(emp => ({
             employeeId: emp.employeeId || emp._id,
             label: emp.label || `${emp.employeeName || 'Unknown'} - ${emp.role || emp.designation || 'Unknown'}`
-          }));
-          setEligibleApprovers(adjustedData);
-          console.log("Eligible approvers set:", adjustedData);
+          }))
+          setEligibleApprovers(adjustedData)
           if (adjustedData.length === 0) {
-            setSubmitMessage("No eligible approvers found for your level");
-            setTimeout(() => setSubmitMessage(""), 5000);
+            setSubmitMessage("No eligible approvers found for your level")
+            setTimeout(() => setSubmitMessage(""), 5000)
           }
         } else {
-          setSubmitMessage(data.message || "Unexpected response from server");
-          console.log("Unexpected response:", data);
+          setSubmitMessage(data.message || "Error fetching eligible approvers")
+          setTimeout(() => setSubmitMessage(""), 3000)
         }
       } catch (error) {
-        console.error("Fetch error:", error);
-        setSubmitMessage("Error fetching eligible approvers");
-        setTimeout(() => setSubmitMessage(""), 3000);
+        console.error("Fetch eligible approvers error:", error)
+        setSubmitMessage("Error fetching eligible approvers")
+        setTimeout(() => setSubmitMessage(""), 3000)
       }
-    };
-    fetchEligibleApprovers();
-  }, [approval_created_by]);
+    }
+    fetchEligibleApprovers()
+  }, [approval_created_by])
 
-  // Fetch received approvals
-  // pages/ApprovalsPage.js
-useEffect(() => {
-  if (activeSection === "received") {
-    const fetchReceivedApprovals = async () => {
-      try {
-        if (!LOGGED_IN_EMPLOYEE_ID) {
-          setSubmitMessage("Please log in to view received approvals");
-          setTimeout(() => setSubmitMessage(""), 3000);
-          return;
-        }
-        const response = await fetch(
-          `http://localhost:8000/api/v1/approval/received/${LOGGED_IN_EMPLOYEE_ID}?priority=${priorityFilter === 'all' ? '' : priorityFilter}`,
-          {
-            method: "GET",
-            credentials: "include",
-            headers: getAuthHeaders(),
+// Fetch received approvals
+  useEffect(() => {
+    if (activeSection === "received" && approval_created_by) {
+      const fetchReceivedApprovals = async () => {
+        try {
+          if (!approval_created_by) {
+            setSubmitMessage("Please log in to view received approvals")
+            setTimeout(() => setSubmitMessage(""), 3000)
+            return
           }
-        );
-        const data = await response.json();
-        console.log("Received approvals data:", data);
-        if (data.statusCode === 200) {
-          const transformedApprovals = data.data.map(approval => ({
-            id: approval._id,
-            approval_id: approval.approval_id,
-            approvalfor: approval.approvalfor,
-            reason: approval.reason,
-            priority: approval.priority,
-            expenseRange: `${approval.min_expense.toFixed(2)} - ${approval.max_expense.toFixed(2)}`,
-            tentative_date: new Date(approval.tentative_date).toISOString().split('T')[0],
-            receiveDate: new Date(approval.createdAt).toISOString().split('T')[0],
-            status: approval.status,
-            senderName: approval.approval_created_by?.name || 'Unknown',
-            senderDepartment: approval.approval_created_by?.department || 'N/A',
-            senderDesignation: approval.approval_created_by?.role || 'Unknown',
-            senderId: approval.approval_created_by?.employeeId || '',
-            approval_to: approval.approval_to?.employeeId || '',
-            approverName: approval.approval_to?.name || 'Unknown',
-            actionDate: approval.decision_date ? new Date(approval.decision_date).toISOString().split('T')[0] : '',
-            actionNote: approval.approver_note || '',
-            decisionTime: approval.decision_time ? new Date(approval.decision_time).toLocaleTimeString() : '',
-            decisionDateP: approval.decision_date ? new Date(approval.decision_date).toISOString().split('T')[0] : ''
-          }));
-          setReceivedApprovals(transformedApprovals);
-        } else {
-          setSubmitMessage(data.message || "Error fetching received approvals");
-          setTimeout(() => setSubmitMessage(""), 3000);
+          const response = await fetch(
+            `http://localhost:8000/api/v1/approval/received${priorityFilter !== "all" ? `?priority=${priorityFilter}` : ""}`,
+            {
+              method: "GET",
+              credentials: "include",
+              headers: getAuthHeaders(),
+            }
+          )
+          const data = await response.json()
+
+          if (data.statusCode === 200) {
+            const transformedApprovals = data.data.map(approval => {
+              // Ensure min_expense and max_expense are valid numbers
+              const minExpense = isNaN(Number(approval.min_expense?.toString())) ? 0 : Number(approval.min_expense.toString())
+              const maxExpense = isNaN(Number(approval.max_expense?.toString())) ? 0 : Number(approval.max_expense.toString())
+
+              
+              return {
+                id: approval._id,
+                approval_id: approval.approval_id,
+                approvalfor: approval.approvalfor,
+                reason: approval.reason,
+                priority: approval.priority,
+                expenseRange: `${minExpense.toFixed(2)} - ${maxExpense.toFixed(2)}`,
+                tentative_date: new Date(approval.tentative_date).toISOString().split('T')[0],
+                receiveDate: new Date(approval.createdAt).toISOString().split('T')[0],
+                status: approval.status.toLowerCase(),
+                senderName: approval.approval_created_by?.name || 'Unknown',
+                senderDepartment:
+                  typeof approval.approval_created_by?.department === "object"
+                    ? `${approval.approval_created_by.department.department_id || "Unknown"} - ${approval.approval_created_by.department.departmentName || "Unknown"}`
+                    : approval.approval_created_by?.department || "Unknown",
+                senderDesignation: approval.approval_created_by?.role || 'Unknown',
+                senderId: approval.approval_created_by?.employeeId || '',
+                approval_to: approval.approval_to?.employeeId || '',
+                approverName: approval.approval_to?.name || 'Unknown',
+                actionDate: approval.decision_date ? new Date(approval.decision_date).toISOString().split('T')[0] : '',
+                actionNote: approval.approver_note || '',
+                decisionTime: approval.decision_time ? new Date(approval.decision_time).toLocaleTimeString() : '',
+                decisionDate: approval.decision_date ? new Date(approval.decision_date).toISOString().split('T')[0] : ''
+              }
+            })
+            setReceivedApprovals(transformedApprovals)
+          } else {
+            setSubmitMessage(data.message || "Error fetching received approvals")
+            setTimeout(() => setSubmitMessage(""), 3000)
+          }
+        } catch (error) {
+          console.error("Fetch received approvals error:", error)
+          setSubmitMessage("Error fetching received approvals")
+          setTimeout(() => setSubmitMessage(""), 3000)
         }
-      } catch (error) {
-        console.error("Fetch received approvals error:", error);
-        setSubmitMessage("Error fetching received approvals");
-        setTimeout(() => setSubmitMessage(""), 3000);
       }
-    };
-    fetchReceivedApprovals();
-  }
-}, [activeSection, priorityFilter, LOGGED_IN_EMPLOYEE_ID]);
+      fetchReceivedApprovals()
+    }
+  }, [activeSection, priorityFilter, approval_created_by])
 
   // Fetch approval history
   useEffect(() => {
     if (activeSection === "history" && approval_created_by) {
       const fetchApprovalHistory = async () => {
         try {
+          const queryParams = new URLSearchParams()
+          if (statusFilter !== "all") queryParams.append("status", statusFilter)
+          queryParams.append("sort", sortBy === "newest" ? "desc" : "asc")
+          
           const response = await fetch(
-            `http://localhost:8000/api/v1/approval/history/${approval_created_by}?status=${statusFilter}&sort=${sortBy === "newest" ? "desc" : "asc"}`,
-            { headers: getAuthHeaders() }
+            `http://localhost:8000/api/v1/approval/history?${queryParams}`,
+            {
+              method: "GET",
+              credentials: "include",
+              headers: getAuthHeaders(),
+            }
           )
           const data = await response.json()
-          if (data.status === 200) {
-            setApprovalHistory(data.data.map(approval => ({
-              id: approval._id,
-              approval_id: approval.approval_id,
-              approvalfor: approval.approvalfor,
-              reason: approval.reason,
-              priority: approval.priority,
-              expenseRange: `${approval.min_expense} - ${approval.max_expense}`,
-              tentative_date: approval.tentative_date,
-              submittedDate: approval.createdAt,
-              status: approval.status.toLowerCase(),
-              approvedBy: approval.approvedBy ? `${approval.approvedBy.employeeId} - ${approval.approvedBy.name}` : "",
-              rejectedBy: approval.rejectedBy ? `${approval.rejectedBy.employeeId} - ${approval.rejectedBy.name}` : "",
-              actionDate: approval.decision_date,
-              actionNote: approval.approver_note,
-              senderName: approval.approval_created_by.name,
-              senderDepartment: approval.approval_created_by.department || "N/A",
-              senderDesignation: approval.approval_created_by.role,
-              senderId: approval.approval_created_by.employeeId,
-              approval_to: approval.approval_to.employeeId,
-              approverName: approval.approval_to.name,
-              decisionTime: approval.decision_time ? new Date(approval.decision_time).toLocaleTimeString() : "",
-              decisionDate: approval.decision_date,
-            })))
+          console.log("Approval history raw data:", data) // Debug log
+          if (data.status === 200 || data.statusCode === 200) {
+            const transformedHistory = data.data.map(approval => {
+              // Ensure min_expense and max_expense are valid numbers
+              const minExpense = isNaN(Number(approval.min_expense)) ? 0 : Number(approval.min_expense)
+              const maxExpense = isNaN(Number(approval.max_expense)) ? 0 : Number(approval.max_expense)
+              
+              return {
+                id: approval._id,
+                approval_id: approval.approval_id,
+                approvalfor: approval.approvalfor,
+                reason: approval.reason,
+                priority: approval.priority,
+                expenseRange: `${minExpense.toFixed(2)} - ${maxExpense.toFixed(2)}`,
+                tentative_date: new Date(approval.tentative_date).toISOString().split('T')[0],
+                submittedDate: new Date(approval.createdAt).toISOString().split('T')[0],
+                status: approval.status.toLowerCase(),
+                approvedBy: approval.approvedBy ? `${approval.approvedBy.employeeId} - ${approval.approvedBy.name}` : "",
+                rejectedBy: approval.rejectedBy ? `${approval.rejectedBy.employeeId} - ${approval.rejectedBy.name}` : "",
+                actionDate: approval.decision_date ? new Date(approval.decision_date).toISOString().split('T')[0] : "",
+                actionNote: approval.approver_note || "",
+                senderName: approval.approval_created_by?.name || "Unknown",
+                senderDepartment: approval.approval_created_by?.department || "N/A",
+                senderDesignation: approval.approval_created_by?.role || "Unknown",
+                senderId: approval.approval_created_by?.employeeId || "",
+                approval_to: approval.approval_to?.employeeId || "",
+                approverName: approval.approval_to?.name || "Unknown",
+                decisionTime: approval.decision_time ? new Date(approval.decision_time).toLocaleTimeString() : "",
+                decisionDate: approval.decision_date ? new Date(approval.decision_date).toISOString().split('T')[0] : "",
+              }
+            })
+            setApprovalHistory(transformedHistory)
           } else {
             setSubmitMessage(data.message || "Error fetching approval history")
             setTimeout(() => setSubmitMessage(""), 3000)
           }
         } catch (error) {
+          console.error("Fetch approval history error:", error)
           setSubmitMessage("Error fetching approval history")
           setTimeout(() => setSubmitMessage(""), 3000)
         }
@@ -244,23 +263,22 @@ useEffect(() => {
     }
   }, [activeSection, statusFilter, sortBy, approval_created_by])
 
-  // Generate approval ID on component mount
+  // Generate approval ID
   useEffect(() => {
-    const generateapproval_id = async () => {
+    const generateApprovalId = async () => {
       const timestamp = Date.now()
       const id = `APP-${timestamp.toString().slice(-5).padStart(5, "0")}`
-      setapproval_id(id)
+      setApprovalId(id)
     }
-    generateapproval_id()
+    generateApprovalId()
   }, [])
 
   // Handle new approval form submission
   const handleNewApprovalSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    console.log("Submitting form with:", { approval_id, approval_to, approval_created_by, approvalfor, min_expense, max_expense, priority, tentative_date, reason });
+    e.preventDefault()
+    setIsSubmitting(true)
     try {
-      const response = await fetch("http://localhost:8000/api/v1/approval/createApproval", { // Fixed endpoint to match controller
+      const response = await fetch("http://localhost:8000/api/v1/approval/createApproval", {
         method: "POST",
         credentials: "include",
         headers: getAuthHeaders(),
@@ -269,39 +287,37 @@ useEffect(() => {
           approval_to,
           approval_created_by,
           approvalfor,
-          min_expense,
-          max_expense,
+          min_expense: Number(min_expense), // Convert to number
+          max_expense: Number(max_expense), // Convert to number
           priority,
           tentative_date,
           reason,
+          createdBy: approval_created_by, // Include createdBy for backend
         }),
-      });
-      const data = await response.json();
+      })
+      const data = await response.json()
       if (response.ok) {
-        setSubmitMessage("Approval request submitted successfully");
-        setTimeout(() => setSubmitMessage(""), 3000);
-        setapproval_to("");
-        setApprovalfor("");
-        setmin_expense("");
-        setmax_expense("");
-        setPriority("");
-        settentative_date("");
-        setReason("");
+        setSubmitMessage("Approval request submitted successfully")
+        setTimeout(() => setSubmitMessage(""), 3000)
+        setApprovalTo("")
+        setApprovalfor("")
+        setMinExpense("")
+        setMaxExpense("")
+        setPriority("")
+        setTentativeDate("")
+        setReason("")
+        const timestamp = Date.now()
+        setApprovalId(`APP-${timestamp.toString().slice(-5).padStart(5, "0")}`)
       } else {
-        setSubmitMessage(data.message || `Failed to submit: ${response.status} ${response.statusText}`);
-        console.log("Error response:", data);
+        setSubmitMessage(data.message || `Failed to submit: ${response.status} ${response.statusText}`)
       }
     } catch (error) {
-      console.error("Submission error:", error);
-      if (error.name === "SyntaxError") {
-        setSubmitMessage("Server error: Endpoint not found or invalid response");
-      } else {
-        setSubmitMessage("Error submitting approval request");
-      }
-      setTimeout(() => setSubmitMessage(""), 3000);
+      console.error("Submission error:", error)
+      setSubmitMessage("Error submitting approval request")
+      setTimeout(() => setSubmitMessage(""), 3000)
     }
-    setIsSubmitting(false);
-  };
+    setIsSubmitting(false)
+  }
 
   // Handle approval action
   const handleApprovalAction = (approval, action) => {
@@ -310,88 +326,84 @@ useEffect(() => {
     setActionDialogOpen(true)
   }
 
-const confirmApprovalAction = async () => {
-  // Read fresh values from localStorage
-  const loggedInEmployee = typeof window !== "undefined" ? localStorage.getItem("loggedInEmployee") : null;
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-  
-  let employeeId = null;
-  
-  if (loggedInEmployee) {
+  const confirmApprovalAction = async () => {
+    const loggedInEmployee = typeof window !== "undefined" ? localStorage.getItem("loggedInEmployee") : null
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
+    
+    let employeeId = null
+    if (loggedInEmployee) {
+      try {
+        const parsedEmployee = JSON.parse(loggedInEmployee)
+        employeeId = parsedEmployee?.employeeId
+      } catch (e) {
+        console.error("Error parsing employee from localStorage:", e)
+      }
+    }
+    
+    if (!employeeId || !selectedApproval) {
+      setSubmitMessage("Please log in to perform this action")
+      setActionDialogOpen(false)
+      setActionNote("")
+      setTimeout(() => setSubmitMessage(""), 3000)
+      return
+    }
+    
     try {
-      const parsedEmployee = JSON.parse(loggedInEmployee);
-      employeeId = parsedEmployee?.employeeId;
-    } catch (e) {
-      console.error("Error parsing employee from localStorage:", e);
+      const headers = {
+        "Content-Type": "application/json",
+        "X-Employee-ID": employeeId,
+      }
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`
+      }
+      
+      const response = await fetch(`http://localhost:8000/api/v1/approval/update-status/${selectedApproval.approval_id}`, {
+        method: "PATCH",
+        headers,
+        credentials: "include",
+        body: JSON.stringify({
+          status: actionType === "accept" ? "Approved" : actionType === "reject" ? "Rejected" : "On Hold",
+          approver_note: actionNote,
+          employeeId,
+        }),
+      })
+      
+      const data = await response.json()
+      if (data.status === 200 || data.statusCode === 200) {
+        setReceivedApprovals(receivedApprovals.map((approval) =>
+          approval.id === selectedApproval.id
+            ? {
+                ...approval,
+                status: actionType === "accept" ? "approved" : actionType === "reject" ? "rejected" : "on-hold",
+                actionNote,
+                actionDate: new Date().toISOString().split("T")[0],
+                decisionTime: new Date().toLocaleTimeString(),
+                decisionDate: new Date().toISOString().split("T")[0],
+              }
+            : approval
+        ))
+        setSubmitMessage(`Approval ${actionType === "accept" ? "accepted" : actionType === "reject" ? "rejected" : "put on hold"} successfully!`)
+      } else {
+        setSubmitMessage(data.message || "Error updating approval status")
+      }
+    } catch (error) {
+      console.error("Request error:", error)
+      setSubmitMessage("Error updating approval status")
+    } finally {
+      setActionDialogOpen(false)
+      setActionNote("")
+      setTimeout(() => setSubmitMessage(""), 3000)
     }
   }
-  
-  if (!employeeId) {
-    setSubmitMessage("Please log in to perform this action - Employee not found");
-    setActionDialogOpen(false);
-    setActionNote("");
-    setTimeout(() => setSubmitMessage(""), 3000);
-    return;
-  }
-  
-  try {
-    const headers = {
-      "Content-Type": "application/json",
-      "X-Employee-ID": employeeId, // ✅ Send employee ID in header
-    };
-    
-    // Add token if available
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-    
-    const response = await fetch(`http://localhost:8000/api/v1/approval/update-status/${selectedApproval.approval_id}`, {
-      method: "PATCH",
-      headers: headers,
-      credentials: "include",
-      body: JSON.stringify({
-        status: actionType === "accept" ? "Approved" : actionType === "reject" ? "Rejected" : "On Hold",
-        approver_note: actionNote,
-        employeeId: employeeId, // ✅ Also send in body as fallback
-      }),
-    });
-    
-    const data = await response.json();
-    console.log("Response:", data);
-    
-    if (data.status === 200 || data.statusCode === 200) {
-      setReceivedApprovals(receivedApprovals.map((approval) =>
-        approval.id === selectedApproval.id
-          ? {
-              ...approval,
-              status: actionType === "accept" ? "approved" : actionType === "reject" ? "rejected" : "on-hold",
-              actionNote: actionNote,
-              actionDate: new Date().toISOString().split("T")[0],
-              actionBy: employeeId,
-            }
-          : approval
-      ));
-      setSubmitMessage(`Approval ${actionType === "accept" ? "accepted" : actionType === "reject" ? "rejected" : "put on hold"} successfully!`);
-    } else {
-      setSubmitMessage(data.message || "Error updating approval status");
-    }
-  } catch (error) {
-    console.error("Request error:", error);
-    setSubmitMessage("Error updating approval status");
-  } finally {
-    setActionDialogOpen(false);
-    setActionNote("");
-    setTimeout(() => setSubmitMessage(""), 3000);
-  }
-};
+
   // Get priority badge color
   const getPriorityColor = (priority) => {
-    switch (priority) {
-      case "High":
+    switch (priority?.toLowerCase()) {
+      case "high":
         return "bg-red-100 text-red-800"
-      case "Medium":
+      case "medium":
         return "bg-yellow-100 text-yellow-800"
-      case "Low":
+      case "low":
         return "bg-green-100 text-green-800"
       default:
         return "bg-gray-100 text-gray-800"
@@ -400,7 +412,7 @@ const confirmApprovalAction = async () => {
 
   // Get status badge color
   const getStatusColor = (status) => {
-    switch (status) {
+    switch (status?.toLowerCase()) {
       case "approved":
         return "bg-green-100 text-green-800"
       case "rejected":
@@ -508,7 +520,7 @@ const confirmApprovalAction = async () => {
 
                     <div className="space-y-2">
                       <Label htmlFor="approval_to">Approval To *</Label>
-                      <Select value={approval_to} onValueChange={setapproval_to} required>
+                      <Select value={approval_to} onValueChange={setApprovalTo} required>
                         <SelectTrigger>
                           <SelectValue placeholder="Select approver" />
                         </SelectTrigger>
@@ -528,7 +540,6 @@ const confirmApprovalAction = async () => {
                       <Input
                         id="approval_created_by"
                         value={approval_created_by || ""}
-                        onChange={(e) => setapproval_created_by(e.target.value)}
                         className="bg-gray-50"
                         placeholder="Current user employee ID"
                         readOnly
@@ -565,7 +576,7 @@ const confirmApprovalAction = async () => {
                               id="min_expense"
                               type="number"
                               value={min_expense}
-                              onChange={(e) => setmin_expense(e.target.value)}
+                              onChange={(e) => setMinExpense(e.target.value)}
                               placeholder="0.00"
                               className="pl-8"
                               min="0"
@@ -582,7 +593,7 @@ const confirmApprovalAction = async () => {
                               id="max_expense"
                               type="number"
                               value={max_expense}
-                              onChange={(e) => setmax_expense(e.target.value)}
+                              onChange={(e) => setMaxExpense(e.target.value)}
                               placeholder="0.00"
                               className="pl-8"
                               min="0"
@@ -614,7 +625,7 @@ const confirmApprovalAction = async () => {
                         id="tentative_date"
                         type="date"
                         value={tentative_date}
-                        onChange={(e) => settentative_date(e.target.value)}
+                        onChange={(e) => setTentativeDate(e.target.value)}
                         required
                       />
                     </div>
@@ -651,7 +662,6 @@ const confirmApprovalAction = async () => {
             {/* Approval Received Tab */}
             {activeSection === "received" && (
               <div className="space-y-6">
-                {/* Priority Filter */}
                 <Card>
                   <CardContent className="pt-6">
                     <div className="flex items-center space-x-4">
@@ -687,7 +697,6 @@ const confirmApprovalAction = async () => {
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                      {/* Sender Information */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
                         <div>
                           <Label className="text-sm font-medium text-gray-700">Sender's Name</Label>
@@ -709,7 +718,6 @@ const confirmApprovalAction = async () => {
                         </div>
                       </div>
 
-                      {/* Approval Details */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <Label className="text-sm font-medium text-gray-700">Approval ID</Label>
@@ -742,8 +750,7 @@ const confirmApprovalAction = async () => {
                         <p className="text-sm text-gray-900 mt-1 p-3 bg-gray-50 rounded-lg">{approval.reason}</p>
                       </div>
 
-                      {/* Action Buttons */}
-                      {approval.status === "pending" && (
+                      {approval.status.toLowerCase() === "pending" && (
                         <div className="flex flex-wrap gap-3 pt-4 border-t">
                           <Button variant="destructive" onClick={() => handleApprovalAction(approval, "reject")}>
                             <XCircle className="h-4 w-4 mr-2" />
@@ -784,7 +791,6 @@ const confirmApprovalAction = async () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {/* Filters */}
                     <div className="flex flex-wrap gap-4">
                       <div className="flex items-center space-x-2">
                         <Filter className="h-4 w-4 text-gray-400" />
@@ -794,10 +800,10 @@ const confirmApprovalAction = async () => {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">All Status</SelectItem>
-                            <SelectItem value="approved">Approved</SelectItem>
-                            <SelectItem value="rejected">Rejected</SelectItem>
-                            <SelectItem value="pending">Pending</SelectItem>
-                            <SelectItem value="on-hold">On Hold</SelectItem>
+                            <SelectItem value="Approved">Approved</SelectItem>
+                            <SelectItem value="Rejected">Rejected</SelectItem>
+                            <SelectItem value="Pending">Pending</SelectItem>
+                            <SelectItem value="On Hold">On Hold</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -815,7 +821,6 @@ const confirmApprovalAction = async () => {
                       </div>
                     </div>
 
-                    {/* History Table */}
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -919,11 +924,10 @@ const confirmApprovalAction = async () => {
           </DialogHeader>
           {selectedApprovalDetail && (
             <div className="space-y-6">
-              {/* Basic Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
                 <div>
                   <Label className="text-sm font-medium text-gray-700">Approval ID</Label>
-                  <p className="text-sm text-gray-900">{selectedApprovalDetail.approval_id3}</p>
+                  <p className="text-sm text-gray-900">{selectedApprovalDetail.approval_id}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-700">Approval For</Label>
@@ -959,7 +963,6 @@ const confirmApprovalAction = async () => {
                 </div>
               </div>
 
-              {/* Sender Information */}
               <div className="space-y-4">
                 <h4 className="font-medium text-gray-900">Sender Information</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -978,7 +981,6 @@ const confirmApprovalAction = async () => {
                 </div>
               </div>
 
-              {/* Financial Information */}
               <div className="space-y-4">
                 <h4 className="font-medium text-gray-900">Financial Details</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -995,13 +997,11 @@ const confirmApprovalAction = async () => {
                 </div>
               </div>
 
-              {/* Reason */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-gray-700">Reason</Label>
                 <p className="text-sm text-gray-900 p-3 bg-gray-50 rounded-lg">{selectedApprovalDetail.reason}</p>
               </div>
 
-              {/* Action Information */}
               {(selectedApprovalDetail.approvedBy ||
                 selectedApprovalDetail.rejectedBy ||
                 selectedApprovalDetail.actionDate ||
