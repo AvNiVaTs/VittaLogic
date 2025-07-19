@@ -26,8 +26,7 @@ const createInternalTransaction = asyncHandler(async (req, res) => {
         debitAccount,
         creditAccount,
         status,
-        narration,
-        attachments
+        narration
     } = req.body;
 
     const transactionId = `INT-${(await getNextSequence("internalTransaction")).toString().padStart(5, "0")}`;
@@ -123,6 +122,18 @@ const createInternalTransaction = asyncHandler(async (req, res) => {
         maintenanceRepairDetails.referenceId = assetRecord.maintenanceDetails?.maintenanceId;
     }
 
+    let attachmentUrl = null;
+    if (req.files?.attachment?.[0]?.path) {
+      const attachmentPath = req.files.attachment[0].path;
+      const attachment = await uploadOnCloudinary(attachmentPath);
+      if (attachment?.url) {
+        attachmentUrl = attachment.url;
+      }
+      if (fs.existsSync(attachmentPath)) {
+        fs.unlinkSync(attachmentPath);
+      }
+    }
+
     const internalTransaction = await InternalTransaction.create({
         transactionId,
         enteredBy: req.body.createdBy,
@@ -141,7 +152,7 @@ const createInternalTransaction = asyncHandler(async (req, res) => {
         creditAccount,
         status,
         narration,
-        attachments
+        attachments: attachmentUrl
     });
 
     return res.status(201).json(
@@ -213,8 +224,7 @@ const getAssetsForMaintenanceRepair = asyncHandler(async (req, res) => {
 
 const getInternalDebitAccounts = asyncHandler(async (req, res) => {
   const accounts = await FinancialAccount.find({ account_category: "Debit Account" });
-  const options = [
-    { label: "N/A", value: "NA" },
+  const options = [,
     ...accounts.map(a => ({
       label: `${a.account_id} - ${a.account_name}`,
       value: a.account_id
@@ -225,8 +235,7 @@ const getInternalDebitAccounts = asyncHandler(async (req, res) => {
 
 const getInternalCreditAccounts = asyncHandler(async (req, res) => {
   const accounts = await FinancialAccount.find({ account_category: "Credit Account" });
-  const options = [
-    { label: "N/A", value: "NA" },
+  const options = [,
     ...accounts.map(a => ({
       label: `${a.account_id} - ${a.account_name}`,
       value: a.account_id

@@ -204,8 +204,7 @@ const getAssetDetailsById = asyncHandler(async (req, res) => {
 
 const getSalesDebitAccounts = asyncHandler(async (req, res) => {
   const accounts = await FinancialAccount.find({ account_category: "Debit Account" });
-  const options = [
-    { label: "N/A", value: "NA" },
+  const options = [,
     ...accounts.map(a => ({
       label: `${a.account_id} - ${a.account_name}`,
       value: a.account_id
@@ -216,8 +215,7 @@ const getSalesDebitAccounts = asyncHandler(async (req, res) => {
 
 const getSalesCreditAccounts = asyncHandler(async (req, res) => {
   const accounts = await FinancialAccount.find({ account_category: "Credit Account" });
-  const options = [
-    { label: "N/A", value: "NA" },
+  const options = [,
     ...accounts.map(a => ({
       label: `${a.account_id} - ${a.account_name}`,
       value: a.account_id
