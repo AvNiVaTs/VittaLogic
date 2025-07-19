@@ -31,8 +31,8 @@ const createSaleTransaction = asyncHandler(async (req, res) => {
     status
   } = req.body;
 
-  const transactionId = `SAL-${(await getNextSequence("saleTransaction")).toString().padStart(5, "0")}`;
-  const referenceId = `REF-${(await getNextSequence("referenceId")).toString().padStart(5, "0")}`;
+  const transactionId = `SALE_TXN-${(await getNextSequence("sale_transaction")).toString().padStart(5, "0")}`;
+  const referenceId = `REF-${(await getNextSequence("transaction")).toString().padStart(5, "0")}`;
 
   if (debitAccount === "NA" && creditAccount === "NA") {
     throw new ApiErr(400, "Only one of Debit or Credit account can be N/A");
@@ -96,7 +96,7 @@ const createSaleTransaction = asyncHandler(async (req, res) => {
   ) {
     await Asset.findOneAndUpdate(
       { assetId: assetDetails.assetId },
-      { assetStatus: "Disposed" }
+      { status: "Disposed" }
     );
   }
 
@@ -204,8 +204,7 @@ const getAssetDetailsById = asyncHandler(async (req, res) => {
 
 const getSalesDebitAccounts = asyncHandler(async (req, res) => {
   const accounts = await FinancialAccount.find({ account_category: "Debit Account" });
-  const options = [
-    { label: "N/A", value: "NA" },
+  const options = [,
     ...accounts.map(a => ({
       label: `${a.account_id} - ${a.account_name}`,
       value: a.account_id
@@ -216,8 +215,7 @@ const getSalesDebitAccounts = asyncHandler(async (req, res) => {
 
 const getSalesCreditAccounts = asyncHandler(async (req, res) => {
   const accounts = await FinancialAccount.find({ account_category: "Credit Account" });
-  const options = [
-    { label: "N/A", value: "NA" },
+  const options = [,
     ...accounts.map(a => ({
       label: `${a.account_id} - ${a.account_name}`,
       value: a.account_id
