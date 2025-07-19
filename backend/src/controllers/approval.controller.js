@@ -1,6 +1,6 @@
 import { Approval } from "../models/approval.model.js"
-import { Employee } from "../models/employee.model.js"
 import { Department } from "../models/department.model.js"
+import { Employee } from "../models/employee.model.js"
 import { ApiErr } from "../utils/ApiError.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
@@ -78,9 +78,9 @@ const getApprovalReceived = asyncHandler(async (req, res) => {
 
       let department = null;
       if (creator?.department) {
-        department = await Department.findById(
-          creator.department,
-          "departmentName"
+        department = await Department.findOne(
+          {department_id: creator.department},
+          "department_id departmentName"
         );
       }
 
@@ -95,7 +95,10 @@ const getApprovalReceived = asyncHandler(async (req, res) => {
           employeeId: creator?.employeeId || approval.approval_created_by,
           name: creator?.employeeName || "Unknown",
           role: creator?.role || "Unknown",
-          department: department?.departmentName || "Unknown",
+          department: department?{
+            department_id: department.department_id,
+            departmentName: department.departmentName,
+          } : "Unknown",
         },
         approval_to: {
           employeeId: approval.approval_to,
@@ -192,3 +195,4 @@ const getEligibleApprovers = asyncHandler(async (req, res) => {
 export {
     createApproval, getApprovalHistory, getApprovalReceived, getEligibleApprovers, updateApprovalStatus
 }
+
