@@ -128,7 +128,7 @@ const createInternalTransaction = asyncHandler(async (req, res) => {
         enteredBy: req.body.createdBy,
         transactionDate,
         approvalId,
-        referenceType,
+        reference_type: referenceType,
         salaryDetails,
         liabilityDetails,
         refundInvestmentDetails,
@@ -152,7 +152,7 @@ const createInternalTransaction = asyncHandler(async (req, res) => {
 const getDepartmentsForSalaryDropdown = asyncHandler(async (req, res) => {
   const departments = await Department.find();
   const options = departments.map((d) => ({
-    label: `${d.department_id} - ${d.department_name}`,
+    label: `${d.department_id} - ${d.departmentName}`,
     value: d.department_id
   }));
   return res.status(200).json(new ApiResponse(200, options, "Departments fetched"));
@@ -160,10 +160,19 @@ const getDepartmentsForSalaryDropdown = asyncHandler(async (req, res) => {
 
 const getEmployeesByDepartmentForSalary = asyncHandler(async (req, res) => {
   const { departmentId, payMonth } = req.query;
-  const salaries = await EmployeeSalary.find({ department: departmentId, payMonth }).populate("employee");
+  const salaries = await EmployeeSalary.find({
+    department: departmentId,
+    payMonth
+  }).populate({
+    path: "employee",
+    model: "Employee",
+    localField: "employee",
+    foreignField: "employeeId", // <- match against custom ID
+    justOne: true
+  });
   const options = salaries.map((s) => ({
-    label: `${s.employee} - ${s.employeeName} - ₹${s.netSalary} - ${s.payMonth}`,
-    value: s.employee
+    label: `${s.employee?.employeeId} - ${s.employee?.employeeName} - ₹${s.netSalary} - ${s.payMonth}`,
+    value: s.employee?.employeeId
   }));
   return res.status(200).json(new ApiResponse(200, options, "Employees fetched"));
 });
