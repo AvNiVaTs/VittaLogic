@@ -58,6 +58,7 @@ const createSaleTransaction = asyncHandler(async (req, res) => {
     transactionId,
     referenceId,
     enteredBy: req.body.createdBy,
+    updatedBy: req.body.updatedBy,
     saleDate,
     customerType,
     customerId,
@@ -111,6 +112,7 @@ const completeSaleTransaction = asyncHandler(async (req, res) => {
   if (!saleTransaction) throw new ApiErr(404, "Sale transaction not found");
 
   saleTransaction.status = "Completed";
+  saleTransaction.updatedBy = req.body.updatedBy
   await saleTransaction.save();
 
   await CustomerPayment.findOneAndUpdate(
@@ -146,21 +148,28 @@ const getCustomersByType = asyncHandler(async (req, res) => {
 
 const getPendingPaymentsByCustomer = asyncHandler(async (req, res) => {
   const { customerId } = req.query;
+
   const payments = await CustomerPayment.find({
-    customerId,
-    status: { $ne: "Completed" }
+    customer_id: customerId,
+    status: { $in: ["Pending","Overdue", "Processing", "On Hold"] }
   });
-  const options = payments.map(p => ({
-    label: `${p.paymentId} - (₹${parseFloat(p.payment_amount_in_inr)} - ₹${parseFloat(p.paid_amount)})`,
-    value: p.paymentId
-  }));
-  return res.status(200).json(new ApiResponse(200, options, "Payments fetched"));
+
+  const options = payments.map(p => {
+    const remaining = parseFloat(p.payment_amount_in_inr || 0) - parseFloat(p.paid_amount || 0);
+
+    return {
+      label: `${p.customer_payment_id} (₹${remaining.toFixed(2)})`,
+      value: p.customer_payment_id
+    };
+  });
+
+  return res.status(200).json(new ApiResponse(200, options, "Pending payments fetched"));
 });
 
 const getApprovedCustomerPaymentApprovals = asyncHandler(async (req, res) => {
   const approvals = await Approval.find({
-    approvalFor: "Customer Payment",
-    approvalStatus: "Approved"
+    approvalfor: "Customer Payment",
+    status: "Approved"
   });
   const options = approvals.map(a => ({
     label: `${a.approval_id} - ${a.reason}`,

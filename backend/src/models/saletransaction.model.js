@@ -85,7 +85,12 @@ const saleTransactionSchema = new Schema({
   enteredBy: {
     type: String,
     ref: "Employee",
-    required: true
+    required: true,
+    immutable: true
+  },
+  updatedBy: {
+    type: String,
+    ref: "Employee"
   },
   saleDate: {
     type: Date,
@@ -198,7 +203,7 @@ const saleTransactionSchema = new Schema({
     trim: true
   },
   attachments: {
-    type :String // Cloudnary Url
+    type: String // Cloudnary Url
   }
 }, { timestamps: true });
 

@@ -96,16 +96,16 @@ const customerPaymentSchema = new Schema({
     default: 1.0
   },
   createdBy: { //Middleware
-        type: String,
-        ref: 'Employee',
-        required: true,
-        immutable: true
-    },
+    type: String,
+    ref: 'Employee',
+    required: true,
+    immutable: true
+  },
   updatedBy: { //Middleware
-      type: String,
-      ref: 'Employee',
-      required: true
-    }
+    type: String,
+    ref: 'Employee',
+    required: true
+  }
 },
 {timestamps: true});
 
