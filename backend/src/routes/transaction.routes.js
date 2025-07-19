@@ -29,6 +29,7 @@ import {
     getFinancialDebitAccountDropdown,
     getFinancialCreditAccountDropdown
 } from "../controllers/purchaseTransaction.controller.js"
+import { getTransactionHistory } from "../controllers/transactionHistory.controller.js"
 import { verifyEmployeeJWT } from "../middleware/verifyEmployeeJWT.js"
 import { populateCreatedByUpdatedBy } from "../middleware/populateEmpInfo.middleware.js"
 
@@ -62,5 +63,8 @@ router.route("/dropdown/venPay").get(getVendorPaymentsForDropdown)
 router.route("/dropdown/approved").get(getApprovedApprovalsForDropdown)
 router.route("/dropdown/purchase-debit").get(getFinancialDebitAccountDropdown)
 router.route("/dropdown/purchase-credit").get(getFinancialCreditAccountDropdown)
+
+//Transaction History
+router.route("/history").get(getTransactionHistory)
 
 export default router
