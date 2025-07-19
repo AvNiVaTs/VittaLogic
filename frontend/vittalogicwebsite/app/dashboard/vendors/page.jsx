@@ -324,7 +324,7 @@ export default function VendorsPage() {
         updatedBy: LOGGED_IN_EMPLOYEE_ID,
       }
 
-      const response = await fetch("/http://localhost:8000/api/v1/vendor/payment/registerVendorPay", {
+      const response = await fetch("http://localhost:8000/api/v1/vendor/payment/registerVendorPay", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -542,14 +542,25 @@ export default function VendorsPage() {
     return matchesSearch && matchesType
   })
 
-  const filteredPayments = payments.filter((payment) => {
-    const matchesSearch =
-      payment.vendor_id.company_Name.toLowerCase().includes(paymentSearchTerm.toLowerCase()) ||
-      payment.payment_id.toLowerCase().includes(paymentSearchTerm.toLowerCase()) ||
-      payment.vendor_id.toLowerCase().includes(paymentSearchTerm.toLowerCase())
-    const matchesStatus = paymentStatusFilter === "All" || payment.status === paymentStatusFilter
-    return matchesSearch && matchesStatus
-  })
+const filteredPayments = payments.filter((payment) => {
+  const searchTerm = paymentSearchTerm?.toLowerCase?.() || "";
+
+  const companyName = payment?.vendor_id?.company_Name?.toLowerCase?.() || "";
+  const paymentId = payment?.payment_id?.toLowerCase?.() || "";
+  const vendorId = payment?.vendor_id?._id?.toLowerCase?.() || ""; // fallback if you want to search by vendor's _id
+
+  const matchesSearch =
+    companyName.includes(searchTerm) ||
+    paymentId.includes(searchTerm) ||
+    vendorId.includes(searchTerm);
+
+  const matchesStatus =
+    paymentStatusFilter === "All" || payment.status === paymentStatusFilter;
+
+  return matchesSearch && matchesStatus;
+});
+
+
 
   const tabs = [
     { id: "add-vendor", label: "Add Vendor", icon: Plus },
