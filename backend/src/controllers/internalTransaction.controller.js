@@ -29,7 +29,7 @@ const createInternalTransaction = asyncHandler(async (req, res) => {
         narration
     } = req.body;
 
-    const transactionId = `INT-${(await getNextSequence("internalTransaction")).toString().padStart(5, "0")}`;
+    const transactionId = `INT_TXN-${(await getNextSequence("internal_transaction")).toString().padStart(5, "0")}`;
 
     if (debitAccount === "NA" && creditAccount === "NA") {
         throw new ApiErr(400, "Only one of Debit or Credit account can be N/A");

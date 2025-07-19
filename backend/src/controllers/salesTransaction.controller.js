@@ -31,7 +31,7 @@ const createSaleTransaction = asyncHandler(async (req, res) => {
     status
   } = req.body;
 
-  const transactionId = `TXN-${(await getNextSequence("transaction_id")).toString().padStart(5, "0")}`;
+  const transactionId = `SALE_TXN-${(await getNextSequence("sale_transaction")).toString().padStart(5, "0")}`;
   const referenceId = `REF-${(await getNextSequence("transaction")).toString().padStart(5, "0")}`;
 
   if (debitAccount === "NA" && creditAccount === "NA") {
@@ -96,7 +96,7 @@ const createSaleTransaction = asyncHandler(async (req, res) => {
   ) {
     await Asset.findOneAndUpdate(
       { assetId: assetDetails.assetId },
-      { assetStatus: "Disposed" }
+      { status: "Disposed" }
     );
   }
 
