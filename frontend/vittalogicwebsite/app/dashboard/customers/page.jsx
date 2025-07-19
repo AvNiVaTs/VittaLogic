@@ -53,8 +53,6 @@ export default function CustomersPage() {
   const [receiverContact, setReceiverContact] = useState("")
   const [shippingAddresses, setShippingAddresses] = useState([""])
   const [priority, setPriority] = useState("")
-
-  // Indian Customer Details
   const [industry, setIndustry] = useState("")
   const [state, setState] = useState("")
   const [shippingMethod, setShippingMethod] = useState("")
@@ -65,11 +63,8 @@ export default function CustomersPage() {
   const [accountHolder, setAccountHolder] = useState("")
   const [gstin, setGstin] = useState("")
   const [panNumber, setPanNumber] = useState("")
-
-  // International Customer Details
-
   const [intlIndustry, setIntlIndustry] = useState("")
-  const [tinVatEin, setTinVatEin] = useState("")
+  const [TIN_VAT_EIN_Company_RegNo, setTinVatEin] = useState("")
   const [intlShippingMethod, setIntlShippingMethod] = useState("")
   const [currency, setCurrency] = useState("")
   const [taxProfile, setTaxProfile] = useState("")
@@ -86,8 +81,6 @@ export default function CustomersPage() {
   const [paymentCustomerId, setPaymentCustomerId] = useState("")
   const [paymentAmount, setPaymentAmount] = useState("")
   const [paymentAmountINR, setPaymentAmountINR] = useState("")
-  const [purchaseAmount, setPurchaseAmount] = useState("")
-  const [paidAmount, setPaidAmount] = useState("")
   const [purpose, setPurpose] = useState("")
   const [dueDate, setDueDate] = useState("")
   const [paymentStatus, setPaymentStatus] = useState("")
@@ -98,6 +91,10 @@ export default function CustomersPage() {
   const [paymentCurrency, setPaymentCurrency] = useState("INR")
   const [exchangeRate, setExchangeRate] = useState("")
   const [paymentCreationDate, setPaymentCreationDate] = useState("")
+  const [paymentMethod, setPaymentMethod] = useState("Bank Transfer") // New state for payment method
+  const [notes, setNotes] = useState("") // New state for payment notes
+  const [formErrors, setFormErrors] = useState({}) // New state for form validation errors
+  
 
   // Available options
   const availableCustomerTypes = [
@@ -115,21 +112,14 @@ export default function CustomersPage() {
   ]
   const priorities = ["Low", "Medium", "High"]
   const shippingMethods = {
-    Indian: [
-  "Road", 
-  "Rail", 
-  "Air"],
-  
-    International: [
-  "Road", 
-  "Rail", 
-  "Air", 
-  "Ship"],
+    Indian: ["Road", "Rail", "Air"],
+    International: ["Road", "Rail", "Air", "Ship"],
   }
   const currencies = ["USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "CNY", "INR"]
   const taxProfiles = ["VAT", "Sales Tax"]
   const paymentStatuses = ["pending", "completed", "overdue", "cancelled", "processing"]
   const agingCategories = ["0-30", "31-60", "61-90", "90+"]
+  const paymentMethods = ["Bank Transfer", "Credit Card", "UPI", "Cash", "Cheque"] // New payment methods
 
   // Generate unique ID based on timestamp for UI purposes
   const generateTimestampId = (prefix) => {
@@ -197,133 +187,198 @@ export default function CustomersPage() {
     return matchesSearch && matchesStatus
   })
 
-const handleCustomerSubmit = async (e) => {
-  e.preventDefault();
-  setIsSubmitting(true);
-  setSubmitMessage("");
-
-  const customerData = {
-    company_Name: companyName,
-    address,
-    company_Email: email,
-    customer_Types: customerTypes,
-    contact_Person: {
-      name: contactPersonName,
-      email: contactPersonEmail,
-      number: contactPersonNumber,
-    },
-    customer_Location: customerLocation,
-    industry_Sector: industry,
-    billing_Address: billingAddress,
-    receiver_Name: receiverName,
-    receiver_ContactNo: receiverContact,
-    shipping_Addresses: shippingAddresses
-      .map((addr) => addr.address?.trim())
-      .filter((addr) => addr !== ""),
-    customerPriority: priority,
-    createdBy: LOGGED_IN_EMPLOYEE_ID,
-    updatedBy: LOGGED_IN_EMPLOYEE_ID,
-    ...(customerLocation === "Indian"
-      ? {
-        indianDetails: {
-          industry_Sector: industry,
-          stateProvince: state,
-          preferred_Shipping_Method: shippingMethod,
-          bank_AccountNumber: bankAccount,
-          bank_Name: bankName,
-          bank_Branch: bankBranch,
-          ifsc_Code: ifscCode,
-          account_HolderName: accountHolder,
-          gstin,
-          panNumber,
-      },
+  // Validate payment form
+const validatePaymentForm = () => {
+  const errors = {}
+  
+  if (!paymentCustomerId) errors.paymentCustomerId = "Customer selection is required"
+  if (!paymentAmount || paymentAmount <= 0) errors.paymentAmount = "Valid payment amount is required"
+  if (!paymentAmountINR || paymentAmountINR <= 0) errors.paymentAmountINR = "INR amount is required"
+  if (!purpose.trim()) errors.purpose = "Purpose is required"
+  if (!dueDate) errors.dueDate = "Due date is required"
+  if (!paymentStatus) errors.paymentStatus = "Payment status is required"
+  if (!paymentCurrency) errors.paymentCurrency = "Currency is required"
+  if (!paymentMethod) errors.paymentMethod = "Payment method is required"
+  
+  // Don't require exchange rate validation for INR currency
+  if (paymentCurrency === "INR") {
+    setExchangeRate(1);
+  } else {
+    if (!exchangeRate || exchangeRate <= 0) {
+      errors.exchangeRate = "Valid exchange rate is required";
     }
-      : {
-          internationalDetails: {
-            industry_Sector: intlIndustry,
-            tinVatEin,
-            shippingMethod: intlShippingMethod,
-            defaultCurrency: currency,
-            taxProfile,
-            country,
-            bankName: intlBankName,
-            ibanAccount,
-            swiftBic,
-            bankAddress: intlBankAddress,
-            beneficiaryName,
-            iec,
-          },
-        }),
-  };
-
-  try {
-    const response = await fetch("http://localhost:8000/api/v1/customer/registerCustomer", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("employeeToken")}`,
-      },
-      credentials: "include",
-      body: JSON.stringify(customerData),
-    });
-    const data = await response.json();
-    if (data.statusCode === 200) {
-      setCustomers((prev) => [...prev, data.data]);
-      setSubmitMessage("Customer created successfully!");
-      resetCustomerForm();
-    } else {
-      setSubmitMessage(data.message || "Error creating customer");
-    }
-  } catch (error) {
-    setSubmitMessage("Error creating customer");
-  } finally {
-    setIsSubmitting(false);
-    setTimeout(() => setSubmitMessage(""), 3000);
   }
-};
 
-  const handlePaymentSubmit = async (e) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-    setSubmitMessage("")
+  if (creditDays && creditDays < 0) errors.creditDays = "Credit days cannot be negative"
+  if (outstandingAmount && outstandingAmount < 0) errors.outstandingAmount = "Outstanding amount cannot be negative"
+  
+  return errors
+}
 
-    const paymentData = {
-      customer_id: paymentCustomerId,
-      payment_amount: Number.parseFloat(paymentAmount),
-      purpose,
-      due_date: dueDate,
-      credit_days: Number.parseInt(creditDays),
-      outstanding_amount: Number.parseFloat(outstandingAmount),
-      exchange_rate: Number.parseFloat(exchangeRate),
+  const handleCustomerSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitMessage("");
+
+    const customerData = {
+      company_Name: companyName,
+      address,
+      company_Email: email,
+      customer_Types: customerTypes,
+      contact_Person: {
+        name: contactPersonName,
+        email: contactPersonEmail,
+        number: contactPersonNumber,
+      },
+      customer_Location: customerLocation,
+      industry_Sector: industry,
+      billing_Address: billingAddress,
+      receiver_Name: receiverName,
+      receiver_ContactNo: receiverContact,
+      shipping_Addresses: shippingAddresses
+        .map((addr) => addr.trim())
+        .filter((addr) => addr !== ""),
+      customerPriority: priority,
       createdBy: LOGGED_IN_EMPLOYEE_ID,
       updatedBy: LOGGED_IN_EMPLOYEE_ID,
-    }
+      ...(customerLocation === "Indian"
+        ? {
+            indianDetails: {
+              industry_Sector: industry,
+              stateProvince: state,
+              preferred_Shipping_Method: shippingMethod,
+              bank_AccountNumber: bankAccount,
+              bank_Name: bankName,
+              bank_Branch: bankBranch,
+              ifsc_Code: ifscCode,
+              account_HolderName: accountHolder,
+              gstin,
+              panNumber,
+            },
+          }
+        : {
+            internationalDetails: {
+              industry_Sector: intlIndustry,
+              TIN_VAT_EIN_Company_RegNo,
+              preferredShippingMethod: intlShippingMethod,
+              defaultCurrency: currency,
+              applicableTaxProfile: taxProfile,
+              countryName: country,
+              bankName: intlBankName,
+              ibanOrAccountNumber: ibanAccount,
+              swiftCode: swiftBic,
+              bankAddress: intlBankAddress,
+              beneficiaryName,
+              iecCode: iec
+            },
+          }),
+    };
 
     try {
-      const response = await fetch("http://localhost:8000/api/v1/customer/payment/create", {
+      const response = await fetch("http://localhost:8000/api/v1/customer/registerCustomer", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("employeeToken")}`,
         },
         credentials: "include",
-        body: JSON.stringify(paymentData),
-      })
-      const data = await response.json()
+        body: JSON.stringify(customerData),
+      });
+      const data = await response.json();
       if (data.statusCode === 200) {
-        await fetchCustomers() // Refresh customers to include new payment
-        setSubmitMessage("Customer payment created successfully!")
-        resetPaymentForm()
+        setCustomers((prev) => [...prev, data.data]);
+        setSubmitMessage("Customer created successfully!");
+        resetCustomerForm();
       } else {
-        setSubmitMessage(data.message || "Error creating payment")
+        setSubmitMessage(data.message || "Error creating customer");
       }
     } catch (error) {
-      setSubmitMessage("Error creating payment")
+      setSubmitMessage("Error creating customer");
     } finally {
-      setIsSubmitting(false)
-      setTimeout(() => setSubmitMessage(""), 3000)
+      setIsSubmitting(false);
+      setTimeout(() => setSubmitMessage(""), 3000);
     }
+  };
+
+const handlePaymentSubmit = async (e) => {
+  e.preventDefault()
+  setIsSubmitting(true)
+  setSubmitMessage("")
+  setFormErrors({})
+
+  const errors = validatePaymentForm()
+  if (Object.keys(errors).length > 0) {
+    setFormErrors(errors)
+    setIsSubmitting(false)
+    setSubmitMessage("Please fix the form errors")
+    setTimeout(() => setSubmitMessage(""), 3000)
+    return
   }
+
+  // Create payment data with all required fields
+  const paymentData = {
+    customer_id: paymentCustomerId,
+    payment_amount: Number.parseFloat(paymentAmount),
+    payment_amount_inr: Number.parseFloat(paymentAmountINR), // Add INR amount
+    purpose,
+    due_date: dueDate,
+    status: paymentStatus, // Make sure status is included
+    credit_days: Number.parseInt(creditDays) || 0,
+    outstanding_amount: Number.parseFloat(outstandingAmount) || 0,
+    exchange_rate: Number.parseFloat(exchangeRate),
+    payment_currency: paymentCurrency, // Add currency
+    payment_method: paymentMethod,
+    notes: notes || "", // Ensure notes is not undefined
+    createdBy: LOGGED_IN_EMPLOYEE_ID,
+    updatedBy: LOGGED_IN_EMPLOYEE_ID,
+  }
+
+  // Debug: Log the payload to console
+  console.log("Payment Data being sent:", paymentData)
+  
+  // Check for any undefined or null values
+  const missingFields = Object.entries(paymentData)
+    .filter(([key, value]) => value === null || value === undefined || value === "")
+    .map(([key]) => key)
+  
+  if (missingFields.length > 0) {
+    console.log("Missing or empty fields:", missingFields)
+    setSubmitMessage(`Missing fields: ${missingFields.join(", ")}`)
+    setIsSubmitting(false)
+    setTimeout(() => setSubmitMessage(""), 3000)
+    return
+  }
+
+  try {
+    const response = await fetch("http://localhost:8000/api/v1/customer/payment/create", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("employeeToken")}`,
+      },
+      credentials: "include",
+      body: JSON.stringify(paymentData),
+    })
+    
+    const data = await response.json()
+    console.log("Response from server:", data) // Debug response
+    
+    if (data.statusCode === 200) {
+      await fetchCustomers()
+      setSubmitMessage("Customer payment created successfully!")
+      resetPaymentForm()
+    } else {
+      setSubmitMessage(data.message || "Error creating payment")
+      console.log("Server error details:", data) // Debug server error
+    }
+  } catch (error) {
+    console.error("Request error:", error) // Debug request error
+    setSubmitMessage("Error creating payment")
+  } finally {
+    setIsSubmitting(false)
+    setTimeout(() => setSubmitMessage(""), 3000)
+  }
+}
 
   const resetCustomerForm = () => {
     setCustomerId(generateTimestampId("CUST"))
@@ -379,6 +434,9 @@ const handleCustomerSubmit = async (e) => {
     setPaymentCurrency("INR")
     setExchangeRate("")
     setPaymentCreationDate(new Date().toISOString())
+    setPaymentMethod("Bank Transfer")
+    setNotes("")
+    setFormErrors({})
   }
 
   const handleDeleteCustomer = async (customerId) => {
@@ -418,12 +476,14 @@ const handleCustomerSubmit = async (e) => {
           status: updatedPayment.status,
           receivables_aging: updatedPayment.receivablesAging,
           credit_days: updatedPayment.creditDays,
+          payment_method: updatedPayment.paymentMethod,
+          notes: updatedPayment.notes,
           updatedBy: LOGGED_IN_EMPLOYEE_ID,
         }),
       })
       const data = await response.json()
       if (data.statusCode === 200) {
-        await fetchCustomers() // Refresh customers to include updated payment
+        await fetchCustomers()
         setEditingPayment(null)
         setSubmitMessage("Payment updated successfully!")
       } else {
@@ -576,8 +636,8 @@ const handleCustomerSubmit = async (e) => {
           {/* Main Content */}
           <div className="lg:col-span-3">
             {submitMessage && (
-              <Alert className="mb-6 border-green-200 bg-green-50">
-                <AlertDescription className="text-green-800">{submitMessage}</AlertDescription>
+              <Alert className={`mb-6 border-${submitMessage.includes("Error") ? "red" : "green"}-200 bg-${submitMessage.includes("Error") ? "red" : "green"}-50`}>
+                <AlertDescription className={`text-${submitMessage.includes("Error") ? "red" : "green"}-800`}>{submitMessage}</AlertDescription>
               </Alert>
             )}
 
@@ -918,7 +978,7 @@ const handleCustomerSubmit = async (e) => {
                             <Label htmlFor="tinVatEin">TIN/VAT/EIN/Company Reg No.</Label>
                             <Input
                               id="tinVatEin"
-                              value={tinVatEin}
+                              value={TIN_VAT_EIN_Company_RegNo}
                               onChange={(e) => setTinVatEin(e.target.value)}
                               placeholder="Enter TIN/VAT/EIN/Company registration number"
                             />
@@ -958,7 +1018,7 @@ const handleCustomerSubmit = async (e) => {
                           </div>
                           <div className="space-y-2">
                             <Label htmlFor="intlShippingMethod">Preferred Shipping Method</Label>
-                            <Select value={shippingMethod} onValueChange={setShippingMethod}>
+                            <Select value={intlShippingMethod} onValueChange={setIntlShippingMethod}>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select shipping method" />
                               </SelectTrigger>
@@ -1156,25 +1216,28 @@ const handleCustomerSubmit = async (e) => {
                     <div className="space-y-2">
                       <Label htmlFor="paymentCustomerId">Customer ID *</Label>
                       <Select
-                        value={paymentCustomerId}
                         onValueChange={(value) => {
-                          setPaymentCustomerId(value)
-                          setPaymentAmount("")
-                          setPaymentAmountINR("")
-                          const selectedCustomer = customers.find((customer) => customer.customer_Id === value)
-                          if (selectedCustomer) {
-                            if (selectedCustomer.customer_Location === "Indian") {
-                              setPaymentCurrency("INR")
-                              setExchangeRate("1")
-                            } else if (selectedCustomer.internationalDetails?.defaultCurrency) {
-                              setPaymentCurrency(selectedCustomer.internationalDetails.defaultCurrency)
-                              setExchangeRate("")
+                        setPaymentCustomerId(value)
+                        
+                        const selectedCustomer = customers.find((customer) => customer.customer_Id === value)
+                        if (selectedCustomer) {
+                          if (selectedCustomer.customer_Location === "Indian") {
+                            setPaymentCurrency("INR")
+                            setExchangeRate("1")
+                            
+                            // If payment amount exists, calculate INR amount for Indian customers - 2 decimal places
+                            if (paymentAmount) {
+                              setPaymentAmountINR(Number.parseFloat(paymentAmount).toFixed(2))
                             }
+                          } else if (selectedCustomer.internationalDetails?.defaultCurrency) {
+                            setPaymentCurrency(selectedCustomer.internationalDetails.defaultCurrency)
+                            setExchangeRate("")
+                            setPaymentAmountINR("")
                           }
-                        }}
-                        required
+                        }
+                      }}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className={formErrors.paymentCustomerId ? "border-red-500" : ""}>
                           <SelectValue placeholder="Select customer" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1185,6 +1248,9 @@ const handleCustomerSubmit = async (e) => {
                           ))}
                         </SelectContent>
                       </Select>
+                      {formErrors.paymentCustomerId && (
+                        <p className="text-xs text-red-500">{formErrors.paymentCustomerId}</p>
+                      )}
                       <p className="text-xs text-gray-500">
                         Select the customer for which you're creating the payment record.
                       </p>
@@ -1214,7 +1280,7 @@ const handleCustomerSubmit = async (e) => {
                             setExchangeRate(e.target.value)
                             if (paymentAmount && e.target.value) {
                               const inrAmount = Number.parseFloat(paymentAmount) * Number.parseFloat(e.target.value)
-                              setPaymentAmountINR(inrAmount.toFixed(2))
+                              setPaymentAmountINR(inrAmount.toFixed(5))
                             } else {
                               setPaymentAmountINR("")
                             }
@@ -1224,8 +1290,11 @@ const handleCustomerSubmit = async (e) => {
                           step="0.01"
                           required
                           readOnly={paymentCurrency === "INR"}
-                          className={paymentCurrency === "INR" ? "bg-gray-50" : ""}
+                          className={`${paymentCurrency === "INR" ? "bg-gray-50" : ""} ${formErrors.exchangeRate ? "border-red-500" : ""}`}
                         />
+                        {formErrors.exchangeRate && (
+                          <p className="text-xs text-red-500">{formErrors.exchangeRate}</p>
+                        )}
                         {paymentCurrency === "INR" && (
                           <p className="text-xs text-gray-500">
                             Exchange rate is automatically set to 1 for INR transactions.
@@ -1237,24 +1306,39 @@ const handleCustomerSubmit = async (e) => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="paymentAmountCustomerCurrency">Payment Amount (in Customer Currency) *</Label>
-                        <Input
-                          id="paymentAmountCustomerCurrency"
-                          type="number"
-                          value={paymentAmount}
-                          onChange={(e) => {
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                            {paymentCurrency}
+                          </span>
+                          <Input
+                            onChange={(e) => {
                             setPaymentAmount(e.target.value)
-                            if (e.target.value && exchangeRate) {
-                              const inrAmount = Number.parseFloat(e.target.value) * Number.parseFloat(exchangeRate)
-                              setPaymentAmountINR(inrAmount.toFixed(2))
+                            
+                            if (e.target.value) {
+                              if (paymentCurrency === "INR") {
+                                // For INR, payment amount equals INR amount (exchange rate is 1) - 2 decimal places
+                                setPaymentAmountINR(Number.parseFloat(e.target.value).toFixed(2))
+                              } else if (exchangeRate) {
+                                // For other currencies, multiply by exchange rate - 2 decimal places
+                                const inrAmount = Number.parseFloat(e.target.value) * Number.parseFloat(exchangeRate)
+                                setPaymentAmountINR(inrAmount.toFixed(2))
+                              } else {
+                                setPaymentAmountINR("")
+                              }
                             } else {
                               setPaymentAmountINR("")
                             }
                           }}
-                          placeholder="0.00"
-                          min="0"
-                          step="0.01"
-                          required
-                        />
+                            placeholder="0.00"
+                            min="0"
+                            step="0.01"
+                            required
+                            className={`pl-10 ${formErrors.paymentAmount ? "border-red-500" : ""}`}
+                          />
+                        </div>
+                        {formErrors.paymentAmount && (
+                          <p className="text-xs text-red-500">{formErrors.paymentAmount}</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="paymentAmountINR">Payment Amount (in INR) *</Label>
@@ -1285,7 +1369,11 @@ const handleCustomerSubmit = async (e) => {
                         onChange={(e) => setPurpose(e.target.value)}
                         placeholder="Enter payment purpose"
                         required
+                        className={formErrors.purpose ? "border-red-500" : ""}
                       />
+                      {formErrors.purpose && (
+                        <p className="text-xs text-red-500">{formErrors.purpose}</p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
@@ -1296,19 +1384,42 @@ const handleCustomerSubmit = async (e) => {
                         value={dueDate}
                         onChange={(e) => setDueDate(e.target.value)}
                         required
+                        className={formErrors.dueDate ? "border-red-500" : ""}
                       />
+                      {formErrors.dueDate && (
+                        <p className="text-xs text-red-500">{formErrors.dueDate}</p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="paymentStatus">Status *</Label>
                       <Select value={paymentStatus} onValueChange={setPaymentStatus} required>
-                        <SelectTrigger>
+                        <SelectTrigger className={formErrors.paymentStatus ? "border-red-500" : ""}>
                           <SelectValue placeholder="Select payment status" />
                         </SelectTrigger>
                         <SelectContent>
                           {paymentStatuses.map((status) => (
                             <SelectItem key={status} value={status}>
                               {status.charAt(0).toUpperCase() + status.slice(1)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {formErrors.paymentStatus && (
+                        <p className="text-xs text-red-500">{formErrors.paymentStatus}</p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="paymentMethod">Payment Method *</Label>
+                      <Select value={paymentMethod} onValueChange={setPaymentMethod} required>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select payment method" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {paymentMethods.map((method) => (
+                            <SelectItem key={method} value={method}>
+                              {method}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -1324,19 +1435,43 @@ const handleCustomerSubmit = async (e) => {
                         onChange={(e) => setCreditDays(e.target.value)}
                         placeholder="Enter credit days"
                         min="0"
+                        className={formErrors.creditDays ? "border-red-500" : ""}
                       />
+                      {formErrors.creditDays && (
+                        <p className="text-xs text-red-500">{formErrors.creditDays}</p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="outstandingAmount">Outstanding Amount</Label>
-                      <Input
-                        id="outstandingAmount"
-                        type="number"
-                        value={outstandingAmount}
-                        onChange={(e) => setOutstandingAmount(e.target.value)}
-                        placeholder="Enter outstanding amount"
-                        min="0"
-                        step="0.01"
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                          {paymentCurrency}
+                        </span>
+                        <Input
+                          id="outstandingAmount"
+                          type="number"
+                          value={outstandingAmount}
+                          onChange={(e) => setOutstandingAmount(e.target.value)}
+                          placeholder="Enter outstanding amount"
+                          min="0"
+                          step="0.01"
+                          className={`pl-10 ${formErrors.outstandingAmount ? "border-red-500" : ""}`}
+                        />
+                      </div>
+                      {formErrors.outstandingAmount && (
+                        <p className="text-xs text-red-500">{formErrors.outstandingAmount}</p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="notes">Notes</Label>
+                      <Textarea
+                        id="notes"
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        placeholder="Enter additional notes (optional)"
+                        rows={4}
                       />
                     </div>
 
@@ -1722,17 +1857,16 @@ const handleCustomerSubmit = async (e) => {
                             </div>
                             <div className="grid grid-cols-5 gap-6 mb-4">
                               <div>
-                                <p className="text-sm text-gray-600 mb-1">Purchase Amount</p>
+                                <p className="text-sm text-gray-600 mb-1">Payment Amount</p>
                                 <p className="text-lg font-semibold text-blue-600">
                                   {payment.currency === "INR" ? "₹" : payment.currency + " "}
                                   {payment.payment_amount_in_customer_currency?.toLocaleString() || "N/A"}
                                 </p>
                               </div>
                               <div>
-                                <p className="text-sm text-gray-600 mb-1">Paid Amount</p>
+                                <p className="text-sm text-gray-600 mb-1">Amount (INR)</p>
                                 <p className="text-lg font-semibold text-green-600">
-                                  {payment.currency === "INR" ? "₹" : payment.currency + " "}
-                                  {payment.payment_amount_in_inr?.toLocaleString() || "N/A"}
+                                  ₹ {payment.payment_amount_in_inr?.toLocaleString() || "N/A"}
                                 </p>
                               </div>
                               <div>
@@ -1748,13 +1882,19 @@ const handleCustomerSubmit = async (e) => {
                               </div>
                               <div>
                                 <p className="text-sm text-gray-600 mb-1">Payment Method</p>
-                                <p className="text-lg font-medium text-gray-900">Bank Transfer</p>
+                                <p className="text-lg font-medium text-gray-900">{payment.payment_method || "N/A"}</p>
                               </div>
                             </div>
                             {payment.purpose && (
-                              <div>
+                              <div className="mb-4">
                                 <p className="text-sm text-gray-600 mb-1">Purpose</p>
                                 <p className="text-gray-900">{payment.purpose}</p>
+                              </div>
+                            )}
+                            {payment.notes && (
+                              <div>
+                                <p className="text-sm text-gray-600 mb-1">Notes</p>
+                                <p className="text-gray-900">{payment.notes}</p>
                               </div>
                             )}
                           </CardContent>
