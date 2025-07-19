@@ -77,7 +77,7 @@ const createPurchaseTransaction = asyncHandler(async (req, res) => {
   }
 
   const transactionId = `TXN-${(await getNextSequence("transaction_id")).toString().padStart(5, "0")}`;
-  const referenceId = `REF-${(await getNextSequence("transaction_id")).toString().padStart(5, "0")}`;
+  const referenceId = `REF-${(await getNextSequence("transaction")).toString().padStart(5, "0")}`;
 
   const transaction = await PurchaseTransaction.create({
     transactionId,

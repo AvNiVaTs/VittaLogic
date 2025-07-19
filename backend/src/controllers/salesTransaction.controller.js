@@ -31,8 +31,8 @@ const createSaleTransaction = asyncHandler(async (req, res) => {
     status
   } = req.body;
 
-  const transactionId = `SAL-${(await getNextSequence("saleTransaction")).toString().padStart(5, "0")}`;
-  const referenceId = `REF-${(await getNextSequence("referenceId")).toString().padStart(5, "0")}`;
+  const transactionId = `TXN-${(await getNextSequence("transaction_id")).toString().padStart(5, "0")}`;
+  const referenceId = `REF-${(await getNextSequence("transaction")).toString().padStart(5, "0")}`;
 
   if (debitAccount === "NA" && creditAccount === "NA") {
     throw new ApiErr(400, "Only one of Debit or Credit account can be N/A");
