@@ -43,7 +43,7 @@ const employeeSalarySchema = new Schema({
         default: 0,
         min: 0
     },
-    netSalary: { //Middleware
+    netSalary: {
         type: Number,
         required: true
     },
