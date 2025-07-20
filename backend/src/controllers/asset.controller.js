@@ -102,7 +102,15 @@ const createAssets = asyncHandler(async (req, res) => {
 const updateAssetAssignment = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const updates = req.body;
+
   updates.updatedBy = req.body.updatedBy;
+
+  // Auto-clear assignment fields if unassigning
+  if (updates.assignmentStatus === "Unassigned") {
+    updates.assignedDepartment = null;
+    updates.assignedToEmployee = null;
+    updates.assignedDate = null;
+  }
 
   const asset = await Asset.findOneAndUpdate({ assetId: id }, updates, {
     new: true,
@@ -111,27 +119,29 @@ const updateAssetAssignment = asyncHandler(async (req, res) => {
 
   if (!asset) throw new ApiErr(404, "Asset not found");
 
-  return res.status(200).json(new ApiResponse(200, asset, "Asset updated successfully"));
+  return res
+    .status(200)
+    .json(new ApiResponse(200, asset, "Asset updated successfully"));
 });
 
 const updateAssetStatus = asyncHandler(async (req, res) => {
   const { assetId } = req.params;
   const { status, updatedBy } = req.body;
 
-  const asset = await Asset.findOne({ asset_Id: assetId });
+  const asset = await Asset.findOneAndUpdate(
+    { assetId },
+    { status, updatedBy },
+    { new: true, runValidators: false } // disable validation here
+  );
+
   if (!asset) throw new ApiErr(404, "Asset not found");
-
-  asset.status = status;
-  asset.updatedBy = updatedBy;
-
-  await asset.save();
 
   return res.status(200).json(new ApiResponse(200, asset, "Asset status updated"));
 });
 
 const deleteAsset = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const asset = await Asset.findOneAndDelete({ asset_Id: id });
+  const asset = await Asset.findOneAndDelete({ assetId: id });
   if (!asset) throw new ApiErr(404, "Asset not found");
 
   return res.status(200).json(new ApiResponse(200, asset, "Asset deleted successfully"));
@@ -141,8 +151,8 @@ const searchAsset = asyncHandler(async (req, res) => {
   const { assetId, assetName, assetType, assignmentStatus, maintenanceId, status } = req.query;
   const filter = {};
 
-  if (assetId) filter.asset_Id = assetId;
-  if (assetName) filter.asset_Name = { $regex: assetName, $options: "i" };
+  if (assetId) filter.assetId = assetId;
+  if (assetName) filter.assetName = { $regex: assetName, $options: "i" };
   if (assetType) filter.assetType = assetType;
   if (assignmentStatus) filter.assignmentStatus = assignmentStatus;
   if (status) filter.status = status;
@@ -152,48 +162,44 @@ const searchAsset = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, assets, "Assets fetched successfully"));
 });
 
-const getAssetForEditCard = asyncHandler(async (req, res) => {
-  const { assetId } = req.params;
-  const asset = await Asset.findOne({ asset_Id: assetId });
-  if (!asset) throw new ApiErr(404, "Asset not found");
+// const getAssetForEditCard = asyncHandler(async (req, res) => {
+//   const { assetId } = req.params;
+//   const asset = await Asset.findOne({ asset_Id: assetId });
+//   if (!asset) throw new ApiErr(404, "Asset not found");
 
-  const department = asset.assignedToDepartment
-    ? await Department.findOne({ department_Id: asset.assignedToDepartment })
-    : null;
+//   const department = asset.assignedToDepartment
+//     ? await Department.findOne({ department_Id: asset.assignedToDepartment })
+//     : null;
 
-  const result = {
-    assetId: asset.asset_Id,
-    assetName: asset.asset_Name,
-    assetType: asset.assetType,
-    purchaseCost: asset.unitCost,
-    status: asset.status,
-    assignedToEmployee: asset.assignedToEmployee,
-    assignedToDepartment: asset.assignedToDepartment,
-    assignedToDepartmentName: department?.department_Name || null,
-  };
+//   const result = {
+//     assetId: asset.asset_Id,
+//     assetName: asset.asset_Name,
+//     assetType: asset.assetType,
+//     purchaseCost: asset.unitCost,
+//     status: asset.status,
+//     assignedToEmployee: asset.assignedToEmployee,
+//     assignedToDepartment: asset.assignedToDepartment,
+//     assignedToDepartmentName: department?.department_Name || null,
+//   };
 
-  return res.status(200).json(new ApiResponse(200, result, "Asset details for edit card fetched successfully"));
-});
+//   return res.status(200).json(new ApiResponse(200, result, "Asset details for edit card fetched successfully"));
+// });
 
 const getAssetListCards = asyncHandler(async (req, res) => {
   const assets = await Asset.find();
 
   const cards = await Promise.all(
     assets.map(async (asset) => {
-      const department = asset.assignedDepartment
-        ? await Department.findOne({ department_Id: asset.assignedDepartment })
-        : null;
 
       return {
-        assetName: asset.asset_Name,
-        assetId: asset.asset_Id,
+        assetName: asset.assetName,
+        assetId: asset.assetId,
         assetType: asset.assetType,
         status: asset.status,
         assignmentStatus: asset.assignmentStatus,
         purchaseCost: asset.unitCost,
         assignedToEmployee: asset.assignedToEmployee,
-        assignedToDepartment: asset.assignedToDepartment,
-        assignedToDepartmentName: department?.department_Name || null,
+        assignedToDepartment: asset.assignedDepartment
       };
     })
   );
@@ -201,106 +207,52 @@ const getAssetListCards = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, cards, "Asset list cards fetched"));
 });
 
-const getAssetsByTypeDropdown = asyncHandler(async (req, res) => {
-  const { assetType } = req.query;
+const getAssetDropdown = asyncHandler(async (req, res) => {
+  const { assetType, assetSubtype, status } = req.query;
 
   if (!assetType) {
     throw new ApiErr(400, "assetType is required");
   }
 
-  const assets = await Asset.find({
-    assetType,
-    status: { $nin: ["Awaiting Disposal", "Disposed"] },
-  });
+  const forbiddenStatuses = ["Awaiting Disposal", "Disposed"];
 
-  const dropdown = assets.map(asset => ({
-    value: asset.asset_Id,
-    label: `${asset.asset_Id} - ${asset.asset_Name}`,
-  }));
-
-  return res.status(200).json(new ApiResponse(200, dropdown, "Assets fetched for dropdown"));
-});
-
-const getAssetDropdown = asyncHandler(async (req, res) => {
-  const { assetType, assetSubtype, excludeStatus } = req.query;
-
-  if (!assetType) {
-    throw new ApiErr(400, "assetType is required");
+  if (status && forbiddenStatuses.includes(status)) {
+    throw new ApiErr(400, `Status '${status}' is not allowed`);
   }
 
   const filter = { assetType };
   if (assetSubtype) filter.assetSubtype = assetSubtype;
-  if (excludeStatus) filter.status = { $nin: excludeStatus.split(",") };
+  if (status) filter.status = status;
 
-  const assets = await Asset.find(filter);
+  const assets = await Asset.find(filter).select("assetId assetName");
 
   const dropdown = assets.map(asset => ({
-    value: asset.asset_Id,
-    label: `${asset.asset_Id} - ${asset.asset_Name}`,
+    value: asset.assetId,
+    label: `${asset.assetId} - ${asset.assetName}`,
   }));
 
   return res.status(200).json(new ApiResponse(200, dropdown, "Asset dropdown fetched"));
 });
 
-const getAssetIdsNamesByTypeAndStatus = asyncHandler(async (req, res) => {
-  const { assetType, status } = req.query;
+// const getAssetAssignmentHistory = asyncHandler(async (req, res) => {
+//   const { assetId } = req.params;
 
-  if (!assetType) {
-    throw new ApiErr(400, "assetType is required");
-  }
+//   const asset = await Asset.findOne({ asset_Id: assetId });
+//   if (!asset) throw new ApiErr(404, "Asset not found");
 
-  const filter = {
-    assetType,
-    status: { $nin: ["Awaiting Disposal", "Disposed"] },
-  };
-  if (status) filter.status = status;
+//   // Assuming asset.assignmentHistory is an array of assignment records
+//   const assignmentHistory = asset.assignmentHistory || [];
 
-  const assets = await Asset.find(filter);
-
-  const dropdown = assets.map(asset => ({
-    value: asset.asset_Id,
-    label: `${asset.asset_Id} - ${asset.asset_Name}`,
-  }));
-
-  return res.status(200).json(new ApiResponse(200, dropdown, "Filtered assets fetched"));
-});
-
-const getAssetAssignmentHistory = asyncHandler(async (req, res) => {
-  const { assetId } = req.params;
-
-  const asset = await Asset.findOne({ asset_Id: assetId });
-  if (!asset) throw new ApiErr(404, "Asset not found");
-
-  // Assuming asset.assignmentHistory is an array of assignment records
-  const assignmentHistory = asset.assignmentHistory || [];
-
-  return res.status(200).json(new ApiResponse(200, assignmentHistory, "Assignment history fetched"));
-});
+//   return res.status(200).json(new ApiResponse(200, assignmentHistory, "Assignment history fetched"));
+// });
 
 const getAssetById = asyncHandler(async (req, res) => {
   const { assetId } = req.params;
 
-  const asset = await Asset.findOne({ asset_Id: assetId });
+  const asset = await Asset.findOne({ assetId });
   if (!asset) throw new ApiErr(404, "Asset not found");
 
   return res.status(200).json(new ApiResponse(200, asset, "Asset fetched successfully"));
-});
-
-const getAssetSummaryReport = asyncHandler(async (req, res) => {
-  const assets = await Asset.find();
-
-  // Example aggregation - can be expanded as needed
-  const totalAssets = assets.length;
-  const activeAssets = assets.filter(a => a.status === "Active").length;
-  const disposedAssets = assets.filter(a => a.status === "Disposed").length;
-
-  const summary = {
-    totalAssets,
-    activeAssets,
-    disposedAssets,
-  };
-
-  return res.status(200).json(new ApiResponse(200, summary, "Asset summary report fetched"));
 });
 
 const getAssetTransactionHistory = asyncHandler(async (req, res) => {
@@ -651,13 +603,9 @@ export {
   deleteAsset,
   searchAsset,
   getAssetDetailsFromPurchaseTransactionOnCard,
-  getAssetForEditCard,
-  getAssetsByTypeDropdown,
+  // getAssetForEditCard,
   getAssetDropdown,
-  getAssetIdsNamesByTypeAndStatus,
-  getAssetAssignmentHistory,
   getAssetById,
-  getAssetSummaryReport,
   getAssetTransactionHistory,
 
   getAssetForDisposalEditCard,

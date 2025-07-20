@@ -8,13 +8,9 @@ import {
     deleteAsset,
     searchAsset,
     getAssetDetailsFromPurchaseTransactionOnCard,
-    getAssetForEditCard,
-    getAssetsByTypeDropdown,
+    // getAssetForEditCard,
     getAssetDropdown,
-    getAssetIdsNamesByTypeAndStatus,
-    getAssetAssignmentHistory,
     getAssetById,
-    getAssetSummaryReport,
     getAssetTransactionHistory,
 
     getAssetForDisposalEditCard,
@@ -51,14 +47,10 @@ router.route("/update-assignment/:id").patch(verifyEmployeeJWT, populateCreatedB
 router.route("/update-status/:assetId").patch(verifyEmployeeJWT, populateCreatedByUpdatedBy, updateAssetStatus)
 router.route("/delete/:id").delete(deleteAsset)
 router.route("/search").get(searchAsset)
-router.route("/editCard-details/:assetId").get(getAssetForEditCard)
+// router.route("/editCard-details/:assetId").get(getAssetForEditCard)
 router.route("/list").get(getAssetListCards)
-router.route("/assetType").get(getAssetsByTypeDropdown)
 router.route("/asset-dropdown").get(getAssetDropdown)
-router.route("/asset-name").get(getAssetIdsNamesByTypeAndStatus)
-router.route("/assignment-history/:assetId").get(getAssetAssignmentHistory)
 router.route("/:assetId").get(getAssetById)
-router.route("/summary-report").get(getAssetSummaryReport)
 router.route("/transaction-history/:assetId").get(getAssetTransactionHistory)
 
 //asset disposal
