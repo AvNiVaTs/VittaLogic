@@ -1,6 +1,5 @@
 import fs from "fs"
 import { Asset } from "../models/assets.model.js"
-import { Department } from "../models/department.model.js"
 import { PurchaseTransaction } from "../models/purchaseTransaction.model.js"
 import { InternalTransaction } from "../models/internalTransaction.model.js"
 import { SaleTransaction } from "../models/saleTransaction.model.js"
@@ -12,14 +11,13 @@ import { getNextSequence } from "../utils/getNextSequence.js"
 
 // Asset
 const getAssetDetailsFromPurchaseTransactionOnCard = asyncHandler(async (req, res) => {
-  const { referenceId } = req.params;
-  const purchase = await PurchaseTransaction.findOne({ referenceId });
+  const purchase = await PurchaseTransaction.findOne({ referenceType: "Asset" });
 
-  if (!purchase || purchase.referenceType !== "Asset") {
-    throw new ApiErr(404, "Purchase transaction not found or not an asset");
+  if (!purchase || purchase.length === 0) {
+    throw new ApiErr(404, "Purchase transaction not found for assets");
   }
 
-  const result = {
+  const result =purchases.map((purchase) => ({
     assetName: purchase.assetDetails.assetName,
     referenceId: purchase.referenceId,
     quantity: purchase.assetDetails.quantity,
@@ -28,7 +26,7 @@ const getAssetDetailsFromPurchaseTransactionOnCard = asyncHandler(async (req, re
     costPerUnit: purchase.purchaseAmount / purchase.assetDetails.quantity,
     vendorId: purchase.vendorId,
     purchaseDate: purchase.purchaseDate,
-  };
+  }));
 
   return res.status(200).json(new ApiResponse(200, result, "Asset details fetched from purchase"));
 });
