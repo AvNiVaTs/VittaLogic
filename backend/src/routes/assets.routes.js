@@ -8,11 +8,11 @@ import {
     getAssetDisposalList,
     // getAssetForEditCard,
     getAssetDropdown,
-    getAssetForDisposalEditCard,
+    // getAssetForDisposalEditCard,
     getAssetListCards,
     getAssetMaintenanceSummary,
     getAssetsEligibleForDisposalDropdown,
-    getAssetTransactionHistory,
+    // getAssetTransactionHistory,
     getMaintenanceCardDetails,
     getMaintenanceHistory,
     markAssetForDisposal,
@@ -46,12 +46,12 @@ router.route("/search").get(searchAsset)
 router.route("/list").get(getAssetListCards)
 router.route("/asset-dropdown").get(getAssetDropdown)
 router.route("/:assetId").get(getAssetById)
-router.route("/transaction-history/:assetId").get(getAssetTransactionHistory)
+// router.route("/transaction-history/:assetId").get(getAssetTransactionHistory)
 
 //asset disposal
-router.route("/disposal/:assetId").get(getAssetForDisposalEditCard)
+// router.route("/disposal/:assetId").get(getAssetForDisposalEditCard)
 router.route("/asset-for-disposal").patch(verifyEmployeeJWT, populateCreatedByUpdatedBy, markAssetForDisposal)
-router.route("/update-disposal").patch(verifyEmployeeJWT, populateCreatedByUpdatedBy, updateDisposedAssets)
+router.route("/update-disposal/:assetId").patch(verifyEmployeeJWT, populateCreatedByUpdatedBy, updateDisposedAssets)
 router.route("/eligible-for-disposal").get(getAssetsEligibleForDisposalDropdown)
 router.route("/disposal/update-reason/:assetId").patch(verifyEmployeeJWT, populateCreatedByUpdatedBy, updateDisposalReason)
 router.route("/disposal/list").get(getAssetDisposalList)
