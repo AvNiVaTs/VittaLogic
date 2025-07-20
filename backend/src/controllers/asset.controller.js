@@ -11,9 +11,9 @@ import { getNextSequence } from "../utils/getNextSequence.js"
 
 // Asset
 const getAssetDetailsFromPurchaseTransactionOnCard = asyncHandler(async (req, res) => {
-  const purchase = await PurchaseTransaction.findOne({ referenceType: "Asset" });
+  const purchase = await PurchaseTransaction.find({ referenceType: "Asset" });
 
-  if (!purchase || purchase.length === 0) {
+  if (!Array.isArray(purchase) || purchase.length === 0) {
     throw new ApiErr(404, "Purchase transaction not found for assets");
   }
 
