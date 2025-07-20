@@ -790,7 +790,7 @@ function InternalTransactionTab({ addTransaction }) {
 
         // Note: Approvals endpoint isn't provided, so we'll assume a similar structure
         // You may need to add an endpoint for approvals in your backend
-        const approvalResponse = await fetch("http://localhost:8000/api/v1/approvals", {
+        const approvalResponse = await fetch("http://localhost:8000/api/v1/transaction/dropdown/approve", {
           headers: { Authorization: `Bearer ${localStorage.getItem("employeeToken")}` }
         })
         const approvalData = await approvalResponse.json()
@@ -893,119 +893,122 @@ function InternalTransactionTab({ addTransaction }) {
     }
   }, [formData.referenceType, formData.employeeId, formData.liabilityId, formData.maintenanceAssetId, employees, liabilities, assets])
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    
-    const formDataToSend = new FormData()
-    formDataToSend.append("transactionDate", formData.transactionDate)
-    formDataToSend.append("approvalId", formData.approvalId)
-    formDataToSend.append("referenceType", formData.referenceType)
-    formDataToSend.append("amount", formData.amount)
-    formDataToSend.append("transactionTypes", formData.transactionType)
-    formDataToSend.append("transactionMode", formData.transactionMode)
-    formDataToSend.append("transactionSubmode", formData.transactionSubMode)
-    formDataToSend.append("debitAccount", formData.debitAccount)
-    formDataToSend.append("creditAccount", formData.creditAccount)
-    formDataToSend.append("status", formData.status)
-    formDataToSend.append("narration", formData.narration)
-    formDataToSend.append("createdBy", formData.enteredBy)
-    
-    if (formData.attachments) {
-      formDataToSend.append("attachment", formData.attachments)
-    }
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    if (formData.referenceType === "Salary") {
-      formDataToSend.append("salaryDetails", JSON.stringify({
-        department: formData.departmentId,
-        employeeId: formData.employeeId,
-        payMonth: formData.payMonth
-      }))
-    } else if (formData.referenceType === "Liability") {
-      formDataToSend.append("liabilityDetails", JSON.stringify({
-        liabilityType: formData.liabilityType,
-        liabilityName: formData.liabilityName
-      }))
-    } else if (formData.referenceType === "Refund/Investment") {
-      formDataToSend.append("refundInvestmentDetails", JSON.stringify({
-        description: formData.expenseName,
-        referenceId: formData.referenceId
-      }))
-    } else if (formData.referenceType === "Maintenance / Repair") {
-      formDataToSend.append("maintenanceRepairDetails", JSON.stringify({
-        assetType: formData.maintenanceAssetType,
-        assetId: formData.maintenanceAssetId
-      }))
-    }
-
-    try {
-      const response = await fetch("http://localhost:8000/api/v1/transaction/internal/create", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${localStorage.getItem("employeeToken")}` },
-        body: formDataToSend
-      })
-
-      const data = await response.json()
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to create transaction")
-      }
-
-      const transaction = {
-        id: data.data.transactionId,
-        enteredBy: formData.enteredBy,
-        approvedBy: formData.approvalId,
-        date: formData.transactionDate,
-        type: "Internal",
-        subtype: formData.referenceType,
-        modeCategory: formData.transactionMode,
-        mode: formData.transactionSubMode,
-        transactionFor: formData.employeeId || formData.liabilityId || formData.expenseName || formData.maintenanceAssetId,
-        amount: Number(formData.amount),
-        debitAccount: formData.debitAccount,
-        creditAccount: formData.creditAccount,
-        narration: formData.narration,
-        status: formData.status,
-        department: formData.departmentId,
-        referenceType: formData.referenceType,
-        employeeId: formData.employeeId,
-        liabilityId: formData.liabilityId
-      }
-
-      addTransaction(transaction)
-      toast({ title: "Success", description: "Internal transaction created successfully" })
-
-      // Reset form
-      setFormData({
-        transactionId: `TXN-${Date.now()}`,
-        enteredBy: LOGGED_IN_EMPLOYEE_ID || "EMP-001",
-        approvalId: "",
-        referenceType: "",
-        departmentId: "",
-        employeeId: "",
-        liabilityType: "",
-        liabilityId: "",
-        liabilityName: "",
-        liabilityAmount: "",
-        expenseName: "",
-        maintenanceAssetType: "",
-        maintenanceAssetId: "",
-        maintenanceId: "",
-        referenceId: "",
-        amount: "",
-        transactionType: "",
-        transactionMode: "",
-        transactionSubMode: "",
-        debitAccount: "",
-        creditAccount: "",
-        status: "",
-        narration: "",
-        attachments: null,
-        transactionDate: "",
-        payMonth: ""
-      })
-    } catch (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" })
-    }
+  if (!LOGGED_IN_EMPLOYEE_ID) {
+    toast({
+      title: "Error",
+      description: "Please log in to create a transaction",
+      variant: "destructive",
+    });
+    return;
   }
+
+  const baseData = {
+    transactionDate: formData.transactionDate,
+    approvalId: formData.approvalId,
+    referenceType: formData.referenceType,
+    amount: formData.amount,
+    transactionTypes: formData.transactionType,
+    transactionMode: formData.transactionMode,
+    transactionSubmode: formData.transactionSubMode,
+    debitAccount: formData.debitAccount,
+    creditAccount: formData.creditAccount,
+    status: formData.status,
+    narration: formData.narration,
+    createdBy: LOGGED_IN_EMPLOYEE_ID,
+  };
+
+  // ✅ Add nested fields as objects, NOT JSON strings
+  if (formData.referenceType === "Salary") {
+    baseData.salaryDetails = {
+      department: formData.departmentId,
+      employeeId: formData.employeeId,
+      payMonth: formData.payMonth,
+    };
+  } else if (formData.referenceType === "Liability") {
+    baseData.liabilityDetails = {
+      liabilityType: formData.liabilityType,
+      liabilityName: formData.liabilityName,
+    };
+  } else if (formData.referenceType === "Refund/Investment") {
+    baseData.refundInvestmentDetails = {
+      description: formData.expenseName,
+    };
+  } else if (formData.referenceType === "Maintenance / Repair") {
+    baseData.maintenanceRepairDetails = {
+      assetType: formData.maintenanceAssetType,
+      assetId: formData.maintenanceAssetId,
+    };
+  }
+
+  let requestOptions;
+
+  if (formData.attachments) {
+    const formDataToSend = new FormData();
+
+    Object.entries(baseData).forEach(([key, value]) => {
+      if (
+        typeof value === "object" &&
+        value !== null &&
+        !Array.isArray(value)
+      ) {
+        // Nested objects need to be stringified for FormData
+        formDataToSend.append(key, JSON.stringify(value));
+      } else {
+        formDataToSend.append(key, value);
+      }
+    });
+
+    formDataToSend.append("attachment", formData.attachments);
+
+    requestOptions = {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${employee?.token}`,
+      },
+      credentials: "include",
+      body: formDataToSend,
+    };
+  } else {
+    requestOptions = {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${employee?.token}`,
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(baseData),
+    };
+  }
+
+  try {
+    const response = await fetch(
+      "http://localhost:8000/api/v1/transaction/internal/create",
+      requestOptions
+    );
+
+    const result = await response.json();
+
+    if (result.statusCode === 201) {
+      toast({
+        title: "Success",
+        description: "Internal transaction created successfully!",
+      });
+
+      // Optional: Reset form
+    } else {
+      throw new Error(result.message || "Failed to create transaction");
+    }
+  } catch (error) {
+    toast({
+      title: "Error",
+      description: error.message || "Something went wrong",
+      variant: "destructive",
+    });
+  }
+};
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
