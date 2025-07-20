@@ -85,7 +85,10 @@ const createAssets = asyncHandler(async (req, res) => {
       description,
       documents: attachmentUrl,
       createdBy: req.body.createdBy,
-      updatedBy: req.body.updatedBy
+      updatedBy: req.body.updatedBy,
+      maintenanceDetails: {},  
+      disposalDetails: {},      
+      depreciationDetails: {}
     });
   }
 

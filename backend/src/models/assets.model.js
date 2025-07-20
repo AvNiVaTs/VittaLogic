@@ -240,6 +240,7 @@ const assetSchema = new Schema({
   maintenanceDetails: {
     maintenanceId: { 
       type: String,
+      index: { unique: true, sparse: true }
     },
     maintenanceType: { 
       type: String, 
@@ -307,12 +308,7 @@ const assetSchema = new Schema({
   disposalDetails: {
     disposalId: { 
       type: String,
-      unique: true,
-      immutable : true,
-      index: true,
-      required: function () {
-        return ["Awaiting Disposal", "Disposed"].includes(this.status);
-      }
+      index: { unique: true, sparse: true }
     },
     disposalReason: { 
       type: String,
@@ -364,9 +360,7 @@ const assetSchema = new Schema({
   depreciationDetails: {
     depreciationId: {
         type: String,
-        unique: true,
-        immutable: true,
-        index: true
+        index: { unique: true, sparse: true }
     },
     depreciationMethod: {
         type: String,
