@@ -1,13 +1,13 @@
-import { asyncHandler } from "../utils/asyncHandler.js";
-import { ApiErr } from "../utils/ApiError.js";
-import { ApiResponse } from "../utils/ApiResponse.js";
-import { getNextSequence } from "../utils/getNextSequence.js";
+import { Approval } from "../models/approval.model.js";
+import { FinancialAccount } from "../models/companyFinancial.model.js";
+import { Department } from "../models/department.model.js";
+import { PurchaseTransaction } from "../models/purchaseTransaction.model.js";
 import { Vendor } from "../models/vendor.model.js";
 import { VendorPayment } from "../models/vendorPayment.model.js";
-import { Approval } from "../models/approval.model.js";
-import { Department } from "../models/department.model.js";
-import { FinancialAccount } from "../models/companyFinancial.model.js";
-import { PurchaseTransaction } from "../models/purchaseTransaction.model.js";
+import { ApiErr } from "../utils/ApiError.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { getNextSequence } from "../utils/getNextSequence.js";
 
 const createPurchaseTransaction = asyncHandler(async (req, res) => {
   const {
@@ -34,7 +34,7 @@ const createPurchaseTransaction = asyncHandler(async (req, res) => {
     throw new ApiErr(400, "Both Debit and Credit accounts cannot be NA");
   }
 
-  // ✅ Check 1: Vendor exists and includes the given vendorType
+  // ✅ Vendor check
   const vendor = await Vendor.findOne({ vendor_id: vendorId });
   if (!vendor) {
     throw new ApiErr(404, "Vendor not found");
@@ -44,7 +44,7 @@ const createPurchaseTransaction = asyncHandler(async (req, res) => {
     throw new ApiErr(400, `Vendor type mismatch: Vendor does not belong to type '${vendorType}'`);
   }
 
-  // ✅ Check 2: VendorPayment must be linked to the same vendor
+  // ✅ VendorPayment check
   const vendorPayment = await VendorPayment.findOne({ payment_id: paymentId });
   if (!vendorPayment) {
     throw new ApiErr(404, "Vendor Payment not found");
@@ -54,7 +54,7 @@ const createPurchaseTransaction = asyncHandler(async (req, res) => {
     throw new ApiErr(400, "Vendor Payment is not associated with the selected Vendor");
   }
 
-  // ✅ Check 3: Approval must be for Vendor Payment
+  // ✅ Approval check
   const approval = await Approval.findOne({ approval_id: approvalId });
   if (!approval) {
     throw new ApiErr(404, "Approval not found");
@@ -64,6 +64,24 @@ const createPurchaseTransaction = asyncHandler(async (req, res) => {
     throw new ApiErr(400, `Approval is not applicable for 'Vendor Payment'. Found: '${approval.approvalfor}'`);
   }
 
+  // ✅ Clean assetDetails
+  let parsedAssetDetails = assetDetails;
+  if (typeof assetDetails === "string") {
+    try {
+      parsedAssetDetails = JSON.parse(assetDetails);
+    } catch (err) {
+      throw new ApiErr(400, "Invalid JSON in assetDetails");
+    }
+  }
+
+  const cleanAssetDetails = {
+    assetName: parsedAssetDetails.assetName || parsedAssetDetails.name,
+    quantity: Number(parsedAssetDetails.quantity)
+  };
+
+  // ✅ Optional: clean serviceDetails too if needed (not shown here)
+
+  // ✅ Handle attachment upload
   let attachmentUrl = null;
   if (req.files?.attachment?.[0]?.path) {
     const attachmentPath = req.files.attachment[0].path;
@@ -76,9 +94,11 @@ const createPurchaseTransaction = asyncHandler(async (req, res) => {
     }
   }
 
+  // ✅ Generate IDs
   const transactionId = `PUR_TXN-${(await getNextSequence("purchase_transaction")).toString().padStart(5, "0")}`;
   const referenceId = `REF-${(await getNextSequence("transaction")).toString().padStart(5, "0")}`;
 
+  // ✅ Create transaction
   const transaction = await PurchaseTransaction.create({
     transactionId,
     referenceId,
@@ -90,7 +110,7 @@ const createPurchaseTransaction = asyncHandler(async (req, res) => {
     paymentId,
     approvalId,
     referenceType,
-    assetDetails,
+    assetDetails: cleanAssetDetails, // ✅ Fixed here
     serviceDetails,
     purchaseAmount,
     transactionType,
@@ -103,7 +123,7 @@ const createPurchaseTransaction = asyncHandler(async (req, res) => {
     attachments: attachmentUrl
   });
 
-  // ✅ Update Paid Amount in Vendor Payment
+  // ✅ Update vendorPayment paid amount
   if (purchaseAmount > 0) {
     const currentPaid = parseFloat(vendorPayment.paid_amount || 0);
     const newPaidAmount = currentPaid + parseFloat(purchaseAmount || 0);
@@ -120,6 +140,8 @@ const createPurchaseTransaction = asyncHandler(async (req, res) => {
     new ApiResponse(201, transaction, "Purchase Transaction created successfully")
   );
 });
+
+
 
 const getDepartmentsForDropdown = asyncHandler(async (req, res) => {
   const departments = await Department.find({}, "department_id departmentName");
@@ -230,11 +252,6 @@ const getFinancialCreditAccountDropdown = asyncHandler(async (req, res) => {
 });
 
 export {
-    createPurchaseTransaction,
-    getDepartmentsForDropdown,
-    getVendorsByTypeForDropdown,
-    getVendorPaymentsForDropdown,
-    getApprovedApprovalsForDropdown,
-    getFinancialDebitAccountDropdown,
-    getFinancialCreditAccountDropdown
-}
+  createPurchaseTransaction, getApprovedApprovalsForDropdown, getDepartmentsForDropdown, getFinancialCreditAccountDropdown, getFinancialDebitAccountDropdown, getVendorPaymentsForDropdown, getVendorsByTypeForDropdown
+};
+
