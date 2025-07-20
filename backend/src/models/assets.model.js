@@ -240,7 +240,10 @@ const assetSchema = new Schema({
   maintenanceDetails: {
     maintenanceId: { 
       type: String,
-      index: { unique: true, sparse: true }
+      index: { unique: true, sparse: true },
+      required: function () {
+        return ["Maintenance Needed", "Repair Needed", "Under Maintenance", "Under Repair"].includes(this.status);
+      }
     },
     maintenanceType: { 
       type: String, 
@@ -308,7 +311,10 @@ const assetSchema = new Schema({
   disposalDetails: {
     disposalId: { 
       type: String,
-      index: { unique: true, sparse: true }
+      index: { unique: true, sparse: true },
+      required: function () {
+        return ["Awaiting Disposal", "Disposed"].includes(this.status);
+      }
     },
     disposalReason: { 
       type: String,

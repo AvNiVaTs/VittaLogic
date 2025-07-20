@@ -31,8 +31,8 @@ import {
     getAssetMaintenanceSummary,
     syncMaintenanceStatus,
 
-    getAssetDepreciationDetails,
-    updateAssetDepreciation
+    // getAssetDepreciationDetails,
+    // updateAssetDepreciation
 } from "../controllers/asset.controller.js"
 import {
     createDepreciation,
@@ -78,8 +78,8 @@ router.route("/maintenance/summary").get(getAssetMaintenanceSummary)
 router.route("/sync-maintenance").patch(verifyEmployeeJWT, populateCreatedByUpdatedBy, syncMaintenanceStatus)
 
 //asset depreciation
-router.route("/depreciation/details/:assetId").get(getAssetDepreciationDetails)
-router.route("/depreciation/update/:assetId").patch(verifyEmployeeJWT, populateCreatedByUpdatedBy, updateAssetDepreciation)
+// router.route("/depreciation/details/:assetId").get(getAssetDepreciationDetails)
+// router.route("/depreciation/update/:assetId").patch(verifyEmployeeJWT, populateCreatedByUpdatedBy, updateAssetDepreciation)
 router.route("/depreciation/create").post(verifyEmployeeJWT, populateCreatedByUpdatedBy, createDepreciation)
 router.route("/depreciation/dropdown/asset").get(getAssetDropdownByType)
 router.route("/depreciation/tracking/:assetId").get(getDepreciationTrackingDetails)

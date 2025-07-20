@@ -225,6 +225,13 @@ const getSalesCreditAccounts = asyncHandler(async (req, res) => {
 });
 
 export {
-  completeSaleTransaction, createSaleTransaction, getApprovedCustomerPaymentApprovals, getAssetDetailsById, getAssetsForAssetSale, getCustomersByType,
-  getPendingPaymentsByCustomer, getSalesCreditAccounts, getSalesDebitAccounts
+  completeSaleTransaction,
+  createSaleTransaction,
+  getApprovedCustomerPaymentApprovals,
+  getAssetDetailsById,
+  getAssetsForAssetSale,
+  getCustomersByType,
+  getPendingPaymentsByCustomer,
+  getSalesCreditAccounts,
+  getSalesDebitAccounts
 };

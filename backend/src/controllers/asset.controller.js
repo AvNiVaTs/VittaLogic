@@ -618,30 +618,30 @@ const syncMaintenanceStatus = asyncHandler(async (req, res) => {
 });
 
 //Asset Depreciation
-const getAssetDepreciationDetails = asyncHandler(async (req, res) => {
-  const { assetId } = req.params;
+// const getAssetDepreciationDetails = asyncHandler(async (req, res) => {
+//   const { assetId } = req.params;
 
-  const asset = await Asset.findOne({ asset_Id: assetId });
-  if (!asset) throw new ApiErr(404, "Asset not found");
+//   const asset = await Asset.findOne({ asset_Id: assetId });
+//   if (!asset) throw new ApiErr(404, "Asset not found");
 
-  const depreciation = asset.depreciationDetails || {};
+//   const depreciation = asset.depreciationDetails || {};
 
-  return res.status(200).json(new ApiResponse(200, depreciation, "Depreciation details fetched"));
-});
+//   return res.status(200).json(new ApiResponse(200, depreciation, "Depreciation details fetched"));
+// });
 
-const updateAssetDepreciation = asyncHandler(async (req, res) => {
-  const { assetId } = req.params;
-  const updates = req.body;
+// const updateAssetDepreciation = asyncHandler(async (req, res) => {
+//   const { assetId } = req.params;
+//   const updates = req.body;
 
-  const asset = await Asset.findOne({ asset_Id: assetId });
-  if (!asset) throw new ApiErr(404, "Asset not found");
+//   const asset = await Asset.findOne({ asset_Id: assetId });
+//   if (!asset) throw new ApiErr(404, "Asset not found");
 
-  asset.depreciationDetails = { ...asset.depreciationDetails, ...updates };
+//   asset.depreciationDetails = { ...asset.depreciationDetails, ...updates };
 
-  await asset.save();
+//   await asset.save();
 
-  return res.status(200).json(new ApiResponse(200, asset.depreciationDetails, "Depreciation updated"));
-});
+//   return res.status(200).json(new ApiResponse(200, asset.depreciationDetails, "Depreciation updated"));
+// });
 
 export {
   getAssetListCards,
@@ -674,6 +674,6 @@ export {
   getAssetMaintenanceSummary,
   syncMaintenanceStatus,
 
-  getAssetDepreciationDetails,
-  updateAssetDepreciation
+  // getAssetDepreciationDetails,
+  // updateAssetDepreciation
 }

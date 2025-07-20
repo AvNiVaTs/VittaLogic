@@ -12,8 +12,7 @@ const createDepreciation = asyncHandler(async (req, res) => {
     depreciationMethod,
     usefulLifeYears,
     totalUnitsProduced,
-    unitsUsedThisYear,
-    createdBy
+    unitsUsedThisYear
   } = req.body
 
   const asset = await Asset.findOne({ asset_Id: assetId })
@@ -81,7 +80,7 @@ const createDepreciation = asyncHandler(async (req, res) => {
     annualDepreciation: parseFloat(annualDepreciation.toFixed(2)),
     bookValue: parseFloat(bookValue.toFixed(2)),
     depreciationPercent: parseFloat(depreciationPercent.toFixed(2)),
-    createdBy
+    createdBy: req.body.createdBy
   }
 
   if (depreciationMethod === "Units of Production") {
