@@ -1,6 +1,6 @@
 "use client"
 
-import { ArrowLeft, Building, DollarSign, History, Search, ShoppingCart, Upload } from "lucide-react"
+import { ArrowLeft, Building, DollarSign, History, RefreshCw, Search, ShoppingCart, Upload } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useState } from "react"
 
@@ -12,9 +12,14 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
+import { toast } from "@/components/ui/use-toast"
 
-// Mock data
-const mockVendorTypes = [
+// Authentication
+const employee = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("loggedInEmployee")) : null
+const LOGGED_IN_EMPLOYEE_ID = employee?.employeeId || null
+
+// Static data
+const vendorTypes = [
   "Technology",
   "Manufacturing",
   "Software",
@@ -29,55 +34,6 @@ const mockVendorTypes = [
   "Healthcare",
   "Liability",
   "Others",
-]
-
-const mockVendors = [
-  { id: "VEND-001", name: "ABC Suppliers", type: "Office Supplies" },
-  { id: "VEND-002", name: "XYZ Services", type: "Services" },
-  { id: "VEND-003", name: "Office Supplies Co", type: "Office Supplies" },
-  { id: "VEND-004", name: "Tech Solutions Ltd", type: "Technology" },
-  { id: "VEND-005", name: "Global Manufacturing", type: "Manufacturing" },
-  { id: "VEND-006", name: "Business Consultants", type: "Consulting" },
-  { id: "VEND-007", name: "Power & Utilities", type: "Utilities" },
-  { id: "VEND-008", name: "IT Services Inc", type: "Technology" },
-]
-
-const mockCustomers = [
-  { id: "CUST-001", name: "ABC Corp", type: "Corporate" },
-  { id: "CUST-002", name: "XYZ Ltd", type: "Corporate" },
-  { id: "CUST-003", name: "Global Industries", type: "Enterprise" },
-  { id: "CUST-004", name: "Tech Innovations", type: "SME" },
-  { id: "CUST-005", name: "John Smith", type: "Individual" },
-  { id: "CUST-006", name: "City Council", type: "Government" },
-]
-
-const mockEmployees = [
-  { id: "EMP-001", name: "John Doe", department: "Sales", salaryId: "SAL-001", netSalary: 50000 },
-  { id: "EMP-002", name: "Jane Smith", department: "Marketing", salaryId: "SAL-002", netSalary: 45000 },
-  { id: "EMP-003", name: "Mike Johnson", department: "Administration", salaryId: "SAL-003", netSalary: 40000 },
-  { id: "EMP-004", name: "Sarah Wilson", department: "Finance", salaryId: "SAL-004", netSalary: 55000 },
-  { id: "EMP-005", name: "David Brown", department: "Sales", salaryId: "SAL-005", netSalary: 48000 },
-  { id: "EMP-006", name: "Lisa Davis", department: "HR", salaryId: "SAL-006", netSalary: 42000 },
-  { id: "EMP-007", name: "Tom Wilson", department: "IT", salaryId: "SAL-007", netSalary: 60000 },
-  { id: "EMP-008", name: "Amy Johnson", department: "Operations", salaryId: "SAL-008", netSalary: 38000 },
-]
-
-const mockLiabilities = [
-  { id: "LIB-001", type: "Bank Loan", name: "Business Loan - HDFC", amount: 500000 },
-  { id: "LIB-002", type: "Equipment Loan", name: "Equipment Loan - SBI", amount: 250000 },
-  { id: "LIB-003", type: "Credit Card", name: "Corporate Credit Card - ICICI", amount: 75000 },
-  { id: "LIB-004", type: "Credit Card", name: "Business Credit Card - Axis", amount: 45000 },
-  { id: "LIB-005", type: "Trade Payable", name: "Office Supplies Payable", amount: 25000 },
-  { id: "LIB-006", type: "Trade Payable", name: "IT Services Payable", amount: 85000 },
-  { id: "LIB-007", type: "Tax Liability", name: "GST Payable", amount: 125000 },
-  { id: "LIB-008", type: "Tax Liability", name: "Income Tax Payable", amount: 200000 },
-  { id: "LIB-009", type: "Mortgage", name: "Office Building Mortgage - HDFC", amount: 2500000 },
-  { id: "LIB-010", type: "Accrued Expenses", name: "Accrued Salary Expenses", amount: 180000 },
-  { id: "LIB-011", type: "Deferred Revenue", name: "Advance Payment from Client", amount: 150000 },
-  { id: "LIB-012", type: "Lease Obligation", name: "Office Space Lease", amount: 300000 },
-  { id: "LIB-013", type: "Bond Payable", name: "Corporate Bond Series A", amount: 1000000 },
-  { id: "LIB-014", type: "Notes Payable", name: "Short Term Notes", amount: 400000 },
-  { id: "LIB-015", type: "Other", name: "Miscellaneous Liability", amount: 50000 },
 ]
 
 const liabilityTypes = [
@@ -95,53 +51,11 @@ const liabilityTypes = [
   "Other",
 ]
 
-const mockPayments = [
-  { id: "PAY-001", status: "Pending", vendorId: "VEND-001", amount: 15000 },
-  { id: "PAY-002", status: "Processing", vendorId: "VEND-001", amount: 8000 },
-  { id: "PAY-003", status: "Approved", vendorId: "VEND-002", amount: 25000 },
-  { id: "PAY-004", status: "Completed", vendorId: "VEND-002", amount: 12000 },
-  { id: "PAY-005", status: "Pending", vendorId: "VEND-003", amount: 5000 },
-  { id: "PAY-006", status: "Processing", vendorId: "VEND-004", amount: 35000 },
-  { id: "PAY-007", status: "Approved", vendorId: "VEND-004", amount: 18000 },
-  { id: "PAY-008", status: "On Hold", vendorId: "VEND-005", amount: 22000 },
-  { id: "PAY-009", status: "Pending", vendorId: "VEND-006", amount: 9500 },
-  { id: "PAY-010", status: "Completed", vendorId: "VEND-007", amount: 14000 },
-]
-
-const mockApprovals = [
-  { id: "APPR-001", name: "Manager Approval" },
-  { id: "APPR-002", name: "Finance Approval" },
-  { id: "APPR-003", name: "Director Approval" },
-]
-
-const departments = ["Sales", "Marketing", "Administration", "Finance", "HR", "IT", "Operations"]
-
-const mockDepartments = [
-  { id: "DEPT-001", name: "Sales" },
-  { id: "DEPT-002", name: "Marketing" },
-  { id: "DEPT-003", name: "Finance" },
-  { id: "DEPT-004", name: "IT" },
-  { id: "DEPT-005", name: "HR" },
-  { id: "DEPT-006", name: "Operations" },
-  { id: "DEPT-007", name: "Administration" },
-]
-
-const accounts = [
-  "N/A",
-  "Cash Account",
-  "Bank Account",
-  "Sales Account",
-  "Purchase Account",
-  "Office Supplies Account",
-  "Salary Account",
-]
 const statuses = ["Pending", "Partially Paid", "Completed", "Cancelled"]
 
 const transactionTypes = {
-  Income: ["Sales Revenue", "Service Income", "Interest Income", "Other Income"],
-  Expense: ["Office Supplies", "Utilities", "Rent", "Salaries", "Travel", "Other Expense"],
-  Transfer: ["Internal Transfer", "Bank Transfer", "Cash Transfer"],
-  Investment: ["Equipment Purchase", "Asset Purchase", "Stock Investment"],
+  Asset: ["Raw Material", "Machinery", "Vehicles", "IT Equipment", "Office Supplies", "Others"],
+  Service: ["Consulting", "Legal", "IT Services", "Training", "Security", "Subscriptions", "Others"],
 }
 
 const modeCategories = {
@@ -160,188 +74,10 @@ const modeCategories = {
   Cheque: ["Cheque Issued", "Cheque Received", "Post-Dated Cheque", "Cancelled Cheque"],
 }
 
-const mockCustomerTypes = [
-  "Technology",
-  "Manufacturing",
-  "Retail",
-  "Healthcare",
-  "Education",
-  "B2B",
-  "B2C",
-  "Enterprise",
-  "SME",
-  "Others",
-]
-
-const mockCustomerPayments = [
-  { id: "CPAY-001", status: "Pending", customerId: "CUST-001", amount: 25000, outstandingAmount: 25000 },
-  { id: "CPAY-002", status: "Partially Paid", customerId: "CUST-001", amount: 15000, outstandingAmount: 8000 },
-  { id: "CPAY-003", status: "Pending", customerId: "CUST-002", amount: 35000, outstandingAmount: 35000 },
-  { id: "CPAY-004", status: "Completed", customerId: "CUST-002", amount: 20000, outstandingAmount: 0 },
-  { id: "CPAY-005", status: "Pending", customerId: "CUST-003", amount: 45000, outstandingAmount: 45000 },
-  { id: "CPAY-006", status: "Cancelled", customerId: "CUST-004", amount: 12000, outstandingAmount: 0 },
-  { id: "CPAY-007", status: "Partially Paid", customerId: "CUST-005", amount: 8000, outstandingAmount: 3000 },
-  { id: "CPAY-008", status: "Pending", customerId: "CUST-006", amount: 30000, outstandingAmount: 30000 },
-]
-
-const saleTransactionTypes = [
-  "Product Sale",
-  "Service Sale",
-  "Asset Sale",
-  "Scrap Sale",
-  "Software/License Sale",
-  "Other Sale",
-]
-
-const assetTransactionTypes = ["Raw Material", "Machinery", "Vehicles", "IT Equipment", "Office Supplies", "Others"]
-
-const serviceTransactionTypes = [
-  "Consulting",
-  "Legal",
-  "IT Services",
-  "Training",
-  "Security",
-  "Subscriptions",
-  "Others",
-]
-
-// Mock assets awaiting disposal
-const mockAssetsAwaitingDisposal = [
-  {
-    id: "AST-001",
-    name: "Dell Laptop",
-    type: "IT Equipment",
-    subtype: "Laptop",
-    status: "awaiting_disposal",
-    disposalId: "DISP-001",
-  },
-  {
-    id: "AST-002",
-    name: "Office Chair",
-    type: "Office Furniture",
-    subtype: "Furniture",
-    status: "awaiting_disposal",
-    disposalId: "DISP-002",
-  },
-  {
-    id: "AST-003",
-    name: "Toyota Camry",
-    type: "Vehicles",
-    subtype: "Car",
-    status: "awaiting_disposal",
-    disposalId: "DISP-003",
-  },
-  {
-    id: "AST-004",
-    name: "HP Printer",
-    type: "IT Equipment",
-    subtype: "Printer",
-    status: "awaiting_disposal",
-    disposalId: "DISP-004",
-  },
-  {
-    id: "AST-005",
-    name: "Conference Table",
-    type: "Office Furniture",
-    subtype: "Furniture",
-    status: "awaiting_disposal",
-    disposalId: "DISP-005",
-  },
-]
-
-const assetTypes = ["IT Equipment", "Office Supplies", "Vehicles", "Machinery", "Raw Material", "Others"]
-
-// Asset types specifically for Asset Sale transactions
-const saleAssetTypes = [
-  "IT Equipment",
-  "Office Furniture",
-  "Machinery",
-  "Vehicles",
-  "Real Estate",
-  "Electrical Appliances",
-  "Software Licenses",
-  "Miscellaneous",
-]
-
-// Mock assets data for maintenance/repair transactions
-const mockAssets = [
-  {
-    id: "AST-1703123456789",
-    name: "Dell Laptop",
-    type: "IT Equipment",
-    status: "maintenance_needed",
-  },
-  {
-    id: "AST-1703123456790",
-    name: "Office Chair",
-    type: "Furniture",
-    status: "repair_needed",
-  },
-  {
-    id: "AST-1703123456791",
-    name: "HP Printer",
-    type: "IT Equipment",
-    status: "under_maintenance",
-  },
-  {
-    id: "AST-1703123456792",
-    name: "Conference Table",
-    type: "Furniture",
-    status: "under_repair",
-  },
-  {
-    id: "AST-1703123456793",
-    name: "Server Rack",
-    type: "IT Equipment",
-    status: "maintenance_needed",
-  },
-  {
-    id: "AST-1703123456794",
-    name: "Air Conditioner",
-    type: "Other",
-    status: "repair_needed",
-  },
-]
-
-// Mock maintenance records
-const mockMaintenanceRecords = [
-  {
-    id: "MNT-1703123456789",
-    assetId: "AST-1703123456789",
-    status: "requested",
-  },
-  {
-    id: "MNT-1703123456790",
-    assetId: "AST-1703123456790",
-    status: "requested",
-  },
-  {
-    id: "MNT-1703123456791",
-    assetId: "AST-1703123456791",
-    status: "in_progress",
-  },
-  {
-    id: "MNT-1703123456792",
-    assetId: "AST-1703123456792",
-    status: "in_progress",
-  },
-  {
-    id: "MNT-1703123456793",
-    assetId: "AST-1703123456793",
-    status: "requested",
-  },
-  {
-    id: "MNT-1703123456794",
-    assetId: "AST-1703123456794",
-    status: "requested",
-  },
-]
-
-// Purchase Tab Component
 function PurchaseTab({ addTransaction }) {
   const [formData, setFormData] = useState({
     transactionId: `TXN-${Date.now()}`,
-    enteredBy: "EMP-001 (Current User)",
+    enteredBy: LOGGED_IN_EMPLOYEE_ID || "Unknown",
     department: "",
     vendorType: "",
     vendorId: "",
@@ -365,23 +101,140 @@ function PurchaseTab({ addTransaction }) {
     purchaseDate: "",
   })
 
+  const [departments, setDepartments] = useState([])
+  const [vendors, setVendors] = useState([])
+  const [vendorPayments, setVendorPayments] = useState([])
+  const [approvals, setApprovals] = useState([])
+  const [debitAccounts, setDebitAccounts] = useState([])
+  const [creditAccounts, setCreditAccounts] = useState([])
+
+  // Fetch dropdown data
   useEffect(() => {
-    setFormData((prev) => ({ ...prev, transactionId: `TXN-${Date.now()}` }))
+    const fetchDropdownData = async () => {
+      try {
+        // Fetch departments
+        const deptResponse = await fetch("http://localhost:8000/api/v1/transaction/dropdown/dept", {
+          headers: { Authorization: `Bearer ${employee?.token}` },
+        })
+        const deptData = await deptResponse.json()
+        if (deptData.statusCode === 200) {
+          setDepartments(deptData.data)
+        }
+
+        // Fetch debit accounts
+        const debitResponse = await fetch("http://localhost:8000/api/v1/transaction/dropdown/purchase-debit", {
+          headers: { Authorization: `Bearer ${employee?.token}` },
+        })
+        const debitData = await debitResponse.json()
+        if (debitData.statusCode === 200) {
+          setDebitAccounts(debitData.data.debitAccounts)
+        }
+
+        // Fetch credit accounts
+        const creditResponse = await fetch("http://localhost:8000/api/v1/transaction/dropdown/purchase-credit", {
+          headers: { Authorization: `Bearer ${employee?.token}` },
+        })
+        const creditData = await creditResponse.json()
+        if (creditData.statusCode === 200) {
+          setCreditAccounts(creditData.data.creditAccounts)
+        }
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to fetch dropdown data",
+          variant: "destructive",
+        })
+      }
+    }
+
+    if (LOGGED_IN_EMPLOYEE_ID) {
+      fetchDropdownData()
+    }
   }, [])
 
+  // Fetch vendors when vendorType changes
   useEffect(() => {
     if (formData.vendorType) {
-      setFormData((prev) => ({ ...prev, vendorId: "", paymentId: "" }))
+      const fetchVendors = async () => {
+        try {
+          const response = await fetch(
+            `http://localhost:8000/api/v1/transaction/dropdown/venType?vendorType=${formData.vendorType}`,
+            {
+              headers: { Authorization: `Bearer ${employee?.token}` },
+            }
+          )
+          const data = await response.json()
+          if (data.statusCode === 200) {
+            setVendors(data.data)
+            setFormData((prev) => ({ ...prev, vendorId: "", paymentId: "" }))
+          }
+        } catch (error) {
+          toast({
+            title: "Error",
+            description: "Failed to fetch vendors",
+            variant: "destructive",
+          })
+        }
+      }
+      fetchVendors()
     }
   }, [formData.vendorType])
 
+  // Fetch vendor payments when vendorId changes
   useEffect(() => {
     if (formData.vendorId) {
-      setFormData((prev) => ({ ...prev, paymentId: "" }))
+      const fetchPayments = async () => {
+        try {
+          const response = await fetch(
+            `http://localhost:8000/api/v1/transaction/dropdown/venPay?vendorId=${formData.vendorId}`,
+            {
+              headers: { Authorization: `Bearer ${employee?.token}` },
+            }
+          )
+          const data = await response.json()
+          if (data.statusCode === 200) {
+            setVendorPayments(data.data)
+            setFormData((prev) => ({ ...prev, paymentId: "" }))
+          }
+        } catch (error) {
+          toast({
+            title: "Error",
+            description: "Failed to fetch vendor payments",
+            variant: "destructive",
+          })
+        }
+      }
+      fetchPayments()
     }
   }, [formData.vendorId])
 
+  // Fetch approvals when component mounts
   useEffect(() => {
+    const fetchApprovals = async () => {
+      try {
+        const response = await fetch("http://localhost:8000/api/v1/transaction/dropdown/approved", {
+          headers: { Authorization: `Bearer ${employee?.token}` },
+        })
+        const data = await response.json()
+        if (data.statusCode === 200) {
+          setApprovals(data.data)
+        }
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to fetch approvals",
+          variant: "destructive",
+        })
+      }
+    }
+    if (LOGGED_IN_EMPLOYEE_ID) {
+      fetchApprovals()
+    }
+  }, [])
+
+  // Update transactionId and referenceId
+  useEffect(() => {
+    setFormData((prev) => ({ ...prev, transactionId: `TXN-${Date.now()}` }))
     if (formData.referenceType === "Asset") {
       setFormData((prev) => ({ ...prev, referenceId: `AST-${Date.now()}`, transactionType: "" }))
     } else if (formData.referenceType === "Service") {
@@ -391,76 +244,108 @@ function PurchaseTab({ addTransaction }) {
     }
   }, [formData.referenceType])
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    console.log("Purchase transaction created successfully!", formData)
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    // Save asset data to localStorage for Asset Service
-    if (formData.referenceType === "Asset" && formData.assetName && formData.quantity) {
-      const assetData = {
-        id: `ENTERED-${Date.now()}`,
-        assetName: formData.assetName,
-        quantity: Number.parseInt(formData.quantity),
-        assetId: formData.referenceId,
-        transactionId: formData.transactionId,
-        purchaseAmount: Number.parseFloat(formData.purchaseAmount),
-        vendorId: formData.vendorId,
-        createdAt: new Date().toISOString(),
-      }
-      const existingAssets = JSON.parse(localStorage.getItem("enteredAssets") || "[]")
-      existingAssets.push(assetData)
-      localStorage.setItem("enteredAssets", JSON.stringify(existingAssets))
-    }
-
-    // Map formData to transaction object expected by history
-    const transaction = {
-      id: formData.transactionId,
-      enteredBy: formData.enteredBy,
-      approvedBy: formData.approvalId || "",
-      date: formData.purchaseDate,
-      type: "Purchase",
-      subtype: formData.referenceType === "Asset" ? "Asset Purchase" : formData.referenceType === "Service" ? "Service Purchase" : "",
-      modeCategory: formData.transactionMode || "",
-      mode: formData.transactionSubMode || "",
-      transactionFor: formData.vendorId,
-      amount: Number(formData.purchaseAmount) || 0,
-      debitAccount: formData.debitAccount,
-      creditAccount: formData.creditAccount,
-      narration: formData.narration,
-      status: formData.status,
-      department: formData.department,
-      referenceType: formData.referenceType,
-      vendorId: formData.vendorId,
-    }
-    addTransaction(transaction)
-
-    // Reset form after successful submission
-    setFormData({
-      transactionId: `TXN-${Date.now()}`,
-      enteredBy: "EMP-001 (Current User)",
-      department: "",
-      vendorType: "",
-      vendorId: "",
-      paymentId: "",
-      approvalId: "",
-      referenceType: "",
-      assetName: "",
-      quantity: "",
-      serviceName: "",
-      serviceDuration: "",
-      referenceId: "",
-      purchaseAmount: "",
-      transactionType: "",
-      transactionMode: "",
-      transactionSubMode: "",
-      debitAccount: "",
-      creditAccount: "",
-      status: "",
-      narration: "",
-      attachments: null,
-      purchaseDate: "",
-    })
+  if (!LOGGED_IN_EMPLOYEE_ID) {
+    toast({
+      title: "Error",
+      description: "Please log in to create a transaction",
+      variant: "destructive",
+    });
+    return;
   }
+
+  const baseData = {
+    departmentWhoPurchased: formData.department,
+    purchaseDate: formData.purchaseDate,
+    vendorType: formData.vendorType,
+    vendorId: formData.vendorId,
+    paymentId: formData.paymentId,
+    approvalId: formData.approvalId,
+    referenceType: formData.referenceType,
+    purchaseAmount: formData.purchaseAmount,
+    transactionType: formData.transactionType,
+    transactionMode: formData.transactionMode,
+    transactionSubmode: formData.transactionSubMode,
+    debitAccount: formData.debitAccount,
+    creditAccount: formData.creditAccount,
+    status: formData.status,
+    narration: formData.narration,
+    createdBy: LOGGED_IN_EMPLOYEE_ID,
+  };
+
+  if (formData.referenceType === "Asset") {
+    baseData.assetDetails = JSON.stringify({
+      name: formData.assetName,
+      quantity: Number(formData.quantity),
+    });
+  } else if (formData.referenceType === "Service") {
+    baseData.serviceDetails = JSON.stringify({
+      name: formData.serviceName,
+      duration: Number(formData.serviceDuration),
+    });
+  }
+
+  let requestOptions;
+
+  // ✅ If there is a file, use FormData
+  if (formData.attachments) {
+    const formDataToSend = new FormData();
+    Object.entries(baseData).forEach(([key, value]) => {
+      formDataToSend.append(key, value);
+    });
+    formDataToSend.append("attachment", formData.attachments);
+
+    requestOptions = {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${employee?.token}`,
+      },
+      credentials: "include",
+      body: formDataToSend,
+    };
+  } else {
+    // ✅ Use plain JSON — avoids the backend's req.body issue
+    requestOptions = {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${employee?.token}`,
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(baseData),
+    };
+  }
+
+  try {
+    const response = await fetch(
+      "http://localhost:8000/api/v1/transaction/purchase/create",
+      requestOptions
+    );
+
+    const result = await response.json();
+
+    if (result.statusCode === 201) {
+      // Success logic...
+      toast({
+        title: "Success",
+        description: "Purchase transaction created successfully!",
+      });
+
+      // Reset form here...
+    } else {
+      throw new Error(result.message || "Failed to create transaction");
+    }
+  } catch (error) {
+    toast({
+      title: "Error",
+      description: error.message || "Failed to create transaction",
+      variant: "destructive",
+    });
+  }
+};
+
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -486,9 +371,9 @@ function PurchaseTab({ addTransaction }) {
               <SelectValue placeholder="Select department" />
             </SelectTrigger>
             <SelectContent>
-              {mockDepartments.map((dept) => (
-                <SelectItem key={dept.id} value={dept.name}>
-                  {dept.name} ({dept.id})
+              {departments.map((dept) => (
+                <SelectItem key={dept.value} value={dept.value}>
+                  {dept.label}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -516,7 +401,7 @@ function PurchaseTab({ addTransaction }) {
               <SelectValue placeholder="Select vendor type" />
             </SelectTrigger>
             <SelectContent>
-              {mockVendorTypes.map((type) => (
+              {vendorTypes.map((type) => (
                 <SelectItem key={type} value={type}>
                   {type}
                 </SelectItem>
@@ -536,13 +421,11 @@ function PurchaseTab({ addTransaction }) {
               <SelectValue placeholder={formData.vendorType ? "Select vendor" : "Select vendor type first"} />
             </SelectTrigger>
             <SelectContent>
-              {mockVendors
-                .filter((vendor) => vendor.type === formData.vendorType)
-                .map((vendor) => (
-                  <SelectItem key={vendor.id} value={vendor.id}>
-                    {vendor.name} ({vendor.id})
-                  </SelectItem>
-                ))}
+              {vendors.map((vendor) => (
+                <SelectItem key={vendor.value} value={vendor.value}>
+                  {vendor.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -558,19 +441,16 @@ function PurchaseTab({ addTransaction }) {
               <SelectValue placeholder={formData.vendorId ? "Select payment ID" : "Select vendor first"} />
             </SelectTrigger>
             <SelectContent>
-              {mockPayments
-                .filter((payment) => payment.vendorId === formData.vendorId && payment.status !== "Completed")
-                .map((payment) => (
-                  <SelectItem key={payment.id} value={payment.id}>
-                    {payment.id} ({payment.status}) - ₹{payment.amount.toLocaleString()}
-                  </SelectItem>
-                ))}
+              {vendorPayments.map((payment) => (
+                <SelectItem key={payment.value} value={payment.value}>
+                  {payment.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
-          {formData.vendorId &&
-            mockPayments.filter((p) => p.vendorId === formData.vendorId && p.status !== "Completed").length === 0 && (
-              <p className="text-xs text-amber-600">No pending payments found for this vendor</p>
-            )}
+          {formData.vendorId && vendorPayments.length === 0 && (
+            <p className="text-xs text-amber-600">No pending payments found for this vendor</p>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -583,9 +463,9 @@ function PurchaseTab({ addTransaction }) {
               <SelectValue placeholder="Select approval" />
             </SelectTrigger>
             <SelectContent>
-              {mockApprovals.map((approval) => (
-                <SelectItem key={approval.id} value={approval.id}>
-                  {approval.name} ({approval.id})
+              {approvals.map((approval) => (
+                <SelectItem key={approval.value} value={approval.value}>
+                  {approval.label}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -696,14 +576,8 @@ function PurchaseTab({ addTransaction }) {
               />
             </SelectTrigger>
             <SelectContent>
-              {formData.referenceType === "Asset" &&
-                assetTransactionTypes.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type}
-                  </SelectItem>
-                ))}
-              {formData.referenceType === "Service" &&
-                serviceTransactionTypes.map((type) => (
+              {formData.referenceType &&
+                transactionTypes[formData.referenceType]?.map((type) => (
                   <SelectItem key={type} value={type}>
                     {type}
                   </SelectItem>
@@ -764,9 +638,9 @@ function PurchaseTab({ addTransaction }) {
               <SelectValue placeholder="Select debit account" />
             </SelectTrigger>
             <SelectContent>
-              {accounts.map((account) => (
-                <SelectItem key={account} value={account}>
-                  {account}
+              {debitAccounts.map((account) => (
+                <SelectItem key={account.value} value={account.value}>
+                  {account.label}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -783,9 +657,9 @@ function PurchaseTab({ addTransaction }) {
               <SelectValue placeholder="Select credit account" />
             </SelectTrigger>
             <SelectContent>
-              {accounts.map((account) => (
-                <SelectItem key={account} value={account}>
-                  {account}
+              {creditAccounts.map((account) => (
+                <SelectItem key={account.value} value={account.value}>
+                  {account.label}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -843,11 +717,18 @@ function PurchaseTab({ addTransaction }) {
   )
 }
 
+const inttransactionTypes = [
+    "Income", 
+    "Expense", 
+    "Transfer", 
+    "Investment"
+];
+
 // Internal Transaction Tab Component
 function InternalTransactionTab({ addTransaction }) {
   const [formData, setFormData] = useState({
     transactionId: `TXN-${Date.now()}`,
-    enteredBy: "EMP-001 (Current User)",
+    enteredBy: LOGGED_IN_EMPLOYEE_ID || "EMP-001",
     approvalId: "",
     referenceType: "",
     departmentId: "",
@@ -871,109 +752,259 @@ function InternalTransactionTab({ addTransaction }) {
     narration: "",
     attachments: null,
     transactionDate: "",
+    payMonth: ""
   })
 
+  const [departments, setDepartments] = useState([])
+  const [employees, setEmployees] = useState([])
+  const [liabilities, setLiabilities] = useState([])
+  const [assets, setAssets] = useState([])
+  const [debitAccounts, setDebitAccounts] = useState([])
+  const [creditAccounts, setCreditAccounts] = useState([])
+  const [approvals, setApprovals] = useState([])
+
+  // Fetch dropdown data
   useEffect(() => {
-    setFormData((prev) => ({ ...prev, transactionId: `TXN-${Date.now()}` }))
+    const fetchDropdownData = async () => {
+      try {
+        // Fetch departments
+        const deptResponse = await fetch("http://localhost:8000/api/v1/transaction/dropdown/salaryDept", {
+          headers: { Authorization: `Bearer ${localStorage.getItem("employeeToken")}` }
+        })
+        const deptData = await deptResponse.json()
+        setDepartments(deptData.data || [])
+
+        // Fetch debit accounts
+        const debitResponse = await fetch("http://localhost:8000/api/v1/transaction/dropdown/internal-debit", {
+          headers: { Authorization: `Bearer ${localStorage.getItem("employeeToken")}` }
+        })
+        const debitData = await debitResponse.json()
+        setDebitAccounts(debitData.data || [])
+
+        // Fetch credit accounts
+        const creditResponse = await fetch("http://localhost:8000/api/v1/transaction/dropdown/internal-credit", {
+          headers: { Authorization: `Bearer ${localStorage.getItem("employeeToken")}` }
+        })
+        const creditData = await creditResponse.json()
+        setCreditAccounts(creditData.data || [])
+
+        // Note: Approvals endpoint isn't provided, so we'll assume a similar structure
+        // You may need to add an endpoint for approvals in your backend
+        const approvalResponse = await fetch("http://localhost:8000/api/v1/approvals", {
+          headers: { Authorization: `Bearer ${localStorage.getItem("employeeToken")}` }
+        })
+        const approvalData = await approvalResponse.json()
+        setApprovals(approvalData.data || [])
+      } catch (error) {
+        toast({ title: "Error", description: "Failed to fetch dropdown data", variant: "destructive" })
+      }
+    }
+    fetchDropdownData()
   }, [])
 
+  // Fetch employees when department or payMonth changes
+  useEffect(() => {
+    if (formData.referenceType === "Salary" && formData.departmentId && formData.payMonth) {
+      const fetchEmployees = async () => {
+        try {
+          const response = await fetch(
+            `http://localhost:8000/api/v1/transaction/dropdown/emp-dept-salary?departmentId=${formData.departmentId}&payMonth=${formData.payMonth}`,
+            { headers: { Authorization: `Bearer ${localStorage.getItem("employeeToken")}` } }
+          )
+          const data = await response.json()
+          setEmployees(data.data || [])
+        } catch (error) {
+          toast({ title: "Error", description: "Failed to fetch employees", variant: "destructive" })
+        }
+      }
+      fetchEmployees()
+    }
+  }, [formData.referenceType, formData.departmentId, formData.payMonth])
+
+  // Fetch liabilities when liabilityType changes
+  useEffect(() => {
+    if (formData.referenceType === "Liability" && formData.liabilityType) {
+      const fetchLiabilities = async () => {
+        try {
+          const response = await fetch(
+            `http://localhost:8000/api/v1/transaction/dropdown/liabilityType?liabilityType=${formData.liabilityType}`,
+            { headers: { Authorization: `Bearer ${localStorage.getItem("employeeToken")}` } }
+          )
+          const data = await response.json()
+          setLiabilities(data.data || [])
+        } catch (error) {
+          toast({ title: "Error", description: "Failed to fetch liabilities", variant: "destructive" })
+        }
+      }
+      fetchLiabilities()
+    }
+  }, [formData.referenceType, formData.liabilityType])
+
+  // Fetch assets when maintenanceAssetType changes
+  useEffect(() => {
+    if (formData.referenceType === "Maintenance / Repair" && formData.maintenanceAssetType) {
+      const fetchAssets = async () => {
+        try {
+          const response = await fetch(
+            `http://localhost:8000/api/v1/transaction/dropdown/asset-repair?assetType=${formData.maintenanceAssetType}`,
+            { headers: { Authorization: `Bearer ${localStorage.getItem("employeeToken")}` } }
+          )
+          const data = await response.json()
+          setAssets(data.data || [])
+        } catch (error) {
+          toast({ title: "Error", description: "Failed to fetch assets", variant: "destructive" })
+        }
+      }
+      fetchAssets()
+    }
+  }, [formData.referenceType, formData.maintenanceAssetType])
+
+  // Update referenceId and amount based on selections
   useEffect(() => {
     if (formData.referenceType === "Salary" && formData.employeeId) {
-      const employee = mockEmployees.find((emp) => emp.id === formData.employeeId)
-      if (employee) {
-        setFormData((prev) => ({
+      const selectedEmployee = employees.find(emp => emp.value === formData.employeeId)
+      if (selectedEmployee) {
+        setFormData(prev => ({
           ...prev,
-          referenceId: employee.salaryId,
-          amount: employee.netSalary.toString(),
+          referenceId: selectedEmployee.salaryId,
+          amount: selectedEmployee.netSalary?.toString() || ""
         }))
       }
     } else if (formData.referenceType === "Liability" && formData.liabilityId) {
-      const liability = mockLiabilities.find((lib) => lib.id === formData.liabilityId)
-      if (liability) {
-        setFormData((prev) => ({
+      const selectedLiability = liabilities.find(lib => lib.value === formData.liabilityId)
+      if (selectedLiability) {
+        setFormData(prev => ({
           ...prev,
-          referenceId: liability.id,
-          liabilityName: liability.name,
-          liabilityAmount: liability.amount.toString(),
-          amount: liability.amount.toString(),
+          referenceId: selectedLiability.value,
+          liabilityName: selectedLiability.label.split(" - ")[0],
+          liabilityAmount: selectedLiability.label.match(/₹([\d.]+)/)?.[1] || "",
+          amount: selectedLiability.label.match(/₹([\d.]+)/)?.[1] || ""
         }))
       }
     } else if (formData.referenceType === "Refund/Investment") {
-      setFormData((prev) => ({ ...prev, referenceId: `REF-${Date.now()}` }))
+      setFormData(prev => ({ ...prev, referenceId: `REF-${Date.now()}` }))
     } else if (formData.referenceType === "Maintenance / Repair" && formData.maintenanceAssetId) {
-      const maintenanceRecord = mockMaintenanceRecords.find(
-        (record) => record.assetId === formData.maintenanceAssetId && record.status !== "completed",
-      )
-      setFormData((prev) => ({
-        ...prev,
-        referenceId: maintenanceRecord ? maintenanceRecord.id : "",
-      }))
+      const selectedAsset = assets.find(asset => asset.value === formData.maintenanceAssetId)
+      if (selectedAsset) {
+        setFormData(prev => ({ ...prev, referenceId: selectedAsset.maintenanceId || "" }))
+      }
     } else {
-      setFormData((prev) => ({ ...prev, referenceId: "", amount: "" }))
+      setFormData(prev => ({ ...prev, referenceId: "", amount: "" }))
     }
-  }, [formData.referenceType, formData.employeeId, formData.liabilityId, formData.maintenanceAssetId])
+  }, [formData.referenceType, formData.employeeId, formData.liabilityId, formData.maintenanceAssetId, employees, liabilities, assets])
 
-  useEffect(() => {
-    if (formData.liabilityType) {
-      setFormData((prev) => ({ ...prev, liabilityId: "", liabilityName: "", liabilityAmount: "" }))
-    }
-  }, [formData.liabilityType])
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    console.log("Internal transaction created successfully!", formData)
-
-    // Map formData to transaction object expected by history
-    const transaction = {
-      id: formData.transactionId,
-      enteredBy: formData.enteredBy,
-      approvedBy: formData.approvalId || "",
-      date: formData.transactionDate,
-      type: "Internal",
-      subtype: formData.referenceType || "",
-      modeCategory: formData.transactionMode || "",
-      mode: formData.transactionSubMode || "",
-      transactionFor: formData.employeeId || formData.liabilityId || formData.expenseName || "",
-      amount: Number(formData.amount || formData.liabilityAmount) || 0,
-      debitAccount: formData.debitAccount,
-      creditAccount: formData.creditAccount,
-      narration: formData.narration,
-      status: formData.status,
-      department: formData.departmentId || "",
-      referenceType: formData.referenceType,
-      employeeId: formData.employeeId,
-      liabilityId: formData.liabilityId,
+    
+    const formDataToSend = new FormData()
+    formDataToSend.append("transactionDate", formData.transactionDate)
+    formDataToSend.append("approvalId", formData.approvalId)
+    formDataToSend.append("referenceType", formData.referenceType)
+    formDataToSend.append("amount", formData.amount)
+    formDataToSend.append("transactionTypes", formData.transactionType)
+    formDataToSend.append("transactionMode", formData.transactionMode)
+    formDataToSend.append("transactionSubmode", formData.transactionSubMode)
+    formDataToSend.append("debitAccount", formData.debitAccount)
+    formDataToSend.append("creditAccount", formData.creditAccount)
+    formDataToSend.append("status", formData.status)
+    formDataToSend.append("narration", formData.narration)
+    formDataToSend.append("createdBy", formData.enteredBy)
+    
+    if (formData.attachments) {
+      formDataToSend.append("attachment", formData.attachments)
     }
-    addTransaction(transaction)
 
-    // Reset form after successful submission
-    setFormData({
-      transactionId: `TXN-${Date.now()}`,
-      enteredBy: "EMP-001 (Current User)",
-      approvalId: "",
-      referenceType: "",
-      departmentId: "",
-      employeeId: "",
-      liabilityType: "",
-      liabilityId: "",
-      liabilityName: "",
-      liabilityAmount: "",
-      expenseName: "",
-      maintenanceAssetType: "",
-      maintenanceAssetId: "",
-      maintenanceId: "",
-      referenceId: "",
-      amount: "",
-      transactionType: "",
-      transactionMode: "",
-      transactionSubMode: "",
-      debitAccount: "",
-      creditAccount: "",
-      status: "",
-      narration: "",
-      attachments: null,
-      transactionDate: "",
-    })
+    if (formData.referenceType === "Salary") {
+      formDataToSend.append("salaryDetails", JSON.stringify({
+        department: formData.departmentId,
+        employeeId: formData.employeeId,
+        payMonth: formData.payMonth
+      }))
+    } else if (formData.referenceType === "Liability") {
+      formDataToSend.append("liabilityDetails", JSON.stringify({
+        liabilityType: formData.liabilityType,
+        liabilityName: formData.liabilityName
+      }))
+    } else if (formData.referenceType === "Refund/Investment") {
+      formDataToSend.append("refundInvestmentDetails", JSON.stringify({
+        description: formData.expenseName,
+        referenceId: formData.referenceId
+      }))
+    } else if (formData.referenceType === "Maintenance / Repair") {
+      formDataToSend.append("maintenanceRepairDetails", JSON.stringify({
+        assetType: formData.maintenanceAssetType,
+        assetId: formData.maintenanceAssetId
+      }))
+    }
+
+    try {
+      const response = await fetch("http://localhost:8000/api/v1/transaction/internal/create", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${localStorage.getItem("employeeToken")}` },
+        body: formDataToSend
+      })
+
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to create transaction")
+      }
+
+      const transaction = {
+        id: data.data.transactionId,
+        enteredBy: formData.enteredBy,
+        approvedBy: formData.approvalId,
+        date: formData.transactionDate,
+        type: "Internal",
+        subtype: formData.referenceType,
+        modeCategory: formData.transactionMode,
+        mode: formData.transactionSubMode,
+        transactionFor: formData.employeeId || formData.liabilityId || formData.expenseName || formData.maintenanceAssetId,
+        amount: Number(formData.amount),
+        debitAccount: formData.debitAccount,
+        creditAccount: formData.creditAccount,
+        narration: formData.narration,
+        status: formData.status,
+        department: formData.departmentId,
+        referenceType: formData.referenceType,
+        employeeId: formData.employeeId,
+        liabilityId: formData.liabilityId
+      }
+
+      addTransaction(transaction)
+      toast({ title: "Success", description: "Internal transaction created successfully" })
+
+      // Reset form
+      setFormData({
+        transactionId: `TXN-${Date.now()}`,
+        enteredBy: LOGGED_IN_EMPLOYEE_ID || "EMP-001",
+        approvalId: "",
+        referenceType: "",
+        departmentId: "",
+        employeeId: "",
+        liabilityType: "",
+        liabilityId: "",
+        liabilityName: "",
+        liabilityAmount: "",
+        expenseName: "",
+        maintenanceAssetType: "",
+        maintenanceAssetId: "",
+        maintenanceId: "",
+        referenceId: "",
+        amount: "",
+        transactionType: "",
+        transactionMode: "",
+        transactionSubMode: "",
+        debitAccount: "",
+        creditAccount: "",
+        status: "",
+        narration: "",
+        attachments: null,
+        transactionDate: "",
+        payMonth: ""
+      })
+    } catch (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" })
+    }
   }
 
   return (
@@ -1010,9 +1041,9 @@ function InternalTransactionTab({ addTransaction }) {
               <SelectValue placeholder="Select approval" />
             </SelectTrigger>
             <SelectContent>
-              {mockApprovals.map((approval) => (
-                <SelectItem key={approval.id} value={approval.id}>
-                  {approval.name} ({approval.id})
+              {approvals.map((approval) => (
+                <SelectItem key={approval.value} value={approval.value}>
+                  {approval.label}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -1050,31 +1081,39 @@ function InternalTransactionTab({ addTransaction }) {
                 </SelectTrigger>
                 <SelectContent>
                   {departments.map((dept) => (
-                    <SelectItem key={dept} value={dept}>
-                      {dept}
+                    <SelectItem key={dept.value} value={dept.value}>
+                      {dept.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
+              <Label htmlFor="payMonth">Pay Month *</Label>
+              <Input
+                id="payMonth"
+                type="month"
+                value={formData.payMonth}
+                onChange={(e) => setFormData((prev) => ({ ...prev, payMonth: e.target.value }))}
+                required
+              />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="employeeId">Employee ID *</Label>
               <Select
                 value={formData.employeeId}
                 onValueChange={(value) => setFormData((prev) => ({ ...prev, employeeId: value }))}
-                disabled={!formData.departmentId}
+                disabled={!formData.departmentId || !formData.payMonth}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder={formData.departmentId ? "Select employee" : "Select department first"} />
+                  <SelectValue placeholder={formData.departmentId && formData.payMonth ? "Select employee" : "Select department and pay month first"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockEmployees
-                    .filter((emp) => emp.department === formData.departmentId)
-                    .map((employee) => (
-                      <SelectItem key={employee.id} value={employee.id}>
-                        {employee.id} - {employee.name} - ₹{employee.netSalary.toLocaleString()}
-                      </SelectItem>
-                    ))}
+                  {employees.map((employee) => (
+                    <SelectItem key={employee.value} value={employee.value}>
+                      {employee.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -1087,7 +1126,7 @@ function InternalTransactionTab({ addTransaction }) {
               <Label htmlFor="liabilityType">Liability Type *</Label>
               <Select
                 value={formData.liabilityType}
-                onValueChange={(value) => setFormData((prev) => ({ ...prev, liabilityType: value }))}
+                onValueChange={(value) => setFormData((prev) => ({ ...prev, liabilityType: value, liabilityId: "", liabilityName: "", liabilityAmount: "" }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select liability type" />
@@ -1109,18 +1148,14 @@ function InternalTransactionTab({ addTransaction }) {
                 disabled={!formData.liabilityType}
               >
                 <SelectTrigger>
-                  <SelectValue
-                    placeholder={formData.liabilityType ? "Select liability" : "Select liability type first"}
-                  />
+                  <SelectValue placeholder={formData.liabilityType ? "Select liability" : "Select liability type first"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockLiabilities
-                    .filter((liability) => liability.type === formData.liabilityType)
-                    .map((liability) => (
-                      <SelectItem key={liability.id} value={liability.id}>
-                        {liability.name} - ₹{liability.amount.toLocaleString()}
-                      </SelectItem>
-                    ))}
+                  {liabilities.map((liability) => (
+                    <SelectItem key={liability.value} value={liability.value}>
+                      {liability.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -1155,15 +1190,8 @@ function InternalTransactionTab({ addTransaction }) {
             <div className="space-y-2">
               <Label htmlFor="maintenanceAssetType">Asset Type *</Label>
               <Select
-                value={formData.maintenanceAssetType || ""}
-                onValueChange={(value) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    maintenanceAssetType: value,
-                    maintenanceAssetId: "",
-                    maintenanceId: "",
-                  }))
-                }
+                value={formData.maintenanceAssetType}
+                onValueChange={(value) => setFormData((prev) => ({ ...prev, maintenanceAssetType: value, maintenanceAssetId: "", maintenanceId: "" }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select asset type" />
@@ -1181,44 +1209,24 @@ function InternalTransactionTab({ addTransaction }) {
             <div className="space-y-2">
               <Label htmlFor="maintenanceAssetId">Asset ID *</Label>
               <Select
-                value={formData.maintenanceAssetId || ""}
-                onValueChange={(value) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    maintenanceAssetId: value,
-                  }))
-                }}
+                value={formData.maintenanceAssetId}
+                onValueChange={(value) => setFormData((prev) => ({ ...prev, maintenanceAssetId: value }))}
                 disabled={!formData.maintenanceAssetType}
               >
                 <SelectTrigger>
-                  <SelectValue
-                    placeholder={formData.maintenanceAssetType ? "Select asset" : "Select asset type first"}
-                  />
+                  <SelectValue placeholder={formData.maintenanceAssetType ? "Select asset" : "Select asset type first"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockAssets
-                    .filter(
-                      (asset) =>
-                        asset.type === formData.maintenanceAssetType &&
-                        ["maintenance_needed", "repair_needed", "under_maintenance", "under_repair"].includes(
-                          asset.status,
-                        ),
-                    )
-                    .map((asset) => (
-                      <SelectItem key={asset.id} value={asset.id}>
-                        {asset.id} - {asset.name}
-                      </SelectItem>
-                    ))}
+                  {assets.map((asset) => (
+                    <SelectItem key={asset.value} value={asset.value}>
+                      {asset.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-              {formData.maintenanceAssetType &&
-                mockAssets.filter(
-                  (asset) =>
-                    asset.type === formData.maintenanceAssetType &&
-                    ["maintenance_needed", "repair_needed", "under_maintenance", "under_repair"].includes(asset.status),
-                ).length === 0 && (
-                  <p className="text-xs text-amber-600">No assets requiring maintenance/repair found for this type</p>
-                )}
+              {formData.maintenanceAssetType && assets.length === 0 && (
+                <p className="text-xs text-amber-600">No assets requiring maintenance/repair found for this type</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="referenceId">Reference ID</Label>
@@ -1262,7 +1270,7 @@ function InternalTransactionTab({ addTransaction }) {
               <SelectValue placeholder="Select transaction type" />
             </SelectTrigger>
             <SelectContent>
-              {Object.keys(transactionTypes).map((type) => (
+              {inttransactionTypes.map((type) => (
                 <SelectItem key={type} value={type}>
                   {type}
                 </SelectItem>
@@ -1271,13 +1279,12 @@ function InternalTransactionTab({ addTransaction }) {
           </Select>
         </div>
 
+
         <div className="space-y-2">
           <Label htmlFor="transactionMode">Transaction Mode *</Label>
           <Select
             value={formData.transactionMode}
-            onValueChange={(value) =>
-              setFormData((prev) => ({ ...prev, transactionMode: value, transactionSubMode: "" }))
-            }
+            onValueChange={(value) => setFormData((prev) => ({ ...prev, transactionMode: value, transactionSubMode: "" }))}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select transaction mode" />
@@ -1323,9 +1330,9 @@ function InternalTransactionTab({ addTransaction }) {
               <SelectValue placeholder="Select debit account" />
             </SelectTrigger>
             <SelectContent>
-              {accounts.map((account) => (
-                <SelectItem key={account} value={account}>
-                  {account}
+              {debitAccounts.map((account) => (
+                <SelectItem key={account.value} value={account.value}>
+                  {account.label}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -1342,9 +1349,9 @@ function InternalTransactionTab({ addTransaction }) {
               <SelectValue placeholder="Select credit account" />
             </SelectTrigger>
             <SelectContent>
-              {accounts.map((account) => (
-                <SelectItem key={account} value={account}>
-                  {account}
+              {creditAccounts.map((account) => (
+                <SelectItem key={account.value} value={account.value}>
+                  {account.label}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -1408,11 +1415,21 @@ function InternalTransactionTab({ addTransaction }) {
   )
 }
 
+const saleTransactionTypes = [
+  "Product Sale", 
+  "Service Sale", 
+  "Asset Sale",
+  "Scrap Sale", 
+  "Software/License Sale", 
+  "Other Sale"
+];
+
 // Sale Tab Component
 function SaleTab({ addTransaction }) {
+  // State for form data
   const [formData, setFormData] = useState({
     transactionId: `TXN-${Date.now()}`,
-    enteredBy: "EMP-001 (Current User)",
+    enteredBy: `${LOGGED_IN_EMPLOYEE_ID} (Current User)`,
     customerType: "",
     customerId: "",
     customerPaymentId: "",
@@ -1424,7 +1441,7 @@ function SaleTab({ addTransaction }) {
     assetType: "",
     assetId: "",
     assetName: "",
-    assetStatus: "Awaiting Disposal",
+    assetStatus: "Awaiting Disposal", 
     disposalId: "",
     transactionMode: "",
     transactionSubMode: "",
@@ -1436,6 +1453,274 @@ function SaleTab({ addTransaction }) {
     saleDate: "",
   })
 
+  // State for dropdown options
+  const [customerTypes, setCustomerTypes] = useState([
+    "Technology",
+    "Manufacturing",
+    "Retail",
+    "Healthcare",
+    "Finance", 
+    "Education",
+    "B2B",
+    "B2C",
+    "Enterprise",
+    "SME",
+    "Others",
+  ])
+  const [customers, setCustomers] = useState([])
+  const [customerPayments, setCustomerPayments] = useState([])
+  const [approvals, setApprovals] = useState([])
+  const [assets, setAssets] = useState([])
+  const [debitAccounts, setDebitAccounts] = useState([])
+  const [creditAccounts, setCreditAccounts] = useState([])
+
+  // Loading states
+  const [loading, setLoading] = useState({
+    customers: false,
+    payments: false,
+    approvals: false,
+    assets: false,
+    accounts: false,
+    submitting: false
+  })
+
+  // Load initial data
+  useEffect(() => {
+    loadApprovals()
+    loadAccounts()
+  }, [])
+
+  // Load approvals
+  const loadApprovals = async () => {
+    try {
+      setLoading(prev => ({ ...prev, approvals: true }))
+      const token = employee?.token || localStorage.getItem("authToken")
+      
+      const response = await fetch('http://localhost:8000/api/v1/transaction/dropdown/approvals', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        credentials: "include",
+      })
+      
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      setApprovals(data.data || data)
+    } catch (error) {
+      console.error('Failed to load approvals:', error)
+    } finally {
+      setLoading(prev => ({ ...prev, approvals: false }))
+    }
+  }
+
+  // Load debit and credit accounts
+  const loadAccounts = async () => {
+    try {
+      setLoading(prev => ({ ...prev, accounts: true }))
+      const token = employee?.token || localStorage.getItem("authToken")
+      
+      const [debitResponse, creditResponse] = await Promise.all([
+        fetch('http://localhost:8000/api/v1/transaction/dropdown/debit-account', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }),
+        fetch('http://localhost:8000/api/v1/transaction/dropdown/credit-account', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+      ])
+      
+      if (!debitResponse.ok || !creditResponse.ok) {
+        throw new Error('Failed to load accounts')
+      }
+      
+      const debitData = await debitResponse.json()
+      const creditData = await creditResponse.json()
+      
+      setDebitAccounts([{ label: "N/A", value: "N/A" }, ...(debitData.data || debitData)])
+      setCreditAccounts([{ label: "N/A", value: "N/A" }, ...(creditData.data || creditData)])
+    } catch (error) {
+      console.error('Failed to load accounts:', error)
+    } finally {
+      setLoading(prev => ({ ...prev, accounts: false }))
+    }
+  }
+
+  // Load customers by type
+  const loadCustomers = async (customerType) => {
+    if (!customerType) return
+    
+    try {
+      setLoading(prev => ({ ...prev, customers: true }))
+      const token = employee?.token || localStorage.getItem("authToken")
+      
+      const response = await fetch(`http://localhost:8000/api/v1/transaction/dropdown/customers`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        credentials: "include",
+      })
+      
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      setCustomers(data.data || data)
+    } catch (error) {
+      console.error('Failed to load customers:', error)
+      setCustomers([])
+    } finally {
+      setLoading(prev => ({ ...prev, customers: false }))
+    }
+  }
+
+  // Load customer payments
+  const loadCustomerPayments = async (customerId) => {
+    if (!customerId) return
+    
+    try {
+      setLoading(prev => ({ ...prev, payments: true }))
+      const token = employee?.token || localStorage.getItem("authToken")
+      
+      const response = await fetch(`http://localhost:8000/api/v1/transaction/dropdown/pending-payment?customerId=${customerId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      setCustomerPayments(data.data || data)
+    } catch (error) {
+      console.error('Failed to load customer payments:', error)
+      setCustomerPayments([])
+    } finally {
+      setLoading(prev => ({ ...prev, payments: false }))
+    }
+  }
+
+  // Load assets for sale
+  const loadAssets = async (assetType) => {
+    if (!assetType) return
+    
+    try {
+      setLoading(prev => ({ ...prev, assets: true }))
+      const token = employee?.token || localStorage.getItem("authToken")
+      
+      const response = await fetch(`http://localhost:8000/api/v1/transaction/dropdown/assets?assetType=${assetType}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      setAssets(data.data || data)
+    } catch (error) {
+      console.error('Failed to load assets:', error)
+      setAssets([])
+    } finally {
+      setLoading(prev => ({ ...prev, assets: false }))
+    }
+  }
+
+  // Load asset details
+  const loadAssetDetails = async (assetId) => {
+    if (!assetId) return
+    
+    try {
+      const token = employee?.token || localStorage.getItem("authToken")
+      
+      const response = await fetch(`http://localhost:8000/api/v1/transaction/dropdown/asset-details?assetId=${assetId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      const assetDetails = data.data || data
+      
+      setFormData(prev => ({
+        ...prev,
+        assetName: assetDetails.assetName || '',
+        assetStatus: assetDetails.assetStatus || 'Awaiting Disposal',
+        disposalId: assetDetails.disposalId || ''
+      }))
+    } catch (error) {
+      console.error('Failed to load asset details:', error)
+    }
+  }
+
+  // Effect for customer type change
+  useEffect(() => {
+    if (formData.customerType) {
+      loadCustomers(formData.customerType)
+      setFormData(prev => ({ ...prev, customerId: "", customerPaymentId: "" }))
+      setCustomerPayments([])
+    }
+  }, [formData.customerType])
+
+  // Effect for customer change
+  useEffect(() => {
+    if (formData.customerId) {
+      loadCustomerPayments(formData.customerId)
+      setFormData(prev => ({ ...prev, customerPaymentId: "" }))
+    }
+  }, [formData.customerId])
+
+  // Effect for transaction type change
+  useEffect(() => {
+    if (formData.transactionType !== "Asset Sale") {
+      setFormData(prev => ({
+        ...prev,
+        assetType: "",
+        assetId: "",
+        assetName: "",
+        disposalId: "",
+      }))
+      setAssets([])
+    }
+  }, [formData.transactionType])
+
+  // Effect for asset type change
+  useEffect(() => {
+    if (formData.assetType) {
+      loadAssets(formData.assetType)
+      setFormData(prev => ({ ...prev, assetId: "", assetName: "", disposalId: "" }))
+    }
+  }, [formData.assetType])
+
+  // Effect for asset ID change
+  useEffect(() => {
+    if (formData.assetId) {
+      loadAssetDetails(formData.assetId)
+    }
+  }, [formData.assetId])
+
+  // Reset transaction IDs
   useEffect(() => {
     setFormData((prev) => ({
       ...prev,
@@ -1444,104 +1729,68 @@ function SaleTab({ addTransaction }) {
     }))
   }, [])
 
-  useEffect(() => {
-    if (formData.customerType) {
-      setFormData((prev) => ({ ...prev, customerId: "", customerPaymentId: "" }))
-    }
-  }, [formData.customerType])
+  // Handle form submission
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-  useEffect(() => {
-    if (formData.customerId) {
-      setFormData((prev) => ({ ...prev, customerPaymentId: "" }))
-    }
-  }, [formData.customerId])
+  try {
+    setLoading(prev => ({ ...prev, submitting: true }));
 
-  useEffect(() => {
-    if (formData.transactionType !== "Asset Sale") {
-      setFormData((prev) => ({
-        ...prev,
-        assetType: "",
-        assetId: "",
-        assetName: "",
-        disposalId: "",
-      }))
-    }
-  }, [formData.transactionType])
-
-  useEffect(() => {
-    if (formData.assetType) {
-      setFormData((prev) => ({ ...prev, assetId: "", assetName: "", disposalId: "" }))
-    }
-  }, [formData.assetType])
-
-  useEffect(() => {
-    if (formData.assetId) {
-      const selectedAsset = mockAssetsAwaitingDisposal.find(
-        (asset) => asset.id === formData.assetId && asset.status === "awaiting_disposal",
-      )
-      if (selectedAsset) {
-        setFormData((prev) => ({
-          ...prev,
-          assetName: selectedAsset.name,
-          disposalId: selectedAsset.disposalId,
-        }))
-      }
-    }
-  }, [formData.assetId])
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    console.log("Sale transaction created successfully!", formData)
-
-    // Map formData to transaction object expected by history
-    const transaction = {
-      id: formData.transactionId,
-      enteredBy: formData.enteredBy,
-      approvedBy: formData.approvalId || "",
-      date: formData.saleDate,
-      type: "Sale",
-      subtype: formData.transactionType || "",
-      modeCategory: formData.transactionMode || "",
-      mode: formData.transactionSubMode || "",
-      transactionFor: formData.customerId,
-      amount: Number(formData.saleAmount) || 0,
+    const payload = {
+      saleDate: formData.saleDate,
+      customerType: formData.customerType,
+      customerId: formData.customerId,
+      paymentId: formData.customerPaymentId,
+      approvalId: formData.approvalId,
+      saleName: formData.saleName,
+      saleAmount: formData.saleAmount,
+      transactionType: formData.transactionType,
+      transactionMode: formData.transactionMode,
+      transactionSubmode: formData.transactionSubMode,
       debitAccount: formData.debitAccount,
       creditAccount: formData.creditAccount,
-      narration: formData.narration,
       status: formData.status,
-      department: "",
-      referenceType: formData.assetType || "",
-      customerId: formData.customerId,
-    }
-    addTransaction(transaction)
+      narration: formData.narration,
+      createdBy: employee?.employeeId,
+      updatedBy: employee?.employeeId,
+    };
 
-    // Reset form after successful submission
-    setFormData({
-      transactionId: `TXN-${Date.now()}`,
-      enteredBy: "EMP-001 (Current User)",
-      customerType: "",
-      customerId: "",
-      customerPaymentId: "",
-      approvalId: "",
-      saleName: "",
-      referenceId: `REF-${Date.now()}`,
-      saleAmount: "",
-      transactionType: "",
-      assetType: "",
-      assetId: "",
-      assetName: "",
-      assetStatus: "Awaiting Disposal",
-      disposalId: "",
-      transactionMode: "",
-      transactionSubMode: "",
-      debitAccount: "",
-      creditAccount: "",
-      status: "",
-      narration: "",
-      attachments: null,
-      saleDate: "",
-    })
+    if (formData.transactionType === "Asset Sale") {
+      payload.assetDetails = {
+        assetType: formData.assetType,
+        assetId: formData.assetId,
+        assetName: formData.assetName,
+        disposalId: formData.disposalId
+      };
+    }
+
+    const token = employee?.token || localStorage.getItem("authToken");
+
+    const response = await fetch('http://localhost:8000/api/v1/transaction/registerSale', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      credentials: "include",
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to create sale transaction: ${response.status}`);
+    }
+
+    const result = await response.json();
+    alert("Sale transaction created successfully!");
+    console.log(result);
+  } catch (err) {
+    console.error("Submission failed:", err);
+    alert(err.message);
+  } finally {
+    setLoading(prev => ({ ...prev, submitting: false }));
   }
+};
+
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -1577,7 +1826,7 @@ function SaleTab({ addTransaction }) {
               <SelectValue placeholder="Select customer type" />
             </SelectTrigger>
             <SelectContent>
-              {mockCustomerTypes.map((type) => (
+              {customerTypes.map((type) => (
                 <SelectItem key={type} value={type}>
                   {type}
                 </SelectItem>
@@ -1591,19 +1840,21 @@ function SaleTab({ addTransaction }) {
           <Select
             value={formData.customerId}
             onValueChange={(value) => setFormData((prev) => ({ ...prev, customerId: value }))}
-            disabled={!formData.customerType}
+            disabled={!formData.customerType || loading.customers}
           >
             <SelectTrigger>
-              <SelectValue placeholder={formData.customerType ? "Select customer" : "Select customer type first"} />
+              <SelectValue placeholder={
+                loading.customers ? "Loading customers..." : 
+                formData.customerType ? "Select customer" : 
+                "Select customer type first"
+              } />
             </SelectTrigger>
             <SelectContent>
-              {mockCustomers
-                .filter((customer) => customer.type === formData.customerType)
-                .map((customer) => (
-                  <SelectItem key={customer.id} value={customer.id}>
-                    {customer.name} ({customer.id})
-                  </SelectItem>
-                ))}
+              {customers.map((customer) => (
+                <SelectItem key={customer.value} value={customer.value}>
+                  {customer.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -1613,25 +1864,26 @@ function SaleTab({ addTransaction }) {
           <Select
             value={formData.customerPaymentId}
             onValueChange={(value) => setFormData((prev) => ({ ...prev, customerPaymentId: value }))}
-            disabled={!formData.customerId}
+            disabled={!formData.customerId || loading.payments}
           >
             <SelectTrigger>
-              <SelectValue placeholder={formData.customerId ? "Select payment ID" : "Select customer first"} />
+              <SelectValue placeholder={
+                loading.payments ? "Loading payments..." :
+                formData.customerId ? "Select payment ID" : 
+                "Select customer first"
+              } />
             </SelectTrigger>
             <SelectContent>
-              {mockCustomerPayments
-                .filter((payment) => payment.customerId === formData.customerId && payment.status !== "Completed")
-                .map((payment) => (
-                  <SelectItem key={payment.id} value={payment.id}>
-                    {payment.id} ({payment.status}) - ₹{payment.amount.toLocaleString()} (Outstanding: ₹
-                    {payment.outstandingAmount.toLocaleString()})
-                  </SelectItem>
-                ))}
+              {customerPayments.map((payment) => (
+                <SelectItem key={payment.value} value={payment.value}>
+                  {payment.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
-          {formData.customerId &&
-            mockCustomerPayments.filter((p) => p.customerId === formData.customerId && p.status !== "Completed")
-              .length === 0 && <p className="text-xs text-amber-600">No pending payments found for this customer</p>}
+          {formData.customerId && customerPayments.length === 0 && !loading.payments && (
+            <p className="text-xs text-amber-600">No pending payments found for this customer</p>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -1639,14 +1891,15 @@ function SaleTab({ addTransaction }) {
           <Select
             value={formData.approvalId}
             onValueChange={(value) => setFormData((prev) => ({ ...prev, approvalId: value }))}
+            disabled={loading.approvals}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select approval" />
+              <SelectValue placeholder={loading.approvals ? "Loading approvals..." : "Select approval"} />
             </SelectTrigger>
             <SelectContent>
-              {mockApprovals.map((approval) => (
-                <SelectItem key={approval.id} value={approval.id}>
-                  {approval.name} ({approval.id})
+              {approvals.map((approval) => (
+                <SelectItem key={approval.value} value={approval.value}>
+                  {approval.label}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -1730,27 +1983,26 @@ function SaleTab({ addTransaction }) {
               <Select
                 value={formData.assetId}
                 onValueChange={(value) => setFormData((prev) => ({ ...prev, assetId: value }))}
-                disabled={!formData.assetType}
+                disabled={!formData.assetType || loading.assets}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder={formData.assetType ? "Select asset" : "Select asset type first"} />
+                  <SelectValue placeholder={
+                    loading.assets ? "Loading assets..." :
+                    formData.assetType ? "Select asset" : 
+                    "Select asset type first"
+                  } />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockAssetsAwaitingDisposal
-                    .filter((asset) => asset.type === formData.assetType && asset.status === "awaiting_disposal")
-                    .map((asset) => (
-                      <SelectItem key={asset.id} value={asset.id}>
-                        {asset.id} - {asset.name}
-                      </SelectItem>
-                    ))}
+                  {assets.map((asset) => (
+                    <SelectItem key={asset.value} value={asset.value}>
+                      {asset.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-              {formData.assetType &&
-                mockAssetsAwaitingDisposal.filter(
-                  (asset) => asset.type === formData.assetType && asset.status === "awaiting_disposal",
-                ).length === 0 && (
-                  <p className="text-xs text-amber-600">No assets awaiting disposal found for this type</p>
-                )}
+              {formData.assetType && assets.length === 0 && !loading.assets && (
+                <p className="text-xs text-amber-600">No assets awaiting disposal found for this type</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -1817,14 +2069,15 @@ function SaleTab({ addTransaction }) {
           <Select
             value={formData.debitAccount}
             onValueChange={(value) => setFormData((prev) => ({ ...prev, debitAccount: value }))}
+            disabled={loading.accounts}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select debit account" />
+              <SelectValue placeholder={loading.accounts ? "Loading accounts..." : "Select debit account"} />
             </SelectTrigger>
             <SelectContent>
-              {accounts.map((account) => (
-                <SelectItem key={account} value={account}>
-                  {account}
+              {debitAccounts.map((account) => (
+                <SelectItem key={account.value} value={account.value}>
+                  {account.label}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -1836,14 +2089,15 @@ function SaleTab({ addTransaction }) {
           <Select
             value={formData.creditAccount}
             onValueChange={(value) => setFormData((prev) => ({ ...prev, creditAccount: value }))}
+            disabled={loading.accounts}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select credit account" />
+              <SelectValue placeholder={loading.accounts ? "Loading accounts..." : "Select credit account"} />
             </SelectTrigger>
             <SelectContent>
-              {accounts.map((account) => (
-                <SelectItem key={account} value={account}>
-                  {account}
+              {creditAccounts.map((account) => (
+                <SelectItem key={account.value} value={account.value}>
+                  {account.label}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -1894,8 +2148,8 @@ function SaleTab({ addTransaction }) {
         </div>
       </div>
 
-      <Button type="submit" className="w-full">
-        Create Sale Transaction
+      <Button type="submit" className="w-full" disabled={loading.submitting}>
+        {loading.submitting ? "Creating Sale Transaction..." : "Create Sale Transaction"}
       </Button>
     </form>
   )
@@ -1903,261 +2157,160 @@ function SaleTab({ addTransaction }) {
 
 export default function TransactionPage() {
   const [activeTab, setActiveTab] = useState("purchase");
-  const defaultTransactions = [
-    // Purchase Transactions
-    {
-      id: "TXN-1734307584123",
-      enteredBy: "EMP-001 (John Doe)",
-      approvedBy: "EMP-002 (Jane Smith)",
-      date: "2024-12-15",
-      type: "Purchase",
-      subtype: "Asset Purchase",
-      modeCategory: "Digital",
-      mode: "Bank Transfer",
-      transactionFor: "VEND-001",
-      amount: 75000,
-      debitAccount: "Asset Account",
-      creditAccount: "Bank Account",
-      narration: "Dell Laptop purchase for IT department",
-      status: "Completed",
-      department: "IT",
-      referenceType: "Asset",
-      vendorId: "VEND-004",
-    },
-    {
-      id: "TXN-1734307584124",
-      enteredBy: "EMP-003 (Mike Johnson)",
-      approvedBy: "EMP-001 (John Doe)",
-      date: "2024-12-14",
-      type: "Purchase",
-      subtype: "Service Purchase",
-      modeCategory: "Digital",
-      mode: "Credit Card",
-      transactionFor: "VEND-002",
-      amount: 25000,
-      debitAccount: "Service Account",
-      creditAccount: "Bank Account",
-      narration: "IT consulting services",
-      status: "Pending",
-      department: "IT",
-      referenceType: "Service",
-      vendorId: "VEND-002",
-    },
-    {
-      id: "TXN-1734307584125",
-      enteredBy: "EMP-002 (Jane Smith)",
-      approvedBy: "EMP-004 (Sarah Wilson)",
-      date: "2024-12-13",
-      type: "Purchase",
-      subtype: "Office Supplies",
-      modeCategory: "Digital",
-      mode: "NEFT",
-      transactionFor: "VEND-001",
-      amount: 15000,
-      debitAccount: "Office Supplies Account",
-      creditAccount: "Bank Account",
-      narration: "Monthly office supplies purchase",
-      status: "Partially Paid",
-      department: "Administration",
-      referenceType: "Asset",
-      vendorId: "VEND-001",
-    },
-    // Sale Transactions
-    {
-      id: "TXN-1734307584126",
-      enteredBy: "EMP-005 (David Brown)",
-      approvedBy: "EMP-002 (Jane Smith)",
-      date: "2024-12-12",
-      type: "Sale",
-      subtype: "Product Sale",
-      modeCategory: "Digital",
-      mode: "UPI",
-      transactionFor: "CUST-001",
-      amount: 85000,
-      debitAccount: "Cash Account",
-      creditAccount: "Sales Account",
-      narration: "Software license sale to ABC Corp",
-      status: "Completed",
-      department: "Sales",
-      referenceType: "Product",
-      customerId: "CUST-001",
-    },
-    {
-      id: "TXN-1734307584127",
-      enteredBy: "EMP-005 (David Brown)",
-      approvedBy: "EMP-003 (Mike Johnson)",
-      date: "2024-12-11",
-      type: "Sale",
-      subtype: "Asset Sale",
-      modeCategory: "Cheque",
-      mode: "Cheque Received",
-      transactionFor: "CUST-003",
-      amount: 45000,
-      debitAccount: "Cash Account",
-      creditAccount: "Asset Sale Account",
-      narration: "Old office furniture disposal",
-      status: "Pending",
-      department: "Administration",
-      referenceType: "Asset",
-      customerId: "CUST-003",
-    },
-    {
-      id: "TXN-1734307584128",
-      enteredBy: "EMP-005 (David Brown)",
-      approvedBy: "EMP-001 (John Doe)",
-      date: "2024-12-10",
-      type: "Sale",
-      subtype: "Service Sale",
-      modeCategory: "Digital",
-      mode: "Bank Transfer",
-      transactionFor: "CUST-002",
-      amount: 120000,
-      debitAccount: "Cash Account",
-      creditAccount: "Service Revenue Account",
-      narration: "Consulting services provided",
-      status: "Cancelled",
-      department: "Consulting",
-      referenceType: "Service",
-      customerId: "CUST-002",
-    },
-    // Internal Transactions
-    {
-      id: "TXN-1734307584129",
-      enteredBy: "EMP-004 (Sarah Wilson)",
-      approvedBy: "EMP-001 (John Doe)",
-      date: "2024-12-09",
-      type: "Internal",
-      subtype: "Salary Payment",
-      modeCategory: "Digital",
-      mode: "NEFT",
-      transactionFor: "EMP-007",
-      amount: 60000,
-      debitAccount: "Salary Account",
-      creditAccount: "Bank Account",
-      narration: "Monthly salary payment for Tom Wilson",
-      status: "Completed",
-      department: "HR",
-      referenceType: "Salary",
-      employeeId: "EMP-007",
-    },
-    {
-      id: "TXN-1734307584130",
-      enteredBy: "EMP-004 (Sarah Wilson)",
-      approvedBy: "EMP-002 (Jane Smith)",
-      date: "2024-12-08",
-      type: "Internal",
-      subtype: "Liability Payment",
-      modeCategory: "Digital",
-      mode: "RTGS",
-      transactionFor: "LIB-001",
-      amount: 50000,
-      debitAccount: "Liability Account",
-      creditAccount: "Bank Account",
-      narration: "Business loan EMI payment",
-      status: "Pending",
-      department: "Finance",
-      referenceType: "Liability",
-      liabilityId: "LIB-001",
-    },
-    {
-      id: "TXN-1734307584131",
-      enteredBy: "EMP-003 (Mike Johnson)",
-      approvedBy: "EMP-004 (Sarah Wilson)",
-      date: "2024-12-07",
-      type: "Internal",
-      subtype: "Investment",
-      modeCategory: "Digital",
-      mode: "Bank Transfer",
-      transactionFor: "REF-001",
-      amount: 200000,
-      debitAccount: "Investment Account",
-      creditAccount: "Bank Account",
-      narration: "Equipment investment for expansion",
-      status: "Partially Paid",
-      department: "Operations",
-      referenceType: "Refund/Investment",
-    },
-    {
-      id: "TXN-1734307584132",
-      enteredBy: "EMP-006 (Lisa Davis)",
-      approvedBy: "EMP-001 (John Doe)",
-      date: "2024-12-06",
-      type: "Internal",
-      subtype: "Salary Payment",
-      modeCategory: "Digital",
-      mode: "UPI",
-      transactionFor: "EMP-002",
-      amount: 45000,
-      debitAccount: "Salary Account",
-      creditAccount: "Bank Account",
-      narration: "Monthly salary payment for Jane Smith",
-      status: "Completed",
-      department: "HR",
-      referenceType: "Salary",
-      employeeId: "EMP-002",
-    },
-  ]
-
-  // Load from localStorage if available
-  const [transactions, setTransactions] = useState(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("transactions")
-      if (stored) {
-        try {
-          return JSON.parse(stored)
-        } catch {
-          return defaultTransactions
-        }
-      }
-    }
-    return defaultTransactions
-  })
-
-  // Save to localStorage whenever transactions changes
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("transactions", JSON.stringify(transactions))
-    }
-  }, [transactions])
-
-  // Add a new transaction to the top of the list
-  const addTransaction = (transaction) => {
-    setTransactions((prev) => [transaction, ...prev])
-  }
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   // States for Transaction History
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState("all")
-  const [typeFilter, setTypeFilter] = useState("all")
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
 
-  // Update the filtering logic
+  // Fetch transactions from backend
+  const fetchTransactions = async () => {
+    if (!LOGGED_IN_EMPLOYEE_ID) {
+      setError("User not authenticated");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const queryParams = new URLSearchParams();
+      
+      // Add search term if exists
+      if (searchTerm.trim()) {
+        queryParams.append('transactionId', searchTerm.trim());
+      }
+      
+      // Add status filter if not "all"
+      if (statusFilter !== "all") {
+        queryParams.append('status', statusFilter);
+      }
+      
+      // Add type filter if not "all"
+      if (typeFilter !== "all") {
+        queryParams.append('type', typeFilter);
+      }
+
+      const url = `http://localhost:8000/api/v1/transaction/history${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          // Add authorization header if you have authentication tokens
+          // 'Authorization': `Bearer ${token}`,
+        },
+        credentials: 'include', // Include cookies if using session-based auth
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.success) {
+        // Transform backend data to match frontend format
+        const transformedTransactions = data.data.map(tx => ({
+          id: tx.transactionId,
+          enteredBy: tx.enteredBy || 'N/A',
+          approvedBy: tx.approvalId || 'N/A',
+          date: formatDate(tx.transactionDate),
+          type: tx.source, // "Purchase", "Sale", "Internal"
+          subtype: tx.transactionType.split(' - ')[1] || tx.transactionType,
+          modeCategory: tx.mode.split(' - ')[0] || 'Digital',
+          mode: tx.mode.split(' - ')[1] || tx.mode,
+          transactionFor: tx.referenceId || 'N/A',
+          amount: tx.amount,
+          debitAccount: tx.debitAccount || 'N/A',
+          creditAccount: tx.creditAccount || 'N/A',
+          narration: tx.narration || '',
+          status: tx.status,
+          department: 'N/A', // This might need to be added to backend
+          referenceType: tx.transactionType.split(' - ')[1] || 'N/A',
+          // Add specific IDs based on transaction type
+          vendorId: tx.source === 'Purchase' ? tx.referenceId : undefined,
+          customerId: tx.source === 'Sale' ? tx.referenceId : undefined,
+          employeeId: tx.source === 'Internal' ? tx.referenceId : undefined,
+        }));
+        
+        setTransactions(transformedTransactions);
+      } else {
+        throw new Error(data.message || 'Failed to fetch transactions');
+      }
+    } catch (err) {
+      console.error('Error fetching transactions:', err);
+      setError(err.message || 'Failed to fetch transactions');
+      setTransactions([]); // Set empty array on error
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Format date helper function
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    try {
+      const date = new Date(dateString);
+      return date.toISOString().split('T')[0]; // Returns YYYY-MM-DD format
+    } catch (error) {
+      return dateString;
+    }
+  };
+
+  // Fetch transactions when component mounts or filters change
+  useEffect(() => {
+    if (activeTab === "history") {
+      fetchTransactions();
+    }
+  }, [activeTab, searchTerm, statusFilter, typeFilter, LOGGED_IN_EMPLOYEE_ID]);
+
+  // Add a new transaction and refresh the list
+  const addTransaction = async (transaction) => {
+    // This would typically be handled by individual tab components
+    // After successfully creating a transaction, refresh the list
+    await fetchTransactions();
+  };
+
+  // Client-side filtering (you can remove this if backend handles all filtering)
   const filteredTransactions = transactions.filter((transaction) => {
-    const matchesSearch =
+    const matchesSearch = !searchTerm || (
       transaction.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       transaction.transactionFor.toLowerCase().includes(searchTerm.toLowerCase()) ||
       transaction.narration.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = statusFilter === "all" || transaction.status === statusFilter
-    const matchesType = typeFilter === "all" || transaction.type === typeFilter
+    );
+    const matchesStatus = statusFilter === "all" || transaction.status === statusFilter;
+    const matchesType = typeFilter === "all" || transaction.type === typeFilter;
 
-    return matchesSearch && matchesStatus && matchesType
-  })
+    return matchesSearch && matchesStatus && matchesType;
+  });
 
   const getStatusColor = (status) => {
     switch (status) {
       case "Completed":
-        return "bg-green-100 text-green-800"
+        return "bg-green-100 text-green-800";
       case "Pending":
-        return "bg-yellow-100 text-yellow-800"
+        return "bg-yellow-100 text-yellow-800";
       case "Approved":
-        return "bg-blue-100 text-blue-800"
+        return "bg-blue-100 text-blue-800";
       case "Rejected":
-        return "bg-red-100 text-red-800"
+        return "bg-red-100 text-red-800";
+      case "Cancelled":
+        return "bg-red-100 text-red-800";
+      case "Partially Paid":
+        return "bg-orange-100 text-orange-800";
       case "On Hold":
-        return "bg-gray-100 text-gray-800"
+        return "bg-gray-100 text-gray-800";
       default:
-        return "bg-gray-100 text-gray-800"
+        return "bg-gray-100 text-gray-800";
     }
-  }
+  };
+
+  // Available statuses for the filter dropdown
+  const statuses = ["Completed", "Pending", "Approved", "Rejected", "Cancelled", "Partially Paid", "On Hold"];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
@@ -2289,7 +2442,7 @@ export default function TransactionPage() {
                         <div className="relative">
                           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                           <Input
-                            placeholder="Search by Transaction ID or Transaction For..."
+                            placeholder="Search by Transaction ID..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="pl-10"
@@ -2324,88 +2477,141 @@ export default function TransactionPage() {
                           <SelectItem value="Internal">Internal</SelectItem>
                         </SelectContent>
                       </Select>
+
+                      {/* Refresh Button */}
+                      <Button 
+                        onClick={fetchTransactions} 
+                        disabled={loading}
+                        variant="outline"
+                      >
+                        {loading ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
+                        ) : (
+                          <RefreshCw className="h-4 w-4" />
+                        )}
+                      </Button>
                     </div>
+
+                    {/* Authentication Error */}
+                    {!LOGGED_IN_EMPLOYEE_ID && (
+                      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                        Please log in to view transaction history.
+                      </div>
+                    )}
+
+                    {/* Error Display */}
+                    {error && (
+                      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                        Error: {error}
+                        <Button 
+                          onClick={fetchTransactions} 
+                          size="sm" 
+                          variant="outline" 
+                          className="ml-2"
+                        >
+                          Retry
+                        </Button>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 
+                {/* Loading State */}
+                {loading && (
+                  <Card>
+                    <CardContent className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+                      <p className="text-gray-500">Loading transactions...</p>
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* Transaction Cards */}
-                <div className="grid gap-6">
-                  {filteredTransactions.length === 0 ? (
-                    <Card>
-                      <CardContent className="text-center py-8">
-                        <p className="text-gray-500">No transactions found matching your criteria.</p>
-                      </CardContent>
-                    </Card>
-                  ) : (
-                    filteredTransactions.map((transaction) => (
-                      <Card key={transaction.id} className="hover:shadow-md transition-shadow">
-                        <CardContent className="p-6">
-                          <div className="flex justify-between items-start mb-4">
-                            <div>
-                              <h3 className="text-lg font-semibold text-gray-900">{transaction.id}</h3>
-                              <p className="text-sm text-gray-600">{transaction.date}</p>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <Badge className={getStatusColor(transaction.status)}>{transaction.status}</Badge>
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-                            <div>
-                              <span className="font-medium text-gray-700">Type:</span>
-                              <p>
-                                {transaction.type} - {transaction.subtype}
-                              </p>
-                            </div>
-                            <div>
-                              <span className="font-medium text-gray-700">Amount:</span>
-                              <p className="text-lg font-semibold">₹{transaction.amount.toLocaleString()}</p>
-                            </div>
-                            <div>
-                              <span className="font-medium text-gray-700">Mode:</span>
-                              <p>
-                                {transaction.modeCategory} - {transaction.mode}
-                              </p>
-                            </div>
-                            <div>
-                              <span className="font-medium text-gray-700">Transaction For:</span>
-                              <p>{transaction.transactionFor}</p>
-                            </div>
-                            <div>
-                              <span className="font-medium text-gray-700">Approved By:</span>
-                              <p>{transaction.approvedBy}</p>
-                            </div>
-                          </div>
-
-                          <Separator className="my-4" />
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                            <div>
-                              <span className="font-medium text-gray-700">Debit Account:</span>
-                              <p>{transaction.debitAccount}</p>
-                            </div>
-                            <div>
-                              <span className="font-medium text-gray-700">Credit Account:</span>
-                              <p>{transaction.creditAccount}</p>
-                            </div>
-                          </div>
-
-                          {transaction.narration && (
-                            <div className="mt-4">
-                              <span className="font-medium text-gray-700">Narration:</span>
-                              <p className="text-sm text-gray-600 mt-1">{transaction.narration}</p>
-                            </div>
-                          )}
+                {!loading && (
+                  <div className="grid gap-6">
+                    {filteredTransactions.length === 0 ? (
+                      <Card>
+                        <CardContent className="text-center py-8">
+                          <p className="text-gray-500">
+                            {error ? "Failed to load transactions." : "No transactions found matching your criteria."}
+                          </p>
                         </CardContent>
                       </Card>
-                    ))
-                  )}
-                </div>
+                    ) : (
+                      filteredTransactions.map((transaction) => (
+                        <Card key={transaction.id} className="hover:shadow-md transition-shadow">
+                          <CardContent className="p-6">
+                            <div className="flex justify-between items-start mb-4">
+                              <div>
+                                <h3 className="text-lg font-semibold text-gray-900">{transaction.id}</h3>
+                                <p className="text-sm text-gray-600">{transaction.date}</p>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <Badge className={getStatusColor(transaction.status)}>{transaction.status}</Badge>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                              <div>
+                                <span className="font-medium text-gray-700">Type:</span>
+                                <p>
+                                  {transaction.type} - {transaction.subtype}
+                                </p>
+                              </div>
+                              <div>
+                                <span className="font-medium text-gray-700">Amount:</span>
+                                <p className="text-lg font-semibold">₹{transaction.amount?.toLocaleString()}</p>
+                              </div>
+                              <div>
+                                <span className="font-medium text-gray-700">Mode:</span>
+                                <p>
+                                  {transaction.modeCategory} - {transaction.mode}
+                                </p>
+                              </div>
+                              <div>
+                                <span className="font-medium text-gray-700">Transaction For:</span>
+                                <p>{transaction.transactionFor}</p>
+                              </div>
+                              <div>
+                                <span className="font-medium text-gray-700">Entered By:</span>
+                                <p>{transaction.enteredBy}</p>
+                              </div>
+                              <div>
+                                <span className="font-medium text-gray-700">Approved By:</span>
+                                <p>{transaction.approvedBy}</p>
+                              </div>
+                            </div>
+
+                            <Separator className="my-4" />
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                              <div>
+                                <span className="font-medium text-gray-700">Debit Account:</span>
+                                <p>{transaction.debitAccount}</p>
+                              </div>
+                              <div>
+                                <span className="font-medium text-gray-700">Credit Account:</span>
+                                <p>{transaction.creditAccount}</p>
+                              </div>
+                            </div>
+
+                            {transaction.narration && (
+                              <div className="mt-4">
+                                <span className="font-medium text-gray-700">Narration:</span>
+                                <p className="text-sm text-gray-600 mt-1">{transaction.narration}</p>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }

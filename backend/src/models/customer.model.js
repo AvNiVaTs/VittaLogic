@@ -1,17 +1,18 @@
 import mongoose, { Schema } from "mongoose";
 
 const CUSTOMER_TYPES = [
-  "Technology", 
-  "Manufacturing", 
-  "Retail", 
-  "Healthcare", 
-  "Education", 
-  "B2B", 
-  "B2C", 
-  "Enterprise", 
-  "SME",
-  "Others"  //added others field
-];
+    "Technology",
+    "Manufacturing",
+    "Retail",
+    "Healthcare",
+    "Finance",        //added finance and some other fields in enum
+    "Education",
+    "B2B",
+    "B2C",
+    "Enterprise",
+    "SME",
+    "Others",
+  ];
 
 const CUSTOMER_LOCATIONS = [
   "Indian", 
