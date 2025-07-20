@@ -1,193 +1,676 @@
-// import { Asset } from "../models/assets.model.js"
-// import { EnteredAsset } from "../models/enteredAsset.model.js"
-// import { Department } from "../models/department.model.js"
-// import { Employee } from "../models/employee.model.js"
-// import { getNextSequence } from "../utils/getNextSequence.js"
-// import { asyncHandler } from "../utils/asyncHandler.js"
-// import { ApiErr } from "../utils/ApiError.js"
-// import { ApiResponse } from "../utils/ApiResponse.js"
+import fs from "fs"
+import { Asset } from "../models/assets.model.js"
+import { Department } from "../models/department.model.js"
+import { PurchaseTransaction } from "../models/purchaseTransaction.model.js"
+import { InternalTransaction } from "../models/internalTransaction.model.js"
+import { SaleTransaction } from "../models/saleTransaction.model.js"
+import { asyncHandler } from "../utils/asyncHandler.js"
+import { ApiErr } from "../utils/ApiError.js"
+import { ApiResponse } from "../utils/ApiResponse.js"
+import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { getNextSequence } from "../utils/getNextSequence.js"
 
-// const createAssetFromEnteredAsset = asyncHandler(async (req, res) => {
-//     const { enteredAssetId, assetType, assetSubType, description, documents } = req.body
+// Asset
+const getAssetDetailsFromPurchaseTransactionOnCard = asyncHandler(async (req, res) => {
+  const { referenceId } = req.params;
+  const purchase = await PurchaseTransaction.findOne({ referenceId });
 
-//     if(!enteredAssetId || !assetType || !assetSubType){
-//         throw new ApiErr(400, "Required fields are missing")
-//     }
+  if (!purchase || purchase.referenceType !== "Asset") {
+    throw new ApiErr(404, "Purchase transaction not found or not an asset");
+  }
 
-//     const ea = await EnteredAsset.findById(enteredAssetId)
-//     if(!ea){
-//         throw new ApiErr(404, "Asset not found")
-//     }
+  const result = {
+    assetName: purchase.assetDetails.assetName,
+    referenceId: purchase.referenceId,
+    quantity: purchase.assetDetails.quantity,
+    transactionId: purchase.transactionId,
+    totalAmount: purchase.purchaseAmount,
+    costPerUnit: purchase.purchaseAmount / purchase.assetDetails.quantity,
+    vendorId: purchase.vendorId,
+    purchaseDate: purchase.purchaseDate,
+  };
 
-//     const quantity = parseInt(ea.quantity)
-//     if(!quantity || quantity<1){
-//         throw new ApiErr(400, "Invalid quantity entered")
-//     }
+  return res.status(200).json(new ApiResponse(200, result, "Asset details fetched from purchase"));
+});
 
-//     const attachmentPath = req.files?.attachment[0]?.path
-//     if(!attachmentPath){
-//         throw new ApiErr(400, "Attachment required")
-//     }
+const createAssets = asyncHandler(async (req, res) => {
+  const {
+    referenceId,
+    assetType,
+    assetSubtype,
+    description
+  } = req.body;
 
-//     const attachment = await uploadOnCloudinary(attachmentPath)
-//     if(!attachment){
-//         throw new ApiErr(400, "Attachment required")
-//     }
+  const purchase = await PurchaseTransaction.findOne({ referenceId });
+  if (!purchase || purchase.referenceType !== "Asset") {
+    throw new ApiErr(404, "Valid PurchaseTransaction with referenceType 'Asset' not found");
+  }
 
-//     const id = `AST-${(await getNextSequence("asset_id")).toString().padStart(5, "0")}`
+  const {
+    assetName,
+    quantity
+  } = purchase.assetDetails;
 
-//     const createdAssets = []
-//     for(let i=1; i<=quantity; i++){
-//         const asset = await Asset.create({
-//             assetId: `${id}-${i}`,
-//             linked_reference_id: ea.linked_reference_id,
-//             assetName: ea.asset_name,
-//             assetType,
-//             assetSubType,
-//             assignedStatus: "Unassigned",
-//             status: "Active",
-//             purchaseFrom: ea.vendor,
-//             purchaseDate: ea.purchase_date,
-//             purchaseCost: ea.cost_per_unit,
-//             numberOfAssets: ea.quantity,
-//             description,
-//             documents: attachment.url,
-//             enteredBy: req.body.createdBy,
-//             updatedBy: req.body.updatedBy
-//         })
-//         createdAssets.push(asset)
-//     }
+  const unitCost = purchase.purchaseAmount / quantity;
 
-//     return res
-//     .status(200)
-//     .json(
-//         new ApiResponse(200, createdAssets, "Assets created successfully")
-//     )
-// })
+  let attachmentUrl = null;
+  if (req.files?.attachment?.[0]?.path) {
+    const attachmentPath = req.files.attachment[0].path;
+    const attachment = await uploadOnCloudinary(attachmentPath);
+    if (attachment?.url) {
+      attachmentUrl = attachment.url;
+    }
+    if (fs.existsSync(attachmentPath)) {
+      fs.unlinkSync(attachmentPath);
+    }
+  }
 
-// const assignedAsset = asyncHandler(async (req, res) => {
-//     const { assetId, assignedToDepartment, assignedTo } = req.body
+  const baseSeq = (await getNextSequence("asset_Id")).toString().padStart(5, "0");
 
-//     const asset = await Asset.findOne({assetId})
-//     if(!asset){
-//         throw new ApiErr(404, "Asset not found")
-//     }
+  const assetsToCreate = [];
+  for (let i = 1; i <= quantity; i++) {
+    const assetId = `AST-${baseSeq}-${i}`;
 
-//     asset.assignedStatus = "Assigned"
-//     asset.assignedToDepartment = assignedToDepartment,
-//     asset.assignedTo = assignedTo
-//     await asset.save()
+    assetsToCreate.push({
+      assetId,
+      linkedreferenceId: referenceId,
+      assetName,
+      assetType,
+      assetSubtype,
+      vendorId: purchase.vendorId,
+      purchaseCost: purchase.purchaseAmount,
+      numberOfAssets: quantity,
+      unitCost,
+      purchaseDate: purchase.purchaseDate,
+      description,
+      documents: attachmentUrl,
+      createdBy: req.body.createdBy,
+      updatedBy: req.body.updatedBy
+    });
+  }
 
-//     return res
-//     .status(200)
-//     .json(
-//         new ApiResponse(200, asset, "Asset assigned successfully")
-//     )
-// })
+  const createdAssets = await Asset.insertMany(assetsToCreate);
 
-// const unassignedAsset = asyncHandler(async (req, res) => {
-//     const {assetId} = req.body
+  return res
+    .status(201)
+    .json(new ApiResponse(201, createdAssets, `${createdAssets.length} assets created successfully`));
+});
 
-//     const asset = await Asset.findOne({assetId})
-//     if(!asset){
-//         throw new ApiErr(404, "Asset not found")
-//     }
+const updateAssetAssignment = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const updates = req.body;
+  updates.updatedBy = req.body.updatedBy;
 
-//     asset.assignedStatus = "Unassigned"
-//     asset.assignedTo = null
-//     asset.assignedToDepartment = null
-//     await asset.save()
+  const asset = await Asset.findOneAndUpdate({ assetId: id }, updates, {
+    new: true,
+    runValidators: true,
+  });
 
-//     return res
-//     .status(200)
-//     .json(
-//         new ApiResponse(200, asset, "Asset Unassigned")
-//     )
-// })
+  if (!asset) throw new ApiErr(404, "Asset not found");
 
-// const filterAssets = asyncHandler(async (req, res) => {
-//     const {status, assignedStatus} = req.query
+  return res.status(200).json(new ApiResponse(200, asset, "Asset updated successfully"));
+});
 
-//     const query = {}
-//     if(status) query.status = status
-//     if(assignedStatus) query.assignedStatus = assignedStatus
+const updateAssetStatus = asyncHandler(async (req, res) => {
+  const { assetId } = req.params;
+  const { status, updatedBy } = req.body;
 
-//     const assets = await Asset.find(query).sort({createdAt: -1})
+  const asset = await Asset.findOne({ asset_Id: assetId });
+  if (!asset) throw new ApiErr(404, "Asset not found");
 
-//     return res
-//     .status(200)
-//     .json(
-//         new ApiResponse(200, assets, "Assets filtered")
-//     )
-// })
+  asset.status = status;
+  asset.updatedBy = updatedBy;
 
-// const searchAssets = asyncHandler(async (req, res) => {
-//     const {assetId, assetName} = req.query
+  await asset.save();
 
-//     let query = {}
-//     if(assetId) query.assetId = {$regex: assetId, $options: "i"}
-//     if(assetName) query.assetName = {$regex: assetName, $options: "i"}
+  return res.status(200).json(new ApiResponse(200, asset, "Asset status updated"));
+});
 
-//     const result = await Asset.find(query)
+const deleteAsset = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const asset = await Asset.findOneAndDelete({ asset_Id: id });
+  if (!asset) throw new ApiErr(404, "Asset not found");
 
-//     return res
-//     .status(200)
-//     .json(
-//         new ApiResponse(200, result, "Asset searched")
-//     )
-// })
+  return res.status(200).json(new ApiResponse(200, asset, "Asset deleted successfully"));
+});
 
-// const getDepartments = asyncHandler(async (req, res) => {
-//     const department = await Department.find()
+const searchAsset = asyncHandler(async (req, res) => {
+  const { assetId, assetName, assetType, assignmentStatus, maintenanceId, status } = req.query;
+  const filter = {};
 
-//     if(!department || department.length===0){
-//         return res.status(200).json(
-//             new ApiResponse(200, [], "No department found")
-//         )
-//     }
+  if (assetId) filter.asset_Id = assetId;
+  if (assetName) filter.asset_Name = { $regex: assetName, $options: "i" };
+  if (assetType) filter.assetType = assetType;
+  if (assignmentStatus) filter.assignmentStatus = assignmentStatus;
+  if (status) filter.status = status;
+  if (maintenanceId) filter["maintenanceDetails.maintenance_Id"] = maintenanceId;
 
-//     const options = department.map(d => ({
-//         label: d.departmentName,
-//         value: d.department_id
-//     }))
+  const assets = await Asset.find(filter);
+  return res.status(200).json(new ApiResponse(200, assets, "Assets fetched successfully"));
+});
 
-//     return res
-//     .status(200)
-//     .json(
-//         new ApiResponse(200, options)
-//     )
-// })
+const getAssetForEditCard = asyncHandler(async (req, res) => {
+  const { assetId } = req.params;
+  const asset = await Asset.findOne({ asset_Id: assetId });
+  if (!asset) throw new ApiErr(404, "Asset not found");
 
-// const getEmployeesByDepartment = asyncHandler(async (req, res) =>{
-//     const {departmentId} = req.query
-//     if(!departmentId){
-//         throw new ApiErr(400, "DepartmentId required")
-//     }
+  const department = asset.assignedToDepartment
+    ? await Department.findOne({ department_Id: asset.assignedToDepartment })
+    : null;
 
-//     const employee = await Employee.find({department: departmentId})
-//     if(!employee || employee.length===0){
-//         return res.status(200).json(
-//             new ApiResponse(200, [], "No employee found in this department")
-//         )
-//     }
-//     const options = employee.map(emp => ({
-//         label: `${emp.employeeId}-${emp.employeeName}`,
-//         value: emp.employeeId
-//     }))
+  const result = {
+    assetId: asset.asset_Id,
+    assetName: asset.asset_Name,
+    assetType: asset.assetType,
+    purchaseCost: asset.unitCost,
+    status: asset.status,
+    assignedToEmployee: asset.assignedToEmployee,
+    assignedToDepartment: asset.assignedToDepartment,
+    assignedToDepartmentName: department?.department_Name || null,
+  };
 
-//     return res
-//     .status(200)
-//     .json(
-//         new ApiResponse(200, options)
-//     )
-// })
+  return res.status(200).json(new ApiResponse(200, result, "Asset details for edit card fetched successfully"));
+});
 
-// export {
-//     createAssetFromEnteredAsset,
-//     assignedAsset,
-//     unassignedAsset,
-//     filterAssets,
-//     searchAssets,
-//     getDepartments,
-//     getEmployeesByDepartment
-// }
+const getAssetListCards = asyncHandler(async (req, res) => {
+  const assets = await Asset.find();
+
+  const cards = await Promise.all(
+    assets.map(async (asset) => {
+      const department = asset.assignedDepartment
+        ? await Department.findOne({ department_Id: asset.assignedDepartment })
+        : null;
+
+      return {
+        assetName: asset.asset_Name,
+        assetId: asset.asset_Id,
+        assetType: asset.assetType,
+        status: asset.status,
+        assignmentStatus: asset.assignmentStatus,
+        purchaseCost: asset.unitCost,
+        assignedToEmployee: asset.assignedToEmployee,
+        assignedToDepartment: asset.assignedToDepartment,
+        assignedToDepartmentName: department?.department_Name || null,
+      };
+    })
+  );
+
+  return res.status(200).json(new ApiResponse(200, cards, "Asset list cards fetched"));
+});
+
+const getAssetsByTypeDropdown = asyncHandler(async (req, res) => {
+  const { assetType } = req.query;
+
+  if (!assetType) {
+    throw new ApiErr(400, "assetType is required");
+  }
+
+  const assets = await Asset.find({
+    assetType,
+    status: { $nin: ["Awaiting Disposal", "Disposed"] },
+  });
+
+  const dropdown = assets.map(asset => ({
+    value: asset.asset_Id,
+    label: `${asset.asset_Id} - ${asset.asset_Name}`,
+  }));
+
+  return res.status(200).json(new ApiResponse(200, dropdown, "Assets fetched for dropdown"));
+});
+
+const getAssetDropdown = asyncHandler(async (req, res) => {
+  const { assetType, assetSubtype, excludeStatus } = req.query;
+
+  if (!assetType) {
+    throw new ApiErr(400, "assetType is required");
+  }
+
+  const filter = { assetType };
+  if (assetSubtype) filter.assetSubtype = assetSubtype;
+  if (excludeStatus) filter.status = { $nin: excludeStatus.split(",") };
+
+  const assets = await Asset.find(filter);
+
+  const dropdown = assets.map(asset => ({
+    value: asset.asset_Id,
+    label: `${asset.asset_Id} - ${asset.asset_Name}`,
+  }));
+
+  return res.status(200).json(new ApiResponse(200, dropdown, "Asset dropdown fetched"));
+});
+
+const getAssetIdsNamesByTypeAndStatus = asyncHandler(async (req, res) => {
+  const { assetType, status } = req.query;
+
+  if (!assetType) {
+    throw new ApiErr(400, "assetType is required");
+  }
+
+  const filter = {
+    assetType,
+    status: { $nin: ["Awaiting Disposal", "Disposed"] },
+  };
+  if (status) filter.status = status;
+
+  const assets = await Asset.find(filter);
+
+  const dropdown = assets.map(asset => ({
+    value: asset.asset_Id,
+    label: `${asset.asset_Id} - ${asset.asset_Name}`,
+  }));
+
+  return res.status(200).json(new ApiResponse(200, dropdown, "Filtered assets fetched"));
+});
+
+const getAssetAssignmentHistory = asyncHandler(async (req, res) => {
+  const { assetId } = req.params;
+
+  const asset = await Asset.findOne({ asset_Id: assetId });
+  if (!asset) throw new ApiErr(404, "Asset not found");
+
+  // Assuming asset.assignmentHistory is an array of assignment records
+  const assignmentHistory = asset.assignmentHistory || [];
+
+  return res.status(200).json(new ApiResponse(200, assignmentHistory, "Assignment history fetched"));
+});
+
+const getAssetById = asyncHandler(async (req, res) => {
+  const { assetId } = req.params;
+
+  const asset = await Asset.findOne({ asset_Id: assetId });
+  if (!asset) throw new ApiErr(404, "Asset not found");
+
+  return res.status(200).json(new ApiResponse(200, asset, "Asset fetched successfully"));
+});
+
+const getAssetSummaryReport = asyncHandler(async (req, res) => {
+  const assets = await Asset.find();
+
+  // Example aggregation - can be expanded as needed
+  const totalAssets = assets.length;
+  const activeAssets = assets.filter(a => a.status === "Active").length;
+  const disposedAssets = assets.filter(a => a.status === "Disposed").length;
+
+  const summary = {
+    totalAssets,
+    activeAssets,
+    disposedAssets,
+  };
+
+  return res.status(200).json(new ApiResponse(200, summary, "Asset summary report fetched"));
+});
+
+const getAssetTransactionHistory = asyncHandler(async (req, res) => {
+  const { assetId } = req.params;
+
+  // Fetch purchase, maintenance, sale transactions related to asset
+  const purchase = await PurchaseTransaction.findOne({ referenceId: assetId });
+  const sales = await SaleTransaction.find({ "assetDetails.assetId": assetId });
+  const maintenanceTxns = await InternalTransaction.find({
+    referenceType: "Maintenance / Repair",
+    "maintenanceRepairDetails.assetId": assetId,
+  });
+
+  const history = {
+    purchase,
+    sales,
+    maintenanceTxns,
+  };
+
+  return res.status(200).json(new ApiResponse(200, history, "Asset transaction history fetched"));
+});
+
+//Asset Disposal
+const getAssetForDisposalEditCard = asyncHandler(async (req, res) => {
+  const { assetId } = req.params;
+  const asset = await Asset.findOne({ asset_Id: assetId });
+  if (!asset) throw new ApiErr(404, "Asset not found");
+
+  const result = {
+    assetId: asset.asset_Id,
+    assetName: asset.asset_Name,
+    assetType: asset.assetType,
+    purchaseCost: asset.unitCost,
+    status: asset.status,
+    disposalReason: asset.disposalDetails?.disposalReason || null,
+    saleAmount: asset.disposalDetails?.saleAmount || null,
+  };
+
+  return res.status(200).json(new ApiResponse(200, result, "Asset disposal card data fetched successfully"));
+});
+
+const markAssetForDisposal = asyncHandler(async (req, res) => {
+  const { assetId } = req.body;
+
+  const asset = await Asset.findOne({ asset_Id: assetId });
+  if (!asset) throw new ApiErr(404, "Asset not found");
+
+  const disposalId = `DISP-${(await getNextSequence("disposal_Id")).toString().padStart(5, "0")}`;
+  asset.status = "Awaiting Disposal";
+  asset.disposalDetails = {
+    disposalId,
+    createdBy: req.body.createdBy,
+  };
+  await asset.save();
+
+  return res.status(200).json(new ApiResponse(200, asset, "Asset marked for disposal"));
+});
+
+const updateDisposedAssets = asyncHandler(async (req, res) => {
+  const { assetId } = req.params;
+
+  const sale = await SaleTransaction.findOne({
+    "assetDetails.assetId": assetId,
+    transactionType: "Asset Sale",
+  });
+  if (!sale) throw new ApiErr(404, "No Asset Sale transaction found for this asset");
+
+  const asset = await Asset.findOneAndUpdate(
+    { asset_Id: assetId },
+    {
+      status: "Disposed",
+      "disposalDetails.transactionId": sale.transactionId,
+      "disposalDetails.saleAmount": sale.saleAmount,
+      "disposalDetails.saleDate": sale.saleDate,
+    },
+    { new: true }
+  );
+
+  return res.status(200).json(new ApiResponse(200, asset, "Asset marked as disposed"));
+});
+
+const getAssetsEligibleForDisposalDropdown = asyncHandler(async (req, res) => {
+  const { assetType, assetSubtype } = req.query;
+
+  if (!assetType || !assetSubtype) {
+    throw new ApiErr(400, "assetType and assetSubtype are required");
+  }
+
+  const assets = await Asset.find({
+    assetType,
+    assetSubtype,
+    status: { $nin: ["Awaiting Disposal", "Disposed"] },
+  });
+
+  const dropdown = assets.map(asset => ({
+    value: asset.asset_Id,
+    label: `${asset.asset_Id} - ${asset.asset_Name}`,
+  }));
+
+  return res.status(200).json(new ApiResponse(200, dropdown, "Eligible assets fetched for disposal dropdown"));
+});
+
+const updateDisposalReason = asyncHandler(async (req, res) => {
+  const { assetId } = req.params;
+  const { disposalReason, updatedBy } = req.body;
+
+  const asset = await Asset.findOne({ asset_Id: assetId });
+  if (!asset) throw new ApiErr(404, "Asset not found");
+
+  asset.disposalDetails = asset.disposalDetails || {};
+  asset.disposalDetails.disposalReason = disposalReason;
+  asset.disposalDetails.updatedBy = req.body.createdBy;
+
+  await asset.save();
+
+  return res.status(200).json(new ApiResponse(200, asset, "Disposal reason updated"));
+});
+
+const getAssetDisposalList = asyncHandler(async (req, res) => {
+  const assets = await Asset.find({
+    status: "Awaiting Disposal",
+  });
+
+  const list = assets.map(asset => ({
+    assetId: asset.asset_Id,
+    assetName: asset.asset_Name,
+    assetType: asset.assetType,
+    purchaseCost: asset.unitCost,
+    status: asset.status,
+    disposalReason: asset.disposalDetails?.disposalReason || null,
+    saleAmount: asset.disposalDetails?.saleAmount || null,
+  }));
+
+  return res.status(200).json(new ApiResponse(200, list, "Assets awaiting disposal fetched"));
+});
+
+//Asset Maintenance
+const fetchMaintenanceTransactionDetails = asyncHandler(async (req, res) => {
+  const { assetId } = req.params;
+
+  const maintenanceTxn = await InternalTransaction.findOne({
+    referenceType: "Maintenance / Repair",
+    "maintenanceRepairDetails.assetId": assetId,
+  });
+
+  if (!maintenanceTxn) {
+    throw new ApiErr(404, "No maintenance transaction found for the given asset ID");
+  }
+
+  const details = {
+    transactionId: maintenanceTxn.transactionId,
+    amount: maintenanceTxn.amount,
+    transactionDate: maintenanceTxn.transactionDate,
+    status: maintenanceTxn.status,
+    maintenanceType: maintenanceTxn.maintenanceRepairDetails?.maintenanceType,
+    referenceId: maintenanceTxn.maintenanceRepairDetails?.referenceId,
+  };
+
+  return res.status(200).json(new ApiResponse(200, details, "Maintenance transaction details fetched"));
+});
+
+const searchAssetsOnMaintenanceList = asyncHandler(async (req, res) => {
+  const { maintenanceId, assetId, assetName, assetType, status } = req.query;
+  const filter = {};
+
+  if (maintenanceId) filter["maintenanceDetails.maintenance_Id"] = maintenanceId;
+  if (assetId) filter.asset_Id = assetId;
+  if (assetName) filter.asset_Name = { $regex: assetName, $options: "i" };
+  if (assetType) filter.assetType = assetType;
+  if (status) filter.status = status;
+
+  const assets = await Asset.find(filter);
+  return res.status(200).json(new ApiResponse(200, assets, "Assets on maintenance list fetched"));
+});
+
+const getMaintenanceHistory = asyncHandler(async (req, res) => {
+  const { assetId } = req.params;
+
+  const asset = await Asset.findOne({ asset_Id: assetId });
+  if (!asset) throw new ApiErr(404, "Asset not found");
+
+  // Sum all maintenance costs linked to this asset
+  let totalMaintenanceCost = 0;
+
+  const maintenanceDetailsWithFinancials = await Promise.all(
+    asset.maintenanceDetails.map(async (md) => {
+      // Find related transaction in InternalTransaction for this maintenance Id
+      const txn = await InternalTransaction.findOne({
+        referenceType: "Maintenance / Repair",
+        "maintenanceRepairDetails.referenceId": md.maintenance_Id,
+      });
+
+      if (txn) totalMaintenanceCost += txn.amount;
+
+      return {
+        maintenanceId: md.maintenance_Id,
+        maintenanceType: md.maintenanceType,
+        requestType: md.requestType,
+        requestStatus: md.requestStatus,
+        createdAt: md.createdAt,
+        serviceProvider: md.serviceProvider || null,
+        serviceStartDate: md.serviceStartDate,
+        serviceEndDate: md.serviceEndDate,
+        maintenancePeriod:
+          (new Date(md.serviceEndDate) - new Date(md.serviceStartDate)) / (1000 * 3600 * 24), // in days
+        transactionId: txn?.transactionId || null,
+        maintenanceCost: txn?.amount || 0,
+        serviceNote: md.serviceNote || null,
+      };
+    })
+  );
+
+  const result = {
+    assetName: asset.asset_Name,
+    assetId: asset.asset_Id,
+    totalMaintenanceCost,
+    maintenanceDetails: maintenanceDetailsWithFinancials,
+  };
+
+  return res.status(200).json(new ApiResponse(200, result, "Maintenance history fetched"));
+});
+
+const getMaintenanceCardDetails = asyncHandler(async (req, res) => {
+  const { assetId, maintenanceId } = req.query;
+
+  if (!assetId || !maintenanceId) {
+    throw new ApiErr(400, "assetId and maintenanceId are required");
+  }
+
+  const asset = await Asset.findOne({
+    asset_Id: assetId,
+    "maintenanceDetails.maintenance_Id": maintenanceId,
+  });
+
+  if (!asset) throw new ApiErr(404, "Maintenance details not found for given asset and maintenance ID");
+
+  const maintenanceDetail = asset.maintenanceDetails.find(md => md.maintenance_Id === maintenanceId);
+
+  const details = {
+    assetName: asset.asset_Name,
+    assetId: asset.asset_Id,
+    requestType: maintenanceDetail.requestType,
+    requestStatus: maintenanceDetail.requestStatus,
+    serviceProvider: maintenanceDetail.serviceProvider || null,
+    serviceNote: maintenanceDetail.serviceNote || null,
+    status: asset.status,
+    updatedBy: maintenanceDetail.updatedBy,
+    serviceStartDate: maintenanceDetail.serviceStartDate,
+    serviceEndDate: maintenanceDetail.serviceEndDate,
+  };
+
+  return res.status(200).json(new ApiResponse(200, details, "Maintenance card details fetched"));
+});
+
+const getAssetMaintenanceSummary = asyncHandler(async (req, res) => {
+  const assets = await Asset.find();
+
+  const summary = assets.map(asset => {
+    const maintenanceCount = asset.maintenanceDetails ? asset.maintenanceDetails.length : 0;
+    return {
+      assetId: asset.asset_Id,
+      assetName: asset.asset_Name,
+      maintenanceCount,
+    };
+  });
+
+  return res.status(200).json(new ApiResponse(200, summary, "Maintenance summary fetched"));
+});
+
+const syncMaintenanceStatus = asyncHandler(async (req, res) => {
+  const { assetId, maintenanceType, serviceStartDate, serviceEndDate, createdBy, serviceProvider, serviceNote } = req.body;
+
+  const asset = await Asset.findOne({ asset_Id: assetId });
+  if (!asset) throw new ApiErr(404, "Asset not found");
+
+  const maintenanceId = `MAINT-${(await getNextSequence("maintenance_Id")).toString().padStart(5, "0")}`;
+  const now = new Date();
+
+  let status = asset.status;
+  let requestType = "";
+  let requestStatus = "";
+
+  if (["Maintenance Needed", "Repair Needed"].includes(maintenanceType)) {
+    if (now < new Date(serviceStartDate)) {
+      status = maintenanceType;
+      requestType = maintenanceType === "Maintenance Needed" ? "Maintenance" : "Repair";
+      requestStatus = "Requested";
+    } else if (now >= new Date(serviceStartDate) && now <= new Date(serviceEndDate)) {
+      status = maintenanceType === "Maintenance Needed" ? "Under Maintenance" : "Under Repair";
+      requestType = maintenanceType === "Maintenance Needed" ? "Maintenance" : "Repair";
+      requestStatus = "In Progress";
+    } else if (now > new Date(serviceEndDate)) {
+      status = "Active";
+      requestType = maintenanceType === "Maintenance Needed" ? "Maintenance" : "Repair";
+      requestStatus = "Completed";
+    }
+  }
+
+  asset.status = status;
+  asset.maintenanceDetails.push({
+    maintenance_Id: maintenanceId,
+    serviceStartDate,
+    serviceEndDate,
+    maintenanceType,
+    requestType,
+    requestStatus,
+    createdBy: req.body.createdBy,
+    updatedBy: req.body.updatedBy,
+    serviceProvider,
+    serviceNote,
+  });
+
+  await asset.save();
+  return res.status(200).json(new ApiResponse(200, asset, "Maintenance status synced"));
+});
+
+//Asset Depreciation
+const getAssetDepreciationDetails = asyncHandler(async (req, res) => {
+  const { assetId } = req.params;
+
+  const asset = await Asset.findOne({ asset_Id: assetId });
+  if (!asset) throw new ApiErr(404, "Asset not found");
+
+  const depreciation = asset.depreciationDetails || {};
+
+  return res.status(200).json(new ApiResponse(200, depreciation, "Depreciation details fetched"));
+});
+
+const updateAssetDepreciation = asyncHandler(async (req, res) => {
+  const { assetId } = req.params;
+  const updates = req.body;
+
+  const asset = await Asset.findOne({ asset_Id: assetId });
+  if (!asset) throw new ApiErr(404, "Asset not found");
+
+  asset.depreciationDetails = { ...asset.depreciationDetails, ...updates };
+
+  await asset.save();
+
+  return res.status(200).json(new ApiResponse(200, asset.depreciationDetails, "Depreciation updated"));
+});
+
+export {
+  getAssetListCards,
+  createAssets,
+  updateAssetAssignment,
+  updateAssetStatus,
+  deleteAsset,
+  searchAsset,
+  getAssetDetailsFromPurchaseTransactionOnCard,
+  getAssetForEditCard,
+  getAssetsByTypeDropdown,
+  getAssetDropdown,
+  getAssetIdsNamesByTypeAndStatus,
+  getAssetAssignmentHistory,
+  getAssetById,
+  getAssetSummaryReport,
+  getAssetTransactionHistory,
+
+  getAssetForDisposalEditCard,
+  markAssetForDisposal,
+  updateDisposedAssets,
+  getAssetsEligibleForDisposalDropdown,
+  updateDisposalReason,
+  getAssetDisposalList,
+
+  fetchMaintenanceTransactionDetails,
+  searchAssetsOnMaintenanceList,
+  getMaintenanceHistory,
+  getMaintenanceCardDetails,
+  getAssetMaintenanceSummary,
+  syncMaintenanceStatus,
+
+  getAssetDepreciationDetails,
+  updateAssetDepreciation
+}

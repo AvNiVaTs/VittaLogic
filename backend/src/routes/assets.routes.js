@@ -1,30 +1,87 @@
-// import {Router} from "express"
-// import {createEnteredAsset} from "../controllers/enteredAsset.controller.js"
-// import {
-//     createAssetFromEnteredAsset,
-//     assignedAsset,
-//     unassignedAsset,
-//     filterAssets,
-//     searchAssets,
-//     getDepartments,
-//     getEmployeesByDepartment
-// } from "../controllers/asset.controller.js"
-// import { verifyEmployeeJWT } from "../middleware/verifyEmployeeJWT.js"
-// import {populateCreatedByUpdatedBy} from "../middleware/populateEmpInfo.middleware.js"
-// import { upload } from "../middleware/multer.middleware.js"
+import {Router} from "express"
+import { upload } from "../middleware/multer.middleware.js"
+import {
+    getAssetListCards,
+    createAssets,
+    updateAssetAssignment,
+    updateAssetStatus,
+    deleteAsset,
+    searchAsset,
+    getAssetDetailsFromPurchaseTransactionOnCard,
+    getAssetForEditCard,
+    getAssetsByTypeDropdown,
+    getAssetDropdown,
+    getAssetIdsNamesByTypeAndStatus,
+    getAssetAssignmentHistory,
+    getAssetById,
+    getAssetSummaryReport,
+    getAssetTransactionHistory,
 
-// const router = Router()
+    getAssetForDisposalEditCard,
+    markAssetForDisposal,
+    updateDisposedAssets,
+    getAssetsEligibleForDisposalDropdown,
+    updateDisposalReason,
+    getAssetDisposalList,
 
-// //entered asset
-// router.route("/enterAsset").post(verifyEmployeeJWT, populateCreatedByUpdatedBy, createEnteredAsset)
+    fetchMaintenanceTransactionDetails,
+    searchAssetsOnMaintenanceList,
+    getMaintenanceHistory,
+    getMaintenanceCardDetails,
+    getAssetMaintenanceSummary,
+    syncMaintenanceStatus,
 
-// //asset
-// router.route("/").post(verifyEmployeeJWT, populateCreatedByUpdatedBy, upload.fields([{name: "attachment", maxCount: 1}]), createAssetFromEnteredAsset)
-// router.route("/assign").put(verifyEmployeeJWT, populateCreatedByUpdatedBy, assignedAsset)
-// router.route("/unassign").put(verifyEmployeeJWT, populateCreatedByUpdatedBy, unassignedAsset)
-// router.route("/filter").get(filterAssets)
-// router.route("/search").get(searchAssets)
-// router.route("/dropdown/departments").get(getDepartments)
-// router.route("/dropdown/employees").get(getEmployeesByDepartment)
+    getAssetDepreciationDetails,
+    updateAssetDepreciation
+} from "../controllers/asset.controller.js"
+import {
+    createDepreciation,
+    getAssetDropdownByType,
+    getDepreciationTrackingDetails
+} from "../controllers/assetDepreciation.controller.js"
+import { verifyEmployeeJWT } from "../middleware/verifyEmployeeJWT.js"
+import {populateCreatedByUpdatedBy} from "../middleware/populateEmpInfo.middleware.js"
 
-// export default router
+const router = Router()
+
+//asset
+router.route("/purchase-details/:referenceId").get(getAssetDetailsFromPurchaseTransactionOnCard)
+router.route("/create").post(verifyEmployeeJWT, populateCreatedByUpdatedBy, upload.fields([{name: "attachment", maxCount: 2}]), createAssets)
+router.route("/update-assignment/:id").patch(verifyEmployeeJWT, populateCreatedByUpdatedBy, updateAssetAssignment)
+router.route("/update-status/:assetId").patch(verifyEmployeeJWT, populateCreatedByUpdatedBy, updateAssetStatus)
+router.route("/delete/:id").delete(deleteAsset)
+router.route("/search").get(searchAsset)
+router.route("/editCard-details/:assetId").get(getAssetForEditCard)
+router.route("/list").get(getAssetListCards)
+router.route("/assetType").get(getAssetsByTypeDropdown)
+router.route("/asset-dropdown").get(getAssetDropdown)
+router.route("/asset-name").get(getAssetIdsNamesByTypeAndStatus)
+router.route("/assignment-history/:assetId").get(getAssetAssignmentHistory)
+router.route("/:assetId").get(getAssetById)
+router.route("/summary-report").get(getAssetSummaryReport)
+router.route("/transaction-history/:assetId").get(getAssetTransactionHistory)
+
+//asset disposal
+router.route("/disposal/:assetId").get(getAssetForDisposalEditCard)
+router.route("/asset-for-disposal").patch(verifyEmployeeJWT, populateCreatedByUpdatedBy, markAssetForDisposal)
+router.route("/update-disposal").patch(verifyEmployeeJWT, populateCreatedByUpdatedBy, updateDisposedAssets)
+router.route("/eligible-for-disposal").get(getAssetsEligibleForDisposalDropdown)
+router.route("/disposal/update-reason/:assetId").patch(verifyEmployeeJWT, populateCreatedByUpdatedBy, updateDisposalReason)
+router.route("/disposal/list").get(getAssetDisposalList)
+
+//asset maintenance
+router.route("/maintenance/transaction-details/:assetId").get(fetchMaintenanceTransactionDetails)
+router.route("/maintenance/search").get(searchAssetsOnMaintenanceList)
+router.route("/maintenance/history/:assetId").get(getMaintenanceHistory)
+router.route("/maintenance/card-details").get(getMaintenanceCardDetails)
+router.route("/maintenance/summary").get(getAssetMaintenanceSummary)
+router.route("/sync-maintenance").patch(verifyEmployeeJWT, populateCreatedByUpdatedBy, syncMaintenanceStatus)
+
+//asset depreciation
+router.route("/depreciation/details/:assetId").get(getAssetDepreciationDetails)
+router.route("/depreciation/update/:assetId").patch(verifyEmployeeJWT, populateCreatedByUpdatedBy, updateAssetDepreciation)
+router.route("/depreciation/create").post(verifyEmployeeJWT, populateCreatedByUpdatedBy, createDepreciation)
+router.route("/depreciation/dropdown/asset").get(getAssetDropdownByType)
+router.route("/depreciation/tracking/:assetId").get(getDepreciationTrackingDetails)
+
+export default router

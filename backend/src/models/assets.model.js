@@ -239,13 +239,7 @@ const assetSchema = new Schema({
 
   maintenanceDetails: {
     maintenanceId: { 
-      type: String, 
-      unique: true, 
-      immutable: true,
-      index: true,
-      required: function () {
-        return ["Maintenance Needed", "Repair Needed", "Under Maintenance", "Under Repair"].includes(this.status);
-      }
+      type: String,
     },
     maintenanceType: { 
       type: String, 
