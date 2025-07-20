@@ -1,12 +1,12 @@
 import fs from "fs"
 import { Asset } from "../models/assets.model.js"
-import { PurchaseTransaction } from "../models/purchaseTransaction.model.js"
 import { InternalTransaction } from "../models/internalTransaction.model.js"
+import { PurchaseTransaction } from "../models/purchaseTransaction.model.js"
 import { SaleTransaction } from "../models/saleTransaction.model.js"
-import { asyncHandler } from "../utils/asyncHandler.js"
 import { ApiErr } from "../utils/ApiError.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { asyncHandler } from "../utils/asyncHandler.js"
+import { uploadOnCloudinary } from "../utils/cloudinary.js"
 import { getNextSequence } from "../utils/getNextSequence.js"
 
 // Asset
@@ -17,7 +17,7 @@ const getAssetDetailsFromPurchaseTransactionOnCard = asyncHandler(async (req, re
     throw new ApiErr(404, "Purchase transaction not found for assets");
   }
 
-  const result =purchases.map((purchase) => ({
+  const result = purchase.map((purchase) => ({
     assetName: purchase.assetDetails.assetName,
     referenceId: purchase.referenceId,
     quantity: purchase.assetDetails.quantity,
@@ -594,32 +594,8 @@ const syncMaintenanceStatus = asyncHandler(async (req, res) => {
 // });
 
 export {
-  getAssetListCards,
-  createAssets,
-  updateAssetAssignment,
-  updateAssetStatus,
-  deleteAsset,
-  searchAsset,
-  getAssetDetailsFromPurchaseTransactionOnCard,
+  createAssets, deleteAsset, fetchMaintenanceTransactionDetails, getAssetById, getAssetDetailsFromPurchaseTransactionOnCard, getAssetDisposalList,
   // getAssetForEditCard,
-  getAssetDropdown,
-  getAssetById,
-  getAssetTransactionHistory,
-
-  getAssetForDisposalEditCard,
-  markAssetForDisposal,
-  updateDisposedAssets,
-  getAssetsEligibleForDisposalDropdown,
-  updateDisposalReason,
-  getAssetDisposalList,
-
-  fetchMaintenanceTransactionDetails,
-  searchAssetsOnMaintenanceList,
-  getMaintenanceHistory,
-  getMaintenanceCardDetails,
-  getAssetMaintenanceSummary,
-  syncMaintenanceStatus,
-
-  // getAssetDepreciationDetails,
-  // updateAssetDepreciation
+  getAssetDropdown, getAssetForDisposalEditCard, getAssetListCards, getAssetMaintenanceSummary, getAssetsEligibleForDisposalDropdown, getAssetTransactionHistory, getMaintenanceCardDetails, getMaintenanceHistory, markAssetForDisposal, searchAsset, searchAssetsOnMaintenanceList, syncMaintenanceStatus, updateAssetAssignment,
+  updateAssetStatus, updateDisposalReason, updateDisposedAssets
 }

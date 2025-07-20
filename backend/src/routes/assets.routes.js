@@ -1,47 +1,42 @@
-import {Router} from "express"
-import { upload } from "../middleware/multer.middleware.js"
+import { Router } from "express"
 import {
-    getAssetListCards,
     createAssets,
-    updateAssetAssignment,
-    updateAssetStatus,
     deleteAsset,
-    searchAsset,
+    fetchMaintenanceTransactionDetails,
+    getAssetById,
     getAssetDetailsFromPurchaseTransactionOnCard,
+    getAssetDisposalList,
     // getAssetForEditCard,
     getAssetDropdown,
-    getAssetById,
-    getAssetTransactionHistory,
-
     getAssetForDisposalEditCard,
-    markAssetForDisposal,
-    updateDisposedAssets,
-    getAssetsEligibleForDisposalDropdown,
-    updateDisposalReason,
-    getAssetDisposalList,
-
-    fetchMaintenanceTransactionDetails,
-    searchAssetsOnMaintenanceList,
-    getMaintenanceHistory,
-    getMaintenanceCardDetails,
+    getAssetListCards,
     getAssetMaintenanceSummary,
+    getAssetsEligibleForDisposalDropdown,
+    getAssetTransactionHistory,
+    getMaintenanceCardDetails,
+    getMaintenanceHistory,
+    markAssetForDisposal,
+    searchAsset,
+    searchAssetsOnMaintenanceList,
     syncMaintenanceStatus,
-
-    // getAssetDepreciationDetails,
-    // updateAssetDepreciation
+    updateAssetAssignment,
+    updateAssetStatus,
+    updateDisposalReason,
+    updateDisposedAssets,
 } from "../controllers/asset.controller.js"
 import {
     createDepreciation,
     getAssetDropdownByType,
     getDepreciationTrackingDetails
 } from "../controllers/assetDepreciation.controller.js"
+import { upload } from "../middleware/multer.middleware.js"
+import { populateCreatedByUpdatedBy } from "../middleware/populateEmpInfo.middleware.js"
 import { verifyEmployeeJWT } from "../middleware/verifyEmployeeJWT.js"
-import {populateCreatedByUpdatedBy} from "../middleware/populateEmpInfo.middleware.js"
 
 const router = Router()
 
 //asset
-router.route("/purchase-details/:referenceId").get(getAssetDetailsFromPurchaseTransactionOnCard)
+router.route("/purchase-details").get(getAssetDetailsFromPurchaseTransactionOnCard)
 router.route("/create").post(verifyEmployeeJWT, populateCreatedByUpdatedBy, upload.fields([{name: "attachment", maxCount: 2}]), createAssets)
 router.route("/update-assignment/:id").patch(verifyEmployeeJWT, populateCreatedByUpdatedBy, updateAssetAssignment)
 router.route("/update-status/:assetId").patch(verifyEmployeeJWT, populateCreatedByUpdatedBy, updateAssetStatus)
