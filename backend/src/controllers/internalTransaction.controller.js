@@ -244,6 +244,22 @@ const getInternalCreditAccounts = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, options, "Credit accounts fetched"));
 });
 
+const getInternalTransactionDropdownApprovals = asyncHandler(async (req, res) => {
+  const excluded = ["Asset", "Vendor Payment", "Customer Payment"];
+
+  const approvals = await Approval.find({
+    status: "Approved",
+    approvalfor: { $nin: excluded }
+  });
+
+  const options = approvals.map(a => ({
+    label: `${a.approval_id} - ${a.reason}`,
+    value: a.approval_id
+  }));
+
+  return res.status(200).json(new ApiResponse(200, options, "Approvals fetched"));
+});
+
 export {
   createInternalTransaction,
   getDepartmentsForSalaryDropdown,
@@ -251,5 +267,11 @@ export {
   getLiabilitiesByType,
   getAssetsForMaintenanceRepair,
   getInternalDebitAccounts,
-  getInternalCreditAccounts
+  getInternalCreditAccounts,
+  getInternalTransactionDropdownApprovals,
+
+
+  // completeInternalTransactions,
+  // getEmployeeSalaryOptions,
+  // getRepairAssets,
 };

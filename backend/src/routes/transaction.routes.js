@@ -18,7 +18,8 @@ import {
     getLiabilitiesByType,
     getAssetsForMaintenanceRepair,
     getInternalDebitAccounts,
-    getInternalCreditAccounts
+    getInternalCreditAccounts,
+    getInternalTransactionDropdownApprovals
 } from "../controllers/internalTransaction.controller.js"
 import {
     createPurchaseTransaction,
@@ -54,6 +55,7 @@ router.route("/dropdown/liabilityType").get(getLiabilitiesByType)
 router.route("/dropdown/asset-repair").get(getAssetsForMaintenanceRepair)
 router.route("/dropdown/internal-debit").get(getInternalDebitAccounts)
 router.route("/dropdown/internal-credit").get(getInternalCreditAccounts)
+router.route("/dropdown/approve").get(getInternalTransactionDropdownApprovals)
 
 //Purchase Transaction
 router.route("/purchase/create").post(verifyEmployeeJWT, populateCreatedByUpdatedBy, upload.fields([{name: "attachment", maxCount: 1}]), createPurchaseTransaction)
