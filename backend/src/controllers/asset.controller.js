@@ -253,84 +253,103 @@ const getAssetById = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, asset, "Asset fetched successfully"));
 });
 
-const getAssetTransactionHistory = asyncHandler(async (req, res) => {
-  const { assetId } = req.params;
+// const getAssetTransactionHistory = asyncHandler(async (req, res) => {
+//   const { assetId } = req.params;
 
-  // Fetch purchase, maintenance, sale transactions related to asset
-  const purchase = await PurchaseTransaction.findOne({ referenceId: assetId });
-  const sales = await SaleTransaction.find({ "assetDetails.assetId": assetId });
-  const maintenanceTxns = await InternalTransaction.find({
-    referenceType: "Maintenance / Repair",
-    "maintenanceRepairDetails.assetId": assetId,
-  });
+//   // Fetch purchase, maintenance, sale transactions related to asset
+//   const purchase = await PurchaseTransaction.findOne({ referenceId: assetId });
+//   const sales = await SaleTransaction.find({ "assetDetails.assetId": assetId });
+//   const maintenanceTxns = await InternalTransaction.find({
+//     referenceType: "Maintenance / Repair",
+//     "maintenanceRepairDetails.assetId": assetId,
+//   });
 
-  const history = {
-    purchase,
-    sales,
-    maintenanceTxns,
-  };
+//   const history = {
+//     purchase,
+//     sales,
+//     maintenanceTxns,
+//   };
 
-  return res.status(200).json(new ApiResponse(200, history, "Asset transaction history fetched"));
-});
+//   return res.status(200).json(new ApiResponse(200, history, "Asset transaction history fetched"));
+// });
 
 //Asset Disposal
-const getAssetForDisposalEditCard = asyncHandler(async (req, res) => {
-  const { assetId } = req.params;
-  const asset = await Asset.findOne({ asset_Id: assetId });
-  if (!asset) throw new ApiErr(404, "Asset not found");
 
-  const result = {
-    assetId: asset.asset_Id,
-    assetName: asset.asset_Name,
-    assetType: asset.assetType,
-    purchaseCost: asset.unitCost,
-    status: asset.status,
-    disposalReason: asset.disposalDetails?.disposalReason || null,
-    saleAmount: asset.disposalDetails?.saleAmount || null,
-  };
+// const getAssetForDisposalEditCard = asyncHandler(async (req, res) => {
+//   const { assetId } = req.params;
+//   const asset = await Asset.findOne({ asset_Id: assetId });
+//   if (!asset) throw new ApiErr(404, "Asset not found");
 
-  return res.status(200).json(new ApiResponse(200, result, "Asset disposal card data fetched successfully"));
-});
+//   const result = {
+//     assetId: asset.asset_Id,
+//     assetName: asset.asset_Name,
+//     assetType: asset.assetType,
+//     purchaseCost: asset.unitCost,
+//     status: asset.status,
+//     disposalReason: asset.disposalDetails?.disposalReason || null,
+//     saleAmount: asset.disposalDetails?.saleAmount || null,
+//   };
+
+//   return res.status(200).json(new ApiResponse(200, result, "Asset disposal card data fetched successfully"));
+// });
 
 const markAssetForDisposal = asyncHandler(async (req, res) => {
-  const { assetId } = req.body;
+  const { assetId, disposalReason } = req.body;
 
-  const asset = await Asset.findOne({ asset_Id: assetId });
+  const asset = await Asset.findOne({ assetId });
   if (!asset) throw new ApiErr(404, "Asset not found");
 
   const disposalId = `DISP-${(await getNextSequence("disposal_Id")).toString().padStart(5, "0")}`;
+
   asset.status = "Awaiting Disposal";
   asset.disposalDetails = {
     disposalId,
-    createdBy: req.body.createdBy,
+    disposalReason,
+    requestDate: new Date(),
+    createdBy : req.body.createdBy
   };
+
   await asset.save();
 
   return res.status(200).json(new ApiResponse(200, asset, "Asset marked for disposal"));
 });
 
+
 const updateDisposedAssets = asyncHandler(async (req, res) => {
   const { assetId } = req.params;
+
+  if (!createdBy) {
+    throw new ApiErr(400, "Missing 'createdBy' in request body");
+  }
 
   const sale = await SaleTransaction.findOne({
     "assetDetails.assetId": assetId,
     transactionType: "Asset Sale",
   });
-  if (!sale) throw new ApiErr(404, "No Asset Sale transaction found for this asset");
+
+  if (!sale) {
+    throw new ApiErr(404, "No Asset Sale transaction found for this asset");
+  }
 
   const asset = await Asset.findOneAndUpdate(
-    { asset_Id: assetId },
+    { assetId },
     {
       status: "Disposed",
       "disposalDetails.transactionId": sale.transactionId,
       "disposalDetails.saleAmount": sale.saleAmount,
       "disposalDetails.saleDate": sale.saleDate,
+      "disposalDetails.createdBy": req.body.createdBy
     },
-    { new: true }
+    { new: true, runValidators: true }
   );
+
+  if (!asset) {
+    throw new ApiErr(404, "Asset not found");
+  }
 
   return res.status(200).json(new ApiResponse(200, asset, "Asset marked as disposed"));
 });
+
 
 const getAssetsEligibleForDisposalDropdown = asyncHandler(async (req, res) => {
   const { assetType, assetSubtype } = req.query;
@@ -594,8 +613,27 @@ const syncMaintenanceStatus = asyncHandler(async (req, res) => {
 // });
 
 export {
-  createAssets, deleteAsset, fetchMaintenanceTransactionDetails, getAssetById, getAssetDetailsFromPurchaseTransactionOnCard, getAssetDisposalList,
+  createAssets, 
+  deleteAsset, 
+  fetchMaintenanceTransactionDetails, 
+  getAssetById, 
+  getAssetDetailsFromPurchaseTransactionOnCard, 
+  getAssetDisposalList,
   // getAssetForEditCard,
-  getAssetDropdown, getAssetForDisposalEditCard, getAssetListCards, getAssetMaintenanceSummary, getAssetsEligibleForDisposalDropdown, getAssetTransactionHistory, getMaintenanceCardDetails, getMaintenanceHistory, markAssetForDisposal, searchAsset, searchAssetsOnMaintenanceList, syncMaintenanceStatus, updateAssetAssignment,
-  updateAssetStatus, updateDisposalReason, updateDisposedAssets
+  getAssetDropdown, 
+  // getAssetForDisposalEditCard, 
+  getAssetListCards, 
+  getAssetMaintenanceSummary, 
+  getAssetsEligibleForDisposalDropdown, 
+  // getAssetTransactionHistory, 
+  getMaintenanceCardDetails, 
+  getMaintenanceHistory, 
+  markAssetForDisposal, 
+  searchAsset, 
+  searchAssetsOnMaintenanceList, 
+  syncMaintenanceStatus, 
+  updateAssetAssignment,
+  updateAssetStatus, 
+  updateDisposalReason, 
+  updateDisposedAssets
 }
