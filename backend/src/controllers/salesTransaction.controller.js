@@ -1,15 +1,15 @@
-import { SaleTransaction } from "../models/saleTransaction.model.js";
-import { Customer } from "../models/customer.model.js";
-import { CustomerPayment } from "../models/customerPayment.model.js";
+import fs from "fs";
 import { Approval } from "../models/approval.model.js";
 import { Asset } from "../models/assets.model.js";
 import { FinancialAccount } from "../models/companyFinancial.model.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
-import { getNextSequence } from "../utils/getNextSequence.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
+import { Customer } from "../models/customer.model.js";
+import { CustomerPayment } from "../models/customerPayment.model.js";
+import { SaleTransaction } from "../models/saleTransaction.model.js";
 import { ApiErr } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import fs from "fs";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { getNextSequence } from "../utils/getNextSequence.js";
 
 // Create Sale Transaction
 const createSaleTransaction = asyncHandler(async (req, res) => {
@@ -204,7 +204,7 @@ const getAssetDetailsById = asyncHandler(async (req, res) => {
 
 const getSalesDebitAccounts = asyncHandler(async (req, res) => {
   const accounts = await FinancialAccount.find({ account_category: "Debit Account" });
-  const options = [,
+  const options = [
     ...accounts.map(a => ({
       label: `${a.account_id} - ${a.account_name}`,
       value: a.account_id
@@ -215,7 +215,7 @@ const getSalesDebitAccounts = asyncHandler(async (req, res) => {
 
 const getSalesCreditAccounts = asyncHandler(async (req, res) => {
   const accounts = await FinancialAccount.find({ account_category: "Credit Account" });
-  const options = [,
+  const options = [
     ...accounts.map(a => ({
       label: `${a.account_id} - ${a.account_name}`,
       value: a.account_id
@@ -225,13 +225,6 @@ const getSalesCreditAccounts = asyncHandler(async (req, res) => {
 });
 
 export {
-  createSaleTransaction,
-  completeSaleTransaction,
-  getCustomersByType,
-  getPendingPaymentsByCustomer,
-  getApprovedCustomerPaymentApprovals,
-  getAssetsForAssetSale,
-  getAssetDetailsById,
-  getSalesDebitAccounts,
-  getSalesCreditAccounts
+  completeSaleTransaction, createSaleTransaction, getApprovedCustomerPaymentApprovals, getAssetDetailsById, getAssetsForAssetSale, getCustomersByType,
+  getPendingPaymentsByCustomer, getSalesCreditAccounts, getSalesDebitAccounts
 };

@@ -52,7 +52,7 @@ export default function DepartmentPage() {
   useEffect(() => {
     const fetchApprovals = async () => {
       try {
-        const res = await fetch("http://localhost:8000/api/v1/approval/department", {
+        const res = await fetch(`http://localhost:8000/api/v1/dept/budget/approval`, {
           credentials: "include",
         })
         const data = await res.json()
@@ -72,7 +72,7 @@ export default function DepartmentPage() {
   useEffect(() => {
     const fetchDepartments = async () => {
       try {
-        const res = await fetch("http://localhost:8000/api/v1/dept/current", {
+        const res = await fetch("http://localhost:8000/api/v1/dept/alldepts", {
           credentials: "include",
         })
         const data = await res.json()
@@ -98,42 +98,43 @@ export default function DepartmentPage() {
   }, [])
 
   // Fetch budgets for each department when switching to info section
-  useEffect(() => {
-    if (activeSection === "info") {
-      const fetchBudgets = async () => {
-        try {
-          const updatedDepartments = await Promise.all(
-            departments.map(async (dept) => {
-              const res = await fetch(`http://localhost:8000/api/v1/dept/budget?departmentId=${dept.id}`, {
-                credentials: "include",
-              })
-              const data = await res.json()
-              if (res.ok) {
-                return {
-                  ...dept,
-                  budgets: data.data.map(budget => ({
-                    budgetId: budget.budgetId,
-                    createdBy: budget.createdBy?.employeeId || 'Unknown',
-                    approvalId: budget.approvalId,
-                    timePeriodFrom: budget.timePeriodFrom,
-                    timePeriodTo: budget.timePeriodTo,
-                    allocatedAmount: budget.allocatedAmount,
-                    budgetCreationDate: budget.budgetCreationDate,
-                    budgetNotes: budget.budgetNote,
-                  }))
-                }
-              }
-              return dept
-            })
-          )
-          setDepartments(updatedDepartments)
-        } catch (err) {
-          console.error("Error fetching budgets:", err)
-        }
+const [departmentBudgets, setDepartmentBudgets] = useState({})
+
+useEffect(() => {
+  if (activeSection === "info" && departments.length > 0) {
+    const fetchBudgets = async () => {
+      try {
+        const budgetPromises = departments.map(async (dept) => {
+          const res = await fetch(`http://localhost:8000/api/v1/dept/budget/?departmentId=${dept.id}`, {
+            credentials: "include",
+          })
+          const data = await res.json()
+          return { departmentId: dept.id, budgets: data.ok ? data.data : [] }
+        })
+        
+        const results = await Promise.all(budgetPromises)
+        const budgetMap = results.reduce((acc, { departmentId, budgets }) => {
+          acc[departmentId] = budgets.map(budget => ({
+            budgetId: budget.budgetId,
+            createdBy: budget.createdBy?.employeeId || 'Unknown',
+            approvalId: budget.approvalId,
+            timePeriodFrom: budget.timePeriodFrom,
+            timePeriodTo: budget.timePeriodTo,
+            allocatedAmount: budget.allocatedAmount,
+            budgetCreationDate: budget.budgetCreationDate,
+            budgetNotes: budget.budgetNote,
+          }))
+          return acc
+        }, {})
+        
+        setDepartmentBudgets(budgetMap)
+      } catch (err) {
+        console.error("Error fetching budgets:", err)
       }
-      fetchBudgets()
     }
-  }, [activeSection])
+    fetchBudgets()
+  }
+}, [activeSection, departments])
 
   // Generate unique ID based on timestamp
   const generateTimestampId = (prefix) => {
@@ -276,7 +277,7 @@ export default function DepartmentPage() {
 
     try {
       const response = await fetch("http://localhost:8000/api/v1/dept/edit", {
-        method: "PUT",
+        method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
@@ -479,23 +480,18 @@ export default function DepartmentPage() {
                           <SelectValue placeholder="Select approval ID" />
                         </SelectTrigger>
                         <SelectContent>
-                          {approvalList
-                            .filter(
-                              (approval) =>
-                                approval.approvalfor === "Department Budget" && approval.status === "Approved"
-                            )
-                            .map((approval) => (
-                              <SelectItem key={approval.approval_id} value={approval.approval_id}>
-                                {approval.approval_id} - ₹{approval.min_expense} - ₹{approval.max_expense} ({approval.reason.substring(0, 50)}...)
-                              </SelectItem>
-                            ))
-                          }
+                          {approvalList.map((approval) => (
+                            <SelectItem key={approval.approval_id} value={approval.approval_id}>
+                              {approval.displayText}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <p className="text-xs text-gray-500">
                         Select an approved department budget approval ID from the approval services.
                       </p>
                     </div>
+
 
                     <div className="space-y-2">
                       <Label htmlFor="budgetDepartmentId">Department ID *</Label>

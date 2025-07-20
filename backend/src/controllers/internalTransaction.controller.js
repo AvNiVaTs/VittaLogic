@@ -1,14 +1,14 @@
-import { InternalTransaction } from "../models/internalTransaction.model.js";
-import { EmployeeSalary } from "../models/employeeSalary.model.js";
 import { Approval } from "../models/approval.model.js";
-import { Department } from "../models/department.model.js";
-import { Liability } from "../models/liability.model.js";
-import { FinancialAccount } from "../models/companyFinancial.model.js";
 import { Asset } from "../models/assets.model.js";
-import { getNextSequence } from "../utils/getNextSequence.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
+import { FinancialAccount } from "../models/companyFinancial.model.js";
+import { Department } from "../models/department.model.js";
+import { EmployeeSalary } from "../models/employeeSalary.model.js";
+import { InternalTransaction } from "../models/internalTransaction.model.js";
+import { Liability } from "../models/liability.model.js";
 import { ApiErr } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { getNextSequence } from "../utils/getNextSequence.js";
 
 const createInternalTransaction = asyncHandler(async (req, res) => {
     const {
@@ -224,7 +224,7 @@ const getAssetsForMaintenanceRepair = asyncHandler(async (req, res) => {
 
 const getInternalDebitAccounts = asyncHandler(async (req, res) => {
   const accounts = await FinancialAccount.find({ account_category: "Debit Account" });
-  const options = [,
+  const options = [
     ...accounts.map(a => ({
       label: `${a.account_id} - ${a.account_name}`,
       value: a.account_id
@@ -235,7 +235,7 @@ const getInternalDebitAccounts = asyncHandler(async (req, res) => {
 
 const getInternalCreditAccounts = asyncHandler(async (req, res) => {
   const accounts = await FinancialAccount.find({ account_category: "Credit Account" });
-  const options = [,
+  const options = [
     ...accounts.map(a => ({
       label: `${a.account_id} - ${a.account_name}`,
       value: a.account_id
@@ -262,16 +262,11 @@ const getInternalTransactionDropdownApprovals = asyncHandler(async (req, res) =>
 
 export {
   createInternalTransaction,
+  getAssetsForMaintenanceRepair,
   getDepartmentsForSalaryDropdown,
   getEmployeesByDepartmentForSalary,
-  getLiabilitiesByType,
-  getAssetsForMaintenanceRepair,
-  getInternalDebitAccounts,
   getInternalCreditAccounts,
-  getInternalTransactionDropdownApprovals,
-
-
-  // completeInternalTransactions,
-  // getEmployeeSalaryOptions,
-  // getRepairAssets,
+  getInternalDebitAccounts,
+  getLiabilitiesByType,
+  getInternalTransactionDropdownApprovals
 };
