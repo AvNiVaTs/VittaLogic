@@ -44,14 +44,14 @@ router.route("/search").get(searchAsset)
 // router.route("/editCard-details/:assetId").get(getAssetForEditCard)
 router.route("/list").get(getAssetListCards)
 router.route("/asset-dropdown").get(getAssetDropdown)
-router.route("/:assetId").get(getAssetById)
+router.route("/getById/:assetId").get(getAssetById)
 // router.route("/transaction-history/:assetId").get(getAssetTransactionHistory)
+router.route("/eligible-for-disposal").get(getAssetsEligibleForDisposalDropdown)
 
 //asset disposal
 // router.route("/disposal/:assetId").get(getAssetForDisposalEditCard)
 router.route("/asset-for-disposal").patch(verifyEmployeeJWT, populateCreatedByUpdatedBy, markAssetForDisposal)
 router.route("/update-disposal").patch(verifyEmployeeJWT, getDisposedAssetsDetails)
-router.route("/eligible-for-disposal").get(getAssetsEligibleForDisposalDropdown)
 // router.route("/disposal/list").get(getAssetDisposalList)
 
 //asset maintenance
