@@ -2,6 +2,8 @@ import { Router } from "express"
 import {
     createAssets,
     deleteAsset,
+    getDepartmentsForDropdown,
+    getEmployeesForDropdown,
     fetchMaintenanceTransactionDetails,
     getAssetById,
     getAssetDetailsFromPurchaseTransactionOnCard,
@@ -47,6 +49,8 @@ router.route("/asset-dropdown").get(getAssetDropdown)
 router.route("/getById/:assetId").get(getAssetById)
 // router.route("/transaction-history/:assetId").get(getAssetTransactionHistory)
 router.route("/eligible-for-disposal").get(getAssetsEligibleForDisposalDropdown)
+router.route("/dropdown/department").get(getDepartmentsForDropdown)
+router.route("/dropdown/employee/:departmentId").get(getEmployeesForDropdown)
 
 //asset disposal
 // router.route("/disposal/:assetId").get(getAssetForDisposalEditCard)

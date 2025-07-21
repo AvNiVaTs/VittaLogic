@@ -3,6 +3,8 @@ import { Asset } from "../models/assets.model.js"
 import { InternalTransaction } from "../models/internalTransaction.model.js"
 import { PurchaseTransaction } from "../models/purchaseTransaction.model.js"
 import { SaleTransaction } from "../models/saleTransaction.model.js"
+import { Department } from "../models/department.model.js"
+import { Employee } from "../models/employee.model.js"
 import { ApiErr } from "../utils/ApiError.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
@@ -295,6 +297,29 @@ const getAssetById = asyncHandler(async (req, res) => {
 
 //   return res.status(200).json(new ApiResponse(200, history, "Asset transaction history fetched"));
 // });
+
+const getDepartmentsForDropdown = asyncHandler(async (req, res) => {
+  const departments = await Department.find().select("department_id departmentName");
+  const dropdown = departments.map(dep => ({
+    label: `${dep.department_id} - ${dep.departmentName}`,
+    value: dep.department_id,
+  }));
+
+  return res.status(200).json(new ApiResponse(200, dropdown, "Departments fetched"));
+});
+
+const getEmployeesForDropdown = asyncHandler(async (req, res) => {
+  const { departmentId } = req.params;
+
+  const employees = await Employee.find({ department: departmentId }).select("employeeId employeeName");
+
+  const dropdown = employees.map(emp => ({
+    label: `${emp.employeeId} - ${emp.employeeName}`,
+    value: emp.employeeId,
+  }));
+
+  return res.status(200).json(new ApiResponse(200, dropdown, "Employees fetched"));
+});
 
 //Asset Disposal
 
@@ -660,6 +685,8 @@ const syncMaintenanceStatus = asyncHandler(async (req, res) => {
 export {
   createAssets,
   deleteAsset,
+  getDepartmentsForDropdown,
+  getEmployeesForDropdown,
   fetchMaintenanceTransactionDetails,
   getAssetById,
   getAssetDetailsFromPurchaseTransactionOnCard,
