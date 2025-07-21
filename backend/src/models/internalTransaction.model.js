@@ -4,7 +4,8 @@ const referenceTypes = [
   "Salary", 
   "Liability", 
   "Refund/Investment", 
-  "Maintenance / Repair"
+  "Maintenance",
+  "Repair"
 ];
 
 const liabilityTypes = [
@@ -108,21 +109,21 @@ const internalTransactionSchema = new Schema({
       type: String,
       ref: "Department",
       required: function () {
-        return this.referenceType === "Salary";
+        return this.reference_type === "Salary";
       }
     },
     employeeId: {
       type: String,
       ref: "Employee",
       required: function () {
-        return this.referenceType === "Salary";
+        return this.reference_type === "Salary";
       }
     },
     referenceId: {
       type: String,
       ref: "EmployeeSalary",
       required: function () {
-        return this.referenceType === "Salary";
+        return this.reference_type === "Salary";
       }
     }
   },
@@ -131,20 +132,20 @@ const internalTransactionSchema = new Schema({
       type: String,
       enum: liabilityTypes,
       required: function () {
-        return this.referenceType === "Liability";
+        return this.reference_type === "Liability";
       }
     },
     liabilityName: {
       type: String,
       required: function () {
-        return this.referenceType === "Liability";
+        return this.reference_type === "Liability";
       }
     },
     referenceId: {
       type: String,
       ref: "Liability",
       required: function () {
-        return this.referenceType === "Liability";
+        return this.reference_type === "Liability";
       }
     }
   },
@@ -152,7 +153,7 @@ const internalTransactionSchema = new Schema({
     description: {
       type: String,
       required: function () {
-        return this.referenceType === "Refund/Investment";
+        return this.reference_type === "Refund/Investment";
       },
       trim: true
     },
@@ -161,7 +162,7 @@ const internalTransactionSchema = new Schema({
       immutable : true,
       unique : true,
       required: function () {
-        return this.referenceType === "Refund/Investment";
+        return this.reference_type === "Refund/Investment";
       },
       immutable: true
     }
@@ -171,21 +172,21 @@ const internalTransactionSchema = new Schema({
       type: String,
       enum: assetTypes,
       required: function () {
-        return this.referenceType === "Maintenance / Repair";
+        return ["Maintenance", "Repair"].includes(this.reference_type);
       }
     },
     assetId: {
       type: String,
       ref: "Asset",
       required: function () {
-        return this.referenceType === "Maintenance / Repair";
+        return ["Maintenance", "Repair"].includes(this.reference_type);
       }
     },
     referenceId: {
       type: String,
       ref: "Asset",
       required: function () {
-        return this.referenceType === "Maintenance / Repair";
+        return ["Maintenance", "Repair"].includes(this.reference_type);
       }
     },
     
