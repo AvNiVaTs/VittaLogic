@@ -36,7 +36,7 @@ const router = Router()
 
 //asset
 router.route("/purchase-details").get(getAssetDetailsFromPurchaseTransactionOnCard)
-router.route("/create").post(verifyEmployeeJWT, populateCreatedByUpdatedBy, upload.fields([{name: "attachment", maxCount: 2}]), createAssets)
+router.route("/create").post(verifyEmployeeJWT, upload.fields([{name: "attachment", maxCount: 2}]), populateCreatedByUpdatedBy, createAssets)
 router.route("/update-assignment/:id").patch(verifyEmployeeJWT, populateCreatedByUpdatedBy, updateAssetAssignment)
 router.route("/update-status/:assetId").patch(verifyEmployeeJWT, populateCreatedByUpdatedBy, updateAssetStatus)
 router.route("/delete/:id").delete(deleteAsset)

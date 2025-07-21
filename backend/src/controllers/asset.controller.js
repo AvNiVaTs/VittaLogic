@@ -11,24 +11,46 @@ import { getNextSequence } from "../utils/getNextSequence.js"
 
 // Asset
 const getAssetDetailsFromPurchaseTransactionOnCard = asyncHandler(async (req, res) => {
-  const purchase = await PurchaseTransaction.find({ referenceType: "Asset" });
+  const purchases = await PurchaseTransaction.find({ referenceType: "Asset" });
 
-  if (!Array.isArray(purchase) || purchase.length === 0) {
+  if (!Array.isArray(purchases) || purchases.length === 0) {
     throw new ApiErr(404, "Purchase transaction not found for assets");
   }
 
-  const result = purchase.map((purchase) => ({
-    assetName: purchase.assetDetails.assetName,
-    referenceId: purchase.referenceId,
-    quantity: purchase.assetDetails.quantity,
-    transactionId: purchase.transactionId,
-    totalAmount: purchase.purchaseAmount,
-    costPerUnit: purchase.purchaseAmount / purchase.assetDetails.quantity,
-    vendorId: purchase.vendorId,
-    purchaseDate: purchase.purchaseDate,
-  }));
+  const result = [];
 
-  return res.status(200).json(new ApiResponse(200, result, "Asset details fetched from purchase"));
+  for (const purchase of purchases) {
+    const refId = purchase.referenceId;
+
+    // Log each referenceId being checked
+    console.log("Checking referenceId:", refId);
+
+    const linkedAsset = await Asset.findOne({
+      linkedreferenceId: refId,
+      assetType: { $exists: true, $ne: null, $ne: "" },
+      assetSubtype: { $exists: true, $ne: null, $ne: "" },
+    });
+
+    // Log asset if found
+    if (linkedAsset) {
+      console.log("Skipping: asset already exists for", refId);
+      continue;
+    }
+
+    // Include in result if no linked asset exists
+    result.push({
+      assetName: purchase.assetDetails.assetName,
+      referenceId: refId,
+      quantity: purchase.assetDetails.quantity,
+      transactionId: purchase.transactionId,
+      totalAmount: purchase.purchaseAmount,
+      costPerUnit: purchase.purchaseAmount / purchase.assetDetails.quantity,
+      vendorId: purchase.vendorId,
+      purchaseDate: purchase.purchaseDate,
+    });
+  }
+
+  return res.status(200).json(new ApiResponse(200, result, "Eligible asset purchases fetched for asset entry card"));
 });
 
 const createAssets = asyncHandler(async (req, res) => {
@@ -197,7 +219,8 @@ const getAssetListCards = asyncHandler(async (req, res) => {
         assignmentStatus: asset.assignmentStatus,
         purchaseCost: asset.unitCost,
         assignedToEmployee: asset.assignedToEmployee,
-        assignedToDepartment: asset.assignedDepartment
+        assignedToDepartment: asset.assignedDepartment,
+        updatedBy: asset.updatedBy,
       };
     })
   );
@@ -635,26 +658,26 @@ const syncMaintenanceStatus = asyncHandler(async (req, res) => {
 // });
 
 export {
-  createAssets, 
-  deleteAsset, 
-  fetchMaintenanceTransactionDetails, 
-  getAssetById, 
-  getAssetDetailsFromPurchaseTransactionOnCard, 
+  createAssets,
+  deleteAsset,
+  fetchMaintenanceTransactionDetails,
+  getAssetById,
+  getAssetDetailsFromPurchaseTransactionOnCard,
   // getAssetDisposalList,
   // getAssetForEditCard,
-  getAssetDropdown, 
+  getAssetDropdown,
   // getAssetForDisposalEditCard, 
-  getAssetListCards, 
+  getAssetListCards,
   // getAssetMaintenanceSummary, 
-  getAssetsEligibleForDisposalDropdown, 
+  getAssetsEligibleForDisposalDropdown, getDisposedAssetsDetails,
   // getAssetTransactionHistory, 
-  getMaintenanceCardDetails, 
-  getMaintenanceHistory, 
-  markAssetForDisposal, 
-  searchAsset, 
-  searchAssetsOnMaintenanceList, 
-  syncMaintenanceStatus, 
+  getMaintenanceCardDetails,
+  getMaintenanceHistory,
+  markAssetForDisposal,
+  searchAsset,
+  searchAssetsOnMaintenanceList,
+  syncMaintenanceStatus,
   updateAssetAssignment,
-  updateAssetStatus, 
-  getDisposedAssetsDetails
+  updateAssetStatus
 }
+
