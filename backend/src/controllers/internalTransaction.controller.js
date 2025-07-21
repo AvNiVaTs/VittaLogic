@@ -260,6 +260,19 @@ const getInternalTransactionDropdownApprovals = asyncHandler(async (req, res) =>
   return res.status(200).json(new ApiResponse(200, options, "Approvals fetched"));
 });
 
+const getAssetIdByAssetTypeDropdown = asyncHandler(async (req, res) => {
+  const { assetType } = req.params;
+
+  const assets = await Asset.find({ assetType }).select("assetId assetName");
+
+  const dropdown = assets.map(asset => ({
+    label: `${asset.assetId} - ${asset.assetName}`,
+    value: asset.assetId,
+  }));
+
+  return res.status(200).json(new ApiResponse(200, dropdown, "Employees fetched"));
+});
+
 export {
   createInternalTransaction,
   getAssetsForMaintenanceRepair,
@@ -268,5 +281,6 @@ export {
   getInternalCreditAccounts,
   getInternalDebitAccounts,
   getLiabilitiesByType,
-  getInternalTransactionDropdownApprovals
+  getInternalTransactionDropdownApprovals,
+  getAssetIdByAssetTypeDropdown
 };
