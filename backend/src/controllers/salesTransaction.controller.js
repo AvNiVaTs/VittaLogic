@@ -180,7 +180,7 @@ const getApprovedCustomerPaymentApprovals = asyncHandler(async (req, res) => {
 
 const getAssetsForAssetSale = asyncHandler(async (req, res) => {
   const { assetType } = req.query;
-  const assets = await Asset.find({ assetType, assetStatus: "Awaiting Disposal" });
+  const assets = await Asset.find({ assetType, assetStatus: "Awaiting Disposal" }).select("assetId assetName");
   const options = assets.map(a => ({
     label: `${a.assetId} - ${a.assetName}`,
     value: a.assetId
