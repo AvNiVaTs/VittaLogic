@@ -10,7 +10,7 @@ import {
     getAssetDropdown,
     // getAssetForDisposalEditCard,
     getAssetListCards,
-    getAssetMaintenanceSummary,
+    // getAssetMaintenanceSummary,
     getAssetsEligibleForDisposalDropdown,
     getDisposedAssetsDetails,
     // getAssetTransactionHistory,
@@ -59,7 +59,7 @@ router.route("/maintenance/transaction-details/:assetId").get(fetchMaintenanceTr
 router.route("/maintenance/search").get(searchAssetsOnMaintenanceList)
 router.route("/maintenance/history/:assetId").get(getMaintenanceHistory)
 router.route("/maintenance/card-details").get(getMaintenanceCardDetails)
-router.route("/maintenance/summary").get(getAssetMaintenanceSummary)
+// router.route("/maintenance/summary").get(getAssetMaintenanceSummary)
 router.route("/sync-maintenance").patch(verifyEmployeeJWT, populateCreatedByUpdatedBy, syncMaintenanceStatus)
 
 //asset depreciation
