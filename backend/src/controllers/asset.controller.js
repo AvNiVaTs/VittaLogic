@@ -375,23 +375,36 @@ const getDisposedAssetsDetails = asyncHandler(async (req, res) => {
 const getAssetsEligibleForDisposalDropdown = asyncHandler(async (req, res) => {
   const { assetType, assetSubtype } = req.query;
 
-  if(!assetType && !assetSubtype){
-    return new ApiErr(400 , "Asset type and subtype required")
+  console.log("▶ HIT /asset/eligible-for-disposal");
+  console.log("▶ assetType:", assetType);
+  console.log("▶ assetSubtype:", assetSubtype);
+
+  if (!assetType || !assetSubtype) {
+    throw new ApiErr(400, "Asset Type and Asset Subtype are required");
   }
 
   const assets = await Asset.find({
     assetType,
     assetSubtype,
     status: { $nin: ["Awaiting Disposal", "Disposed"] },
-  });
+  }).select("assetId assetName");
+
+  console.log("▶ Assets found:", assets.length);
+
+  if (!assets || assets.length === 0) {
+    throw new ApiErr(404, "No eligible assets found");
+  }
 
   const dropdown = assets.map(asset => ({
-    value: asset.assetId,
     label: `${asset.assetId} - ${asset.assetName}`,
+    value: asset.assetId,
   }));
 
-  return res.status(200).json(new ApiResponse(200, dropdown, "Eligible assets fetched for disposal dropdown"));
+  return res
+    .status(200)
+    .json(new ApiResponse(200, dropdown, "Eligible assets fetched for disposal dropdown"));
 });
+
 
 // const getAssetDisposalList = asyncHandler(async (req, res) => {
 //   const assets = await Asset.find({
@@ -529,20 +542,20 @@ const getMaintenanceCardDetails = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, details, "Maintenance card details fetched"));
 });
 
-const getAssetMaintenanceSummary = asyncHandler(async (req, res) => {
-  const assets = await Asset.find();
+// const getAssetMaintenanceSummary = asyncHandler(async (req, res) => {
+//   const assets = await Asset.find();
 
-  const summary = assets.map(asset => {
-    const maintenanceCount = asset.maintenanceDetails ? asset.maintenanceDetails.length : 0;
-    return {
-      assetId: asset.asset_Id,
-      assetName: asset.asset_Name,
-      maintenanceCount,
-    };
-  });
+//   const summary = assets.map(asset => {
+//     const maintenanceCount = asset.maintenanceDetails ? asset.maintenanceDetails.length : 0;
+//     return {
+//       assetId: asset.asset_Id,
+//       assetName: asset.asset_Name,
+//       maintenanceCount,
+//     };
+//   });
 
-  return res.status(200).json(new ApiResponse(200, summary, "Maintenance summary fetched"));
-});
+//   return res.status(200).json(new ApiResponse(200, summary, "Maintenance summary fetched"));
+// });
 
 const syncMaintenanceStatus = asyncHandler(async (req, res) => {
   const { assetId, maintenanceType, serviceStartDate, serviceEndDate, createdBy, serviceProvider, serviceNote } = req.body;
@@ -628,7 +641,7 @@ export {
   getAssetDropdown, 
   // getAssetForDisposalEditCard, 
   getAssetListCards, 
-  getAssetMaintenanceSummary, 
+  // getAssetMaintenanceSummary, 
   getAssetsEligibleForDisposalDropdown, 
   // getAssetTransactionHistory, 
   getMaintenanceCardDetails, 
