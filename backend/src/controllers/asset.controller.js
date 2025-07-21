@@ -315,47 +315,68 @@ const markAssetForDisposal = asyncHandler(async (req, res) => {
 });
 
 
-const updateDisposedAssets = asyncHandler(async (req, res) => {
-  const { assetId } = req.params;
-
-  if (!createdBy) {
-    throw new ApiErr(400, "Missing 'createdBy' in request body");
-  }
-
-  const sale = await SaleTransaction.findOne({
-    "assetDetails.assetId": assetId,
-    transactionType: "Asset Sale",
+const getDisposedAssetsDetails = asyncHandler(async (req, res) => {
+  // Fetch all assets where status is either Awaiting Disposal or Disposed
+  const assets = await Asset.find({
+    status: { $in: ["Awaiting Disposal", "Disposed"] },
   });
 
-  if (!sale) {
-    throw new ApiErr(404, "No Asset Sale transaction found for this asset");
+  if (!assets || assets.length === 0) {
+    throw new ApiErr(404, "No assets found with Awaiting Disposal or Disposed status");
   }
 
-  const asset = await Asset.findOneAndUpdate(
-    { assetId },
-    {
-      status: "Disposed",
-      "disposalDetails.transactionId": sale.transactionId,
-      "disposalDetails.saleAmount": sale.saleAmount,
-      "disposalDetails.saleDate": sale.saleDate,
-      "disposalDetails.createdBy": req.body.createdBy
-    },
-    { new: true, runValidators: true }
-  );
+  const result = [];
 
-  if (!asset) {
-    throw new ApiErr(404, "Asset not found");
+  for (const asset of assets) {
+    const baseData = {
+      assetId: asset.assetId,
+      assetName: asset.assetName,
+      status: asset.status,
+      assetType: asset.assetType,
+      purchaseCost: asset.purchaseCost,
+      createdBy: asset.createdBy,
+      disposalReason: asset.disposalDetails?.disposalReason || "Not Provided",
+    };
+
+    if (asset.status === "Disposed") {
+      // Fetch sale transaction details
+      const sale = await SaleTransaction.findOne({
+        "assetDetails.assetId": asset.assetId,
+        transactionType: "Asset Sale",
+      });
+
+      if (sale) {
+        // Update disposalDetails if not already saved
+        if (
+          !asset.disposalDetails.transactionId ||
+          !asset.disposalDetails.saleAmount ||
+          !asset.disposalDetails.saleDate
+        ) {
+          asset.disposalDetails.transactionId = sale.transactionId;
+          asset.disposalDetails.saleAmount = sale.saleAmount;
+          asset.disposalDetails.saleDate = sale.saleDate;
+          await asset.save();
+        }
+
+        baseData.saleAmount = sale.saleAmount;
+      }
+    }
+
+    result.push(baseData);
   }
 
-  return res.status(200).json(new ApiResponse(200, asset, "Asset marked as disposed"));
+  return res
+    .status(200)
+    .json(new ApiResponse(200, result, "Disposed and Awaiting Disposal assets fetched successfully"));
 });
+
 
 
 const getAssetsEligibleForDisposalDropdown = asyncHandler(async (req, res) => {
   const { assetType, assetSubtype } = req.query;
 
-  if (!assetType || !assetSubtype) {
-    throw new ApiErr(400, "assetType and assetSubtype are required");
+  if(!assetType && !assetSubtype){
+    return new ApiErr(400 , "Asset type and subtype required")
   }
 
   const assets = await Asset.find({
@@ -365,46 +386,30 @@ const getAssetsEligibleForDisposalDropdown = asyncHandler(async (req, res) => {
   });
 
   const dropdown = assets.map(asset => ({
-    value: asset.asset_Id,
-    label: `${asset.asset_Id} - ${asset.asset_Name}`,
+    value: asset.assetId,
+    label: `${asset.assetId} - ${asset.assetName}`,
   }));
 
   return res.status(200).json(new ApiResponse(200, dropdown, "Eligible assets fetched for disposal dropdown"));
 });
 
-const updateDisposalReason = asyncHandler(async (req, res) => {
-  const { assetId } = req.params;
-  const { disposalReason, updatedBy } = req.body;
+// const getAssetDisposalList = asyncHandler(async (req, res) => {
+//   const assets = await Asset.find({
+//     status: "Awaiting Disposal",
+//   });
 
-  const asset = await Asset.findOne({ asset_Id: assetId });
-  if (!asset) throw new ApiErr(404, "Asset not found");
+//   const list = assets.map(asset => ({
+//     assetId: asset.asset_Id,
+//     assetName: asset.asset_Name,
+//     assetType: asset.assetType,
+//     purchaseCost: asset.unitCost,
+//     status: asset.status,
+//     disposalReason: asset.disposalDetails?.disposalReason || null,
+//     saleAmount: asset.disposalDetails?.saleAmount || null,
+//   }));
 
-  asset.disposalDetails = asset.disposalDetails || {};
-  asset.disposalDetails.disposalReason = disposalReason;
-  asset.disposalDetails.updatedBy = req.body.createdBy;
-
-  await asset.save();
-
-  return res.status(200).json(new ApiResponse(200, asset, "Disposal reason updated"));
-});
-
-const getAssetDisposalList = asyncHandler(async (req, res) => {
-  const assets = await Asset.find({
-    status: "Awaiting Disposal",
-  });
-
-  const list = assets.map(asset => ({
-    assetId: asset.asset_Id,
-    assetName: asset.asset_Name,
-    assetType: asset.assetType,
-    purchaseCost: asset.unitCost,
-    status: asset.status,
-    disposalReason: asset.disposalDetails?.disposalReason || null,
-    saleAmount: asset.disposalDetails?.saleAmount || null,
-  }));
-
-  return res.status(200).json(new ApiResponse(200, list, "Assets awaiting disposal fetched"));
-});
+//   return res.status(200).json(new ApiResponse(200, list, "Assets awaiting disposal fetched"));
+// });
 
 //Asset Maintenance
 const fetchMaintenanceTransactionDetails = asyncHandler(async (req, res) => {
@@ -618,7 +623,7 @@ export {
   fetchMaintenanceTransactionDetails, 
   getAssetById, 
   getAssetDetailsFromPurchaseTransactionOnCard, 
-  getAssetDisposalList,
+  // getAssetDisposalList,
   // getAssetForEditCard,
   getAssetDropdown, 
   // getAssetForDisposalEditCard, 
@@ -634,6 +639,5 @@ export {
   syncMaintenanceStatus, 
   updateAssetAssignment,
   updateAssetStatus, 
-  updateDisposalReason, 
-  updateDisposedAssets
+  getDisposedAssetsDetails
 }

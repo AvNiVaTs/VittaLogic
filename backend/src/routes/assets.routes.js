@@ -5,13 +5,14 @@ import {
     fetchMaintenanceTransactionDetails,
     getAssetById,
     getAssetDetailsFromPurchaseTransactionOnCard,
-    getAssetDisposalList,
+    // getAssetDisposalList,
     // getAssetForEditCard,
     getAssetDropdown,
     // getAssetForDisposalEditCard,
     getAssetListCards,
     getAssetMaintenanceSummary,
     getAssetsEligibleForDisposalDropdown,
+    getDisposedAssetsDetails,
     // getAssetTransactionHistory,
     getMaintenanceCardDetails,
     getMaintenanceHistory,
@@ -20,9 +21,7 @@ import {
     searchAssetsOnMaintenanceList,
     syncMaintenanceStatus,
     updateAssetAssignment,
-    updateAssetStatus,
-    updateDisposalReason,
-    updateDisposedAssets,
+    updateAssetStatus
 } from "../controllers/asset.controller.js"
 import {
     createDepreciation,
@@ -51,10 +50,9 @@ router.route("/:assetId").get(getAssetById)
 //asset disposal
 // router.route("/disposal/:assetId").get(getAssetForDisposalEditCard)
 router.route("/asset-for-disposal").patch(verifyEmployeeJWT, populateCreatedByUpdatedBy, markAssetForDisposal)
-router.route("/update-disposal/:assetId").patch(verifyEmployeeJWT, populateCreatedByUpdatedBy, updateDisposedAssets)
+router.route("/update-disposal").patch(verifyEmployeeJWT, getDisposedAssetsDetails)
 router.route("/eligible-for-disposal").get(getAssetsEligibleForDisposalDropdown)
-router.route("/disposal/update-reason/:assetId").patch(verifyEmployeeJWT, populateCreatedByUpdatedBy, updateDisposalReason)
-router.route("/disposal/list").get(getAssetDisposalList)
+// router.route("/disposal/list").get(getAssetDisposalList)
 
 //asset maintenance
 router.route("/maintenance/transaction-details/:assetId").get(fetchMaintenanceTransactionDetails)
