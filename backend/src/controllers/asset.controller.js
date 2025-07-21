@@ -370,14 +370,8 @@ const getDisposedAssetsDetails = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, result, "Disposed and Awaiting Disposal assets fetched successfully"));
 });
 
-
-
 const getAssetsEligibleForDisposalDropdown = asyncHandler(async (req, res) => {
   const { assetType, assetSubtype } = req.query;
-
-  console.log("▶ HIT /asset/eligible-for-disposal");
-  console.log("▶ assetType:", assetType);
-  console.log("▶ assetSubtype:", assetSubtype);
 
   if (!assetType || !assetSubtype) {
     throw new ApiErr(400, "Asset Type and Asset Subtype are required");
@@ -388,8 +382,6 @@ const getAssetsEligibleForDisposalDropdown = asyncHandler(async (req, res) => {
     assetSubtype,
     status: { $nin: ["Awaiting Disposal", "Disposed"] },
   }).select("assetId assetName");
-
-  console.log("▶ Assets found:", assets.length);
 
   if (!assets || assets.length === 0) {
     throw new ApiErr(404, "No eligible assets found");
@@ -429,7 +421,7 @@ const fetchMaintenanceTransactionDetails = asyncHandler(async (req, res) => {
   const { assetId } = req.params;
 
   const maintenanceTxn = await InternalTransaction.findOne({
-    referenceType: "Maintenance / Repair",
+    reference_type: {$in: ["Maintenance", "Repair"]},
     "maintenanceRepairDetails.assetId": assetId,
   });
 
@@ -442,7 +434,7 @@ const fetchMaintenanceTransactionDetails = asyncHandler(async (req, res) => {
     amount: maintenanceTxn.amount,
     transactionDate: maintenanceTxn.transactionDate,
     status: maintenanceTxn.status,
-    maintenanceType: maintenanceTxn.maintenanceRepairDetails?.maintenanceType,
+    maintenanceType: maintenanceTxn.maintenanceRepairDetails?.maintenance_type,
     referenceId: maintenanceTxn.maintenanceRepairDetails?.referenceId,
   };
 
@@ -558,10 +550,19 @@ const getMaintenanceCardDetails = asyncHandler(async (req, res) => {
 // });
 
 const syncMaintenanceStatus = asyncHandler(async (req, res) => {
-  const { assetId, maintenanceType, serviceStartDate, serviceEndDate, createdBy, serviceProvider, serviceNote } = req.body;
+  const { assetId, maintenanceType, maintenancePeriod, serviceStartDate, serviceEndDate, serviceProvider, serviceNote } = req.body;
 
-  const asset = await Asset.findOne({ asset_Id: assetId });
+  const asset = await Asset.findOne({ assetId });
   if (!asset) throw new ApiErr(404, "Asset not found");
+
+  // Fetch transaction for this maintenance
+  const transaction = await InternalTransaction.findOne({
+    reference_type: "Maintenance / Repair",
+    "maintenanceRepairDetails.assetId": assetId
+  }).sort({ transactionDate: -1 }); // latest one
+
+  const maintenanceCost = transaction?.amount || 0;
+  const transactionId = transaction?.transactionId || null;
 
   const maintenanceId = `MAINT-${(await getNextSequence("maintenance_Id")).toString().padStart(5, "0")}`;
   const now = new Date();
@@ -587,18 +588,21 @@ const syncMaintenanceStatus = asyncHandler(async (req, res) => {
   }
 
   asset.status = status;
-  asset.maintenanceDetails.push({
-    maintenance_Id: maintenanceId,
+  asset.maintenanceDetails = {
+    maintenanceId,
     serviceStartDate,
     serviceEndDate,
     maintenanceType,
+    maintenancePeriod,
     requestType,
     requestStatus,
     createdBy: req.body.createdBy,
     updatedBy: req.body.updatedBy,
     serviceProvider,
     serviceNote,
-  });
+    maintenanceCost,
+    transactionId
+  };
 
   await asset.save();
   return res.status(200).json(new ApiResponse(200, asset, "Maintenance status synced"));
