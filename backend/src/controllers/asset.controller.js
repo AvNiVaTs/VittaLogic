@@ -219,7 +219,8 @@ const getAssetListCards = asyncHandler(async (req, res) => {
         assignmentStatus: asset.assignmentStatus,
         purchaseCost: asset.unitCost,
         assignedToEmployee: asset.assignedToEmployee,
-        assignedToDepartment: asset.assignedDepartment
+        assignedToDepartment: asset.assignedDepartment,
+        updatedBy: asset.updatedBy,
       };
     })
   );
