@@ -10,89 +10,100 @@ const createDepreciation = asyncHandler(async (req, res) => {
   const {
     assetId,
     depreciationMethod,
-    usefulLifeYears,
-    totalUnitsProduced,
-    unitsUsedThisYear
-  } = req.body
+    depreciationRate,        // required for WDM
+    usefulLifeYears,         // optional if present in asset
+    totalUnitsProduced,      // required for Units of Prod
+    unitsUsedThisYear,       // required for Units of Prod
+    depreciationStartDate,   // optional but good to log
+    notes
+  } = req.body;
 
-  const asset = await Asset.findOne({ asset_Id: assetId })
-  if (!asset) throw new ApiErr(404, "Asset not found")
+  const asset = await Asset.findOne({ assetId });
+  if (!asset) throw new ApiErr(404, "Asset not found");
 
-  const purchaseCost = asset.purchaseCost
-  const salvageValue = asset.salvageValue || 0
-  const usefulLife = usefulLifeYears || asset.usefulLifeYears
-  const existingDepreciations = asset.depreciationDetails || []
+  const purchaseCost = asset.purchaseCost;
+  const salvageValue = asset.salvageValue || 0;
+  const usefulLife = usefulLifeYears || asset.usefulLifeYears;
+
+  if (!usefulLife) {
+    throw new ApiErr(400, "Useful life is required if not already defined on the asset");
+  }
+
+  if (depreciationMethod === "Written Down Method" && !depreciationRate) {
+    throw new ApiErr(400, "Depreciation rate is required for Written Down Method");
+  }
+
+  if (
+    depreciationMethod === "Units of Production Method" &&
+    (!totalUnitsProduced || !unitsUsedThisYear)
+  ) {
+    throw new ApiErr(
+      400,
+      "Total units produced and units used this year are required for Units of Production Method"
+    );
+  }
 
   const depreciationId = `DEP-${(await getNextSequence("depreciation_Id")).toString().padStart(5, "0")}`;
 
-  let annualDepreciation = 0
-  let bookValue = 0
-  let depreciationPercent = 0
+  let annualDepreciation = 0;
+  let bookValue = 0;
+  let depreciationPercent = 0;
 
   switch (depreciationMethod) {
-    case "Straight Line": {
-      annualDepreciation = (purchaseCost - salvageValue) / usefulLife
-      bookValue = purchaseCost - annualDepreciation * (existingDepreciations.length + 1)
-      break
+    case "Straight Line Method": {
+      annualDepreciation = (purchaseCost - salvageValue) / usefulLife;
+      break;
     }
-    case "Written Down": {
-      bookValue = purchaseCost
-      for (let i = 0; i <= existingDepreciations.length; i++) {
-        annualDepreciation = bookValue * (1 - Math.pow(salvageValue / purchaseCost, 1 / usefulLife))
-        bookValue -= annualDepreciation
-      }
-      break
+    case "Written Down Method": {
+      const rateDecimal = depreciationRate / 100;
+      annualDepreciation = purchaseCost * rateDecimal;
+      break;
     }
-    case "Double Declining": {
-      const rate = 2 / usefulLife
-      bookValue = purchaseCost
-      for (let i = 0; i <= existingDepreciations.length; i++) {
-        annualDepreciation = bookValue * rate
-        bookValue -= annualDepreciation
-      }
-      break
+    case "Double Declining Method": {
+      const rate = 2 / usefulLife;
+      annualDepreciation = purchaseCost * rate;
+      break;
     }
-    case "Units of Production": {
-      if (!totalUnitsProduced || !unitsUsedThisYear) {
-        throw new ApiErr(400, "Total units produced and units used this year are required for Units of Production method")
-      }
-      const perUnit = (purchaseCost - salvageValue) / totalUnitsProduced
-      annualDepreciation = perUnit * unitsUsedThisYear
-      bookValue = purchaseCost - existingDepreciations.reduce((acc, cur) => acc + cur.annualDepreciation, 0) - annualDepreciation
-      break
+    case "Units of Production Method": {
+      const perUnit = (purchaseCost - salvageValue) / totalUnitsProduced;
+      annualDepreciation = perUnit * unitsUsedThisYear;
+      break;
     }
-    case "SYD": {
-      const syd = (usefulLife * (usefulLife + 1)) / 2
-      const n = existingDepreciations.length + 1
-      annualDepreciation = ((usefulLife - n + 1) / syd) * (purchaseCost - salvageValue)
-      bookValue = purchaseCost - existingDepreciations.reduce((acc, cur) => acc + cur.annualDepreciation, 0) - annualDepreciation
-      break
+    case "Sum-of-the-Years Digits Method": {
+      const syd = (usefulLife * (usefulLife + 1)) / 2;
+      const n = 1; // First year, can be tracked differently if needed
+      annualDepreciation = ((usefulLife - n + 1) / syd) * (purchaseCost - salvageValue);
+      break;
     }
     default:
-      throw new ApiErr(400, "Unsupported depreciation method")
+      throw new ApiErr(400, "Unsupported depreciation method");
   }
 
-  depreciationPercent = ((purchaseCost - bookValue) / purchaseCost) * 100
+  bookValue = purchaseCost - annualDepreciation;
+  depreciationPercent = ((purchaseCost - bookValue) / purchaseCost) * 100;
 
   const depreciationData = {
     depreciationId,
     depreciationMethod,
+    depreciationStartDate: depreciationStartDate || new Date(),
+    salvageValue,
+    usefulLifeYears: usefulLife,
+    depreciationRate: depreciationMethod === "Written Down Method" ? depreciationRate : undefined,
+    totalExpectedUnits: depreciationMethod === "Units of Production Method" ? totalUnitsProduced : undefined,
+    actualUnitsUsed: depreciationMethod === "Units of Production Method" ? unitsUsedThisYear : undefined,
     annualDepreciation: parseFloat(annualDepreciation.toFixed(2)),
-    bookValue: parseFloat(bookValue.toFixed(2)),
-    depreciationPercent: parseFloat(depreciationPercent.toFixed(2)),
+    currentBookValue: parseFloat(bookValue.toFixed(2)),
+    depreciatedPercentage: parseFloat(depreciationPercent.toFixed(2)),
+    notes: notes || "",
     createdBy: req.body.createdBy
-  }
+  };
 
-  if (depreciationMethod === "Units of Production") {
-    depreciationData.totalUnitsProduced = totalUnitsProduced
-    depreciationData.unitsUsedThisYear = unitsUsedThisYear
-  }
+  // Assign depreciation details to asset
+  asset.depreciationDetails = depreciationData;
+  await asset.save();
 
-  asset.depreciationDetails.push(depreciationData)
-  await asset.save()
-
-  return res.status(201).json(new ApiResponse(201, asset, "Depreciation entry created successfully"))
-})
+  return res.status(201).json(new ApiResponse(201, asset, "Depreciation entry created successfully"));
+});
 
 // 2. GET ASSET DROPDOWN BY TYPE (Asset Id - Asset Name)
 const getAssetDropdownByType = asyncHandler(async (req, res) => {
@@ -108,8 +119,8 @@ const getAssetDropdownByType = asyncHandler(async (req, res) => {
   })
 
   const dropdown = assets.map(asset => ({
-    value: asset.asset_Id,
-    label: `${asset.asset_Id} - ${asset.asset_Name}`
+    value: asset.assetId,
+    label: `${asset.assetId} - ${asset.assetName}`
   }))
 
   return res
@@ -119,36 +130,39 @@ const getAssetDropdownByType = asyncHandler(async (req, res) => {
 
 // 3. GET DEPRECIATION TRACKING CARD DETAILS
 const getDepreciationTrackingDetails = asyncHandler(async (req, res) => {
-  const { assetId } = req.params
+  const { assetId } = req.params;
 
-  const asset = await Asset.findOne({ asset_Id: assetId })
-  if (!asset) throw new ApiErr(404, "Asset not found")
+  const asset = await Asset.findOne({ assetId });
+  if (!asset) throw new ApiErr(404, "Asset not found");
 
-  const lastDep = asset.depreciationDetails?.[asset.depreciationDetails.length - 1]
-  if (!lastDep) throw new ApiErr(404, "No depreciation record found for this asset")
+  const dep = asset.depreciationDetails;
+  if (!dep || !dep.depreciationMethod) {
+    throw new ApiErr(404, "No depreciation record found for this asset");
+  }
 
   const details = {
-    assetName: asset.asset_Name,
-    assetId: asset.asset_Id,
+    assetName: asset.assetName,
+    assetId: asset.assetId,
     assetType: asset.assetType,
-    depreciationMethod: lastDep.depreciationMethod,
+    depreciationMethod: dep.depreciationMethod,
     purchaseCost: asset.unitCost,
-    bookValue: lastDep.bookValue,
-    annualDepreciation: lastDep.annualDepreciation,
-    enteredBy: lastDep.createdBy,
-    depreciationPercent: lastDep.depreciationPercent,
-    notes: lastDep.notes || ""
+    bookValue: dep.currentBookValue,
+    annualDepreciation: dep.annualDepreciation,
+    enteredBy: dep.createdBy,
+    depreciationPercent: dep.depreciatedPercentage,
+    notes: dep.notes || ""
+  };
+
+  if (dep.depreciationMethod === "Units of Production Method") {
+    details.totalUnitsProduced = dep.totalExpectedUnits;
+    details.unitsUsedThisYear = dep.actualUnitsUsed;
   }
 
-  if (lastDep.depreciationMethod === "Units of Production") {
-    details.totalUnitsProduced = lastDep.totalUnitsProduced
-    details.unitsUsedThisYear = lastDep.unitsUsedThisYear
-  }
+  return res.status(200).json(
+    new ApiResponse(200, details, "Depreciation tracking details fetched successfully")
+  );
+});
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, details, "Depreciation tracking details fetched successfully"))
-})
 
 
 // Export
