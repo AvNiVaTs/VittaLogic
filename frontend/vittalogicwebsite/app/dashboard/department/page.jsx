@@ -32,6 +32,7 @@ export default function DepartmentPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [editingDepartment, setEditingDepartment] = useState(null)
   const [approvalList, setApprovalList] = useState([])
+  const [departmentBudgets, setDepartmentBudgets] = useState({})
 
   // Department Entry Form State
   const [departmentName, setDepartmentName] = useState("")
@@ -83,7 +84,6 @@ export default function DepartmentPage() {
             description: dept.departmentDescription,
             createdBy: dept.createdBy?.employeeId || 'Unknown',
             createdAt: new Date(dept.createdAt).toISOString().split("T")[0],
-            budgets: [], // Initialize empty, will fetch budgets separately
             updatedBy: dept.updatedBy?.employeeId || null,
             lastUpdated: dept.updatedAt || null,
           })))
@@ -98,43 +98,49 @@ export default function DepartmentPage() {
   }, [])
 
   // Fetch budgets for each department when switching to info section
-const [departmentBudgets, setDepartmentBudgets] = useState({})
-
-useEffect(() => {
-  if (activeSection === "info" && departments.length > 0) {
-    const fetchBudgets = async () => {
-      try {
-        const budgetPromises = departments.map(async (dept) => {
-          const res = await fetch(`http://localhost:8000/api/v1/dept/budget/?departmentId=${dept.id}`, {
-            credentials: "include",
+  useEffect(() => {
+    if (activeSection === "info" && departments.length > 0) {
+      const fetchBudgets = async () => {
+        try {
+          const budgetPromises = departments.map(async (dept) => {
+            try {
+              console.log(`Fetching budget for department ID: ${dept.id}`) // Debug log
+              const res = await fetch(`http://localhost:8000/api/v1/dept/budget/?departmentId=${dept.id}`, {
+                credentials: "include",
+              })
+              const data = await res.json()
+              console.log(`Budget response for ${dept.id}:`, data) // Debug log
+              return { departmentId: dept.id, budgets: res.ok ? data.data : [] }
+            } catch (error) {
+              console.error(`Error fetching budget for department ${dept.id}:`, error)
+              return { departmentId: dept.id, budgets: [] }
+            }
           })
-          const data = await res.json()
-          return { departmentId: dept.id, budgets: data.ok ? data.data : [] }
-        })
-        
-        const results = await Promise.all(budgetPromises)
-        const budgetMap = results.reduce((acc, { departmentId, budgets }) => {
-          acc[departmentId] = budgets.map(budget => ({
-            budgetId: budget.budgetId,
-            createdBy: budget.createdBy?.employeeId || 'Unknown',
-            approvalId: budget.approvalId,
-            timePeriodFrom: budget.timePeriodFrom,
-            timePeriodTo: budget.timePeriodTo,
-            allocatedAmount: budget.allocatedAmount,
-            budgetCreationDate: budget.budgetCreationDate,
-            budgetNotes: budget.budgetNote,
-          }))
-          return acc
-        }, {})
-        
-        setDepartmentBudgets(budgetMap)
-      } catch (err) {
-        console.error("Error fetching budgets:", err)
+
+          const results = await Promise.all(budgetPromises)
+          const budgetMap = results.reduce((acc, { departmentId, budgets }) => {
+            acc[departmentId] = budgets.map(budget => ({
+              budgetId: budget.budgetId,
+              createdBy: budget.createdBy?.employeeId || 'Unknown',
+              approvalId: budget.approvalId,
+              timePeriodFrom: budget.timePeriodFrom,
+              timePeriodTo: budget.timePeriodTo,
+              allocatedAmount: budget.allocatedAmount,
+              budgetCreationDate: budget.budgetCreationDate,
+              budgetNotes: budget.budgetNote,
+            }))
+            return acc
+          }, {})
+          
+          console.log('Final budget map:', budgetMap) // Debug log
+          setDepartmentBudgets(budgetMap)
+        } catch (err) {
+          console.error("Error fetching budgets:", err)
+        }
       }
+      fetchBudgets()
     }
-    fetchBudgets()
-  }
-}, [activeSection, departments])
+  }, [activeSection, departments])
 
   // Generate unique ID based on timestamp
   const generateTimestampId = (prefix) => {
@@ -187,7 +193,6 @@ useEffect(() => {
           description: result.data.departmentDescription,
           createdBy: result.data.createdBy,
           createdAt: new Date().toISOString().split("T")[0],
-          budgets: [],
           updatedBy: null,
           lastUpdated: null,
         },
@@ -246,13 +251,11 @@ useEffect(() => {
         budgetNotes,
       }
 
-      setDepartments((prev) =>
-        prev.map((dept) =>
-          dept.id === budgetDepartmentId
-            ? { ...dept, budgets: [...dept.budgets, newBudget] }
-            : dept
-        )
-      )
+      // Update the departmentBudgets state
+      setDepartmentBudgets((prev) => ({
+        ...prev,
+        [budgetDepartmentId]: [...(prev[budgetDepartmentId] || []), newBudget]
+      }))
 
       setSubmitMessage("Budget allocation created successfully!")
       setBudgetId(generateTimestampId("BUD"))
@@ -492,7 +495,6 @@ useEffect(() => {
                       </p>
                     </div>
 
-
                     <div className="space-y-2">
                       <Label htmlFor="budgetDepartmentId">Department ID *</Label>
                       <Select value={budgetDepartmentId} onValueChange={setBudgetDepartmentId} required>
@@ -621,114 +623,119 @@ useEffect(() => {
                         {searchTerm ? "No departments found matching your search." : "No departments created yet."}
                       </div>
                     ) : (
-                      filteredDepartments.map((department) => (
-                        <Card key={department.id} className="border-l-4 border-l-blue-500">
-                          <CardHeader>
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <CardTitle className="text-lg">{department.name}</CardTitle>
-                                <CardDescription className="mt-1">
-                                  ID: {department.id} | Created by: {department.createdBy} | Date:{" "}
-                                  {department.createdAt}
-                                  {department.updatedBy && (
-                                    <>
-                                      {" "}
-                                      | Updated by: {department.updatedBy} | Last updated:{" "}
-                                      {new Date(department.lastUpdated).toLocaleString()}
-                                    </>
+                      filteredDepartments.map((department) => {
+                        // Get budgets from the separate state instead of department.budgets
+                        const departmentBudgetList = departmentBudgets[department.id] || [];
+                        
+                        return (
+                          <Card key={department.id} className="border-l-4 border-l-blue-500">
+                            <CardHeader>
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <CardTitle className="text-lg">{department.name}</CardTitle>
+                                  <CardDescription className="mt-1">
+                                    ID: {department.id} | Created by: {department.createdBy} | Date:{" "}
+                                    {department.createdAt}
+                                    {department.updatedBy && (
+                                      <>
+                                        {" "}
+                                        | Updated by: {department.updatedBy} | Last updated:{" "}
+                                        {new Date(department.lastUpdated).toLocaleString()}
+                                      </>
+                                    )}
+                                  </CardDescription>
+                                  {department.description && (
+                                    <p className="text-sm text-gray-600 mt-2">{department.description}</p>
                                   )}
-                                </CardDescription>
-                                {department.description && (
-                                  <p className="text-sm text-gray-600 mt-2">{department.description}</p>
-                                )}
+                                </div>
+                                <div className="flex gap-2">
+                                  <Dialog
+                                    open={editingDepartment === department.id}
+                                    onOpenChange={(open) => {
+                                      if (open) {
+                                        setEditingDepartment(department.id)
+                                      } else {
+                                        setEditingDepartment(null)
+                                      }
+                                    }}
+                                  >
+                                    <DialogTrigger asChild>
+                                      <Button variant="outline" size="sm">
+                                        <Edit className="h-4 w-4 mr-1" />
+                                        Edit Department
+                                      </Button>
+                                    </DialogTrigger>
+                                    <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+                                      <DialogHeader>
+                                        <DialogTitle>Edit Department</DialogTitle>
+                                        <DialogDescription>Update department information</DialogDescription>
+                                      </DialogHeader>
+                                      <DepartmentEditForm
+                                        department={department}
+                                        onSave={(updatedData) => {
+                                          handleEditDepartment(department.id, updatedData)
+                                        }}
+                                        onCancel={() => setEditingDepartment(null)}
+                                      />
+                                    </DialogContent>
+                                  </Dialog>
+                                </div>
                               </div>
-                              <div className="flex gap-2">
-                                <Dialog
-                                  open={editingDepartment === department.id}
-                                  onOpenChange={(open) => {
-                                    if (open) {
-                                      setEditingDepartment(department.id)
-                                    } else {
-                                      setEditingDepartment(null)
-                                    }
-                                  }}
-                                >
-                                  <DialogTrigger asChild>
-                                    <Button variant="outline" size="sm">
-                                      <Edit className="h-4 w-4 mr-1" />
-                                      Edit Department
-                                    </Button>
-                                  </DialogTrigger>
-                                  <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
-                                    <DialogHeader>
-                                      <DialogTitle>Edit Department</DialogTitle>
-                                      <DialogDescription>Update department information</DialogDescription>
-                                    </DialogHeader>
-                                    <DepartmentEditForm
-                                      department={department}
-                                      onSave={(updatedData) => {
-                                        handleEditDepartment(department.id, updatedData)
-                                      }}
-                                      onCancel={() => setEditingDepartment(null)}
-                                    />
-                                  </DialogContent>
-                                </Dialog>
-                              </div>
-                            </div>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="space-y-3">
-                              <div className="flex items-center justify-between">
-                                <h4 className="font-medium text-gray-900">Budget Allocations</h4>
-                                <Badge variant="secondary">
-                                  {department.budgets.length} Budget{department.budgets.length !== 1 ? "s" : ""}
-                                </Badge>
-                              </div>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <h4 className="font-medium text-gray-900">Budget Allocations</h4>
+                                  <Badge variant="secondary">
+                                    {departmentBudgetList.length} Budget{departmentBudgetList.length !== 1 ? "s" : ""}
+                                  </Badge>
+                                </div>
 
-                              {department.budgets.length === 0 ? (
-                                <p className="text-sm text-gray-500 italic">No budgets allocated yet.</p>
-                              ) : (
-                                <div className="grid gap-3">
-                                  {department.budgets.map((budget) => (
-                                    <div key={budget.budgetId} className="bg-gray-50 p-3 rounded-lg">
-                                      <div className="flex justify-between items-start mb-2">
-                                        <div className="flex-1">
-                                          <div className="flex items-center gap-2 mb-1">
-                                            <Badge variant="outline">{budget.budgetId}</Badge>
-                                            {budget.approvalId && (
+                                {departmentBudgetList.length === 0 ? (
+                                  <p className="text-sm text-gray-500 italic">No budgets allocated yet.</p>
+                                ) : (
+                                  <div className="grid gap-3">
+                                    {departmentBudgetList.map((budget) => (
+                                      <div key={budget.budgetId} className="bg-gray-50 p-3 rounded-lg">
+                                        <div className="flex justify-between items-start mb-2">
+                                          <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-1">
+                                              <Badge variant="outline">{budget.budgetId}</Badge>
+                                              {budget.approvalId && (
+                                                <span className="text-xs text-gray-600">
+                                                  <strong>Approval:</strong> {budget.approvalId}
+                                                </span>
+                                              )}
+                                              <span className="text-sm text-gray-600">by {budget.createdBy}</span>
+                                            </div>
+                                            <div className="text-sm space-y-1">
                                               <div>
-                                                <strong>Approval ID:</strong> {budget.approvalId}
+                                                <strong>Amount:</strong> ₹{budget.allocatedAmount?.toLocaleString() || '0'}
                                               </div>
-                                            )}
-                                            <span className="text-sm text-gray-600">by {budget.createdBy}</span>
-                                          </div>
-                                          <div className="text-sm space-y-1">
-                                            <div>
-                                              <strong>Amount:</strong> ₹{budget.allocatedAmount.toLocaleString()}
-                                            </div>
-                                            <div>
-                                              <strong>Period:</strong> {budget.timePeriodFrom} to {budget.timePeriodTo}
-                                            </div>
-                                            <div>
-                                              <strong>Created:</strong>{" "}
-                                              {new Date(budget.budgetCreationDate).toLocaleString()}
-                                            </div>
-                                            {budget.budgetNotes && (
                                               <div>
-                                                <strong>Notes:</strong> {budget.budgetNotes}
+                                                <strong>Period:</strong> {budget.timePeriodFrom} to {budget.timePeriodTo}
                                               </div>
-                                            )}
+                                              <div>
+                                                <strong>Created:</strong>{" "}
+                                                {budget.budgetCreationDate ? new Date(budget.budgetCreationDate).toLocaleString() : 'N/A'}
+                                              </div>
+                                              {budget.budgetNotes && (
+                                                <div>
+                                                  <strong>Notes:</strong> {budget.budgetNotes}
+                                                </div>
+                                              )}
+                                            </div>
                                           </div>
                                         </div>
                                       </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )
+                      })
                     )}
                   </div>
                 </CardContent>
