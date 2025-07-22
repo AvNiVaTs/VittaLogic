@@ -2,16 +2,17 @@ import mongoose, { Schema } from "mongoose";
 
 // Customer Types
 const customerTypes = [
-  "Technology", 
-  "Manufacturing", 
-  "Retail", 
-  "Healthcare", 
+  "Technology",
+  "Manufacturing",
+  "Retail",
+  "Healthcare",
+  "Finance",        //added finance and some other fields in enum
   "Education",
-  "B2B", 
-  "B2C", 
-  "Enterprise", 
-  "SME", 
-  "Others"
+  "B2B",
+  "B2C",
+  "Enterprise",
+  "SME",
+  "Others",
 ];
 
 // Transaction Types
