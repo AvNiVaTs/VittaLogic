@@ -161,7 +161,6 @@ const liabilitySchema = new Schema({
   },
   attachment: {
     type: String,  //cloudinary url
-    required: true
   },
   createdBy: { //Middleware
     type: String,

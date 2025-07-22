@@ -83,13 +83,15 @@ const createSaleTransaction = asyncHandler(async (req, res) => {
       throw new ApiErr(404, "Linked customer payment not found");
     }
 
-    const paidAmount = parseFloat(customerPayment.paid_amount.toString());
-    const updatedPaidAmount = paidAmount + saleAmount;
+    const existingPaid = parseFloat(customerPayment.paid_amount?.toString() || "0");
+    const incomingAmount = parseFloat(saleAmount?.toString() || "0"); // force numeric
 
-    customerPayment.paid_amount = mongoose.Types.Decimal128.fromString(updatedPaidAmount.toString());
+    const totalPaid = existingPaid + incomingAmount;
 
-    const totalDue = parseFloat(customerPayment.payment_amount_in_inr.toString());
-    if (updatedPaidAmount >= totalDue) {
+    customerPayment.paid_amount = mongoose.Types.Decimal128.fromString(totalPaid.toString());
+
+    const due = parseFloat(customerPayment.payment_amount_in_inr?.toString() || "0");
+    if (totalPaid >= due) {
       customerPayment.status = "Completed";
     }
 
@@ -145,18 +147,11 @@ const completeSaleTransaction = asyncHandler(async (req, res) => {
 // Dropdown Controllers
 const getCustomersByType = asyncHandler(async (req, res) => {
   const { customerType } = req.query;
-
-  const query = customerType
-    ? { customer_Types: { $regex: `^${customerType}$`, $options: "i" } }
-    : {};
-
-  const customers = await Customer.find(query);
-
+  const customers = await Customer.find({ customerType: { $in: [customerType] } });
   const options = customers.map(c => ({
     label: `${c.customer_Id} - ${c.company_Name}`,
     value: c.customer_Id
   }));
-
   return res.status(200).json(new ApiResponse(200, options, "Customers fetched"));
 });
 
@@ -194,7 +189,7 @@ const getApprovedCustomerPaymentApprovals = asyncHandler(async (req, res) => {
 
 const getAssetsForAssetSale = asyncHandler(async (req, res) => {
   const { assetType } = req.query;
-  const assets = await Asset.find({ assetType, status: "Awaiting Disposal" });
+  const assets = await Asset.find({ assetType, assetStatus: "Awaiting Disposal" }).select("assetId assetName");
   const options = assets.map(a => ({
     label: `${a.assetId} - ${a.assetName}`,
     value: a.assetId
@@ -210,7 +205,7 @@ const getAssetDetailsById = asyncHandler(async (req, res) => {
   return res.status(200).json(
     new ApiResponse(200, {
       assetName: asset.assetName,
-      status: asset.status,
+      assetStatus: asset.assetStatus,
       disposalId: asset.disposalDetails?.disposalId || null
     }, "Asset details fetched")
   );
@@ -249,4 +244,3 @@ export {
   getSalesCreditAccounts,
   getSalesDebitAccounts
 };
-
