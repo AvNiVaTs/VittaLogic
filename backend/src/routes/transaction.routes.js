@@ -1,44 +1,44 @@
 import { Router } from "express"
-import { upload } from "../middleware/multer.middleware.js"
-import {
-    createSaleTransaction,
-    completeSaleTransaction,
-    getCustomersByType,
-    getPendingPaymentsByCustomer,
-    getApprovedCustomerPaymentApprovals,
-    getAssetsForAssetSale,
-    getAssetDetailsById,
-    getSalesDebitAccounts,
-    getSalesCreditAccounts
-} from "../controllers/salesTransaction.controller.js"
 import {
     createInternalTransaction,
+    getAssetIdByAssetTypeDropdown,
+    getAssetsForMaintenanceRepair,
     getDepartmentsForSalaryDropdown,
     getEmployeesByDepartmentForSalary,
-    getLiabilitiesByType,
-    getAssetsForMaintenanceRepair,
-    getInternalDebitAccounts,
     getInternalCreditAccounts,
+    getInternalDebitAccounts,
     getInternalTransactionDropdownApprovals,
-    getAssetIdByAssetTypeDropdown
+    getLiabilitiesByType
 } from "../controllers/internalTransaction.controller.js"
 import {
     createPurchaseTransaction,
-    getDepartmentsForDropdown,
-    getVendorsByTypeForDropdown,
-    getVendorPaymentsForDropdown,
     getApprovedApprovalsForDropdown,
+    getDepartmentsForDropdown,
+    getFinancialCreditAccountDropdown,
     getFinancialDebitAccountDropdown,
-    getFinancialCreditAccountDropdown
+    getVendorPaymentsForDropdown,
+    getVendorsByTypeForDropdown
 } from "../controllers/purchaseTransaction.controller.js"
+import {
+    completeSaleTransaction,
+    createSaleTransaction,
+    getApprovedCustomerPaymentApprovals,
+    getAssetDetailsById,
+    getAssetsForAssetSale,
+    getCustomersByType,
+    getPendingPaymentsByCustomer,
+    getSalesCreditAccounts,
+    getSalesDebitAccounts
+} from "../controllers/salesTransaction.controller.js"
 import { getTransactionHistory } from "../controllers/transactionHistory.controller.js"
-import { verifyEmployeeJWT } from "../middleware/verifyEmployeeJWT.js"
+import { upload } from "../middleware/multer.middleware.js"
 import { populateCreatedByUpdatedBy } from "../middleware/populateEmpInfo.middleware.js"
+import { verifyEmployeeJWT } from "../middleware/verifyEmployeeJWT.js"
 
 const router = Router()
 
 //Sales Transaction
-router.route("/registerSale").post(verifyEmployeeJWT, populateCreatedByUpdatedBy, upload.fields([{name: "attachment", maxCount: 1}]), createSaleTransaction)
+router.route("/registerSale").post(verifyEmployeeJWT, upload.fields([{name: "attachment", maxCount: 1}]), populateCreatedByUpdatedBy, createSaleTransaction)
 router.route("/updateCompleteSale/:id").patch(verifyEmployeeJWT, completeSaleTransaction)
 router.route("/dropdown/customers").get(getCustomersByType);
 router.route("/dropdown/pending-payment").get(getPendingPaymentsByCustomer);
@@ -49,7 +49,7 @@ router.route("/dropdown/debit-account").get(getSalesDebitAccounts);
 router.route("/dropdown/credit-account").get(getSalesCreditAccounts);
 
 //Internal Transaction
-router.route("/internal/create").post(verifyEmployeeJWT, populateCreatedByUpdatedBy, upload.fields([{name: "attachment", maxCount: 1}]), createInternalTransaction)
+router.route("/internal/create").post(verifyEmployeeJWT, upload.fields([{name: "attachment", maxCount: 1}]), populateCreatedByUpdatedBy, createInternalTransaction)
 router.route("/dropdown/salaryDept").get(getDepartmentsForSalaryDropdown)
 router.route("/dropdown/emp-dept-salary").get(getEmployeesByDepartmentForSalary)
 router.route("/dropdown/liabilityType").get(getLiabilitiesByType)
@@ -60,7 +60,7 @@ router.route("/dropdown/approve").get(getInternalTransactionDropdownApprovals)
 router.route("/dropdown/assetByType/:assetType").get(getAssetIdByAssetTypeDropdown)
 
 //Purchase Transaction
-router.route("/purchase/create").post(verifyEmployeeJWT, populateCreatedByUpdatedBy, upload.fields([{name: "attachment", maxCount: 1}]), createPurchaseTransaction)
+router.route("/purchase/create").post(verifyEmployeeJWT, upload.fields([{name: "attachment", maxCount: 1}]), populateCreatedByUpdatedBy, createPurchaseTransaction)
 router.route("/dropdown/dept").get(getDepartmentsForDropdown)
 router.route("/dropdown/venType").get(getVendorsByTypeForDropdown)
 router.route("/dropdown/venPay").get(getVendorPaymentsForDropdown)
