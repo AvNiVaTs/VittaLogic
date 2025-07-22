@@ -1,22 +1,22 @@
 import { Router } from "express"
 import {
     createLiability,
-    getAllLiabilities,
-    searchLiability,
     filterLiabilities,
-    sortByPaidAmount,
-    updateLiability,
+    getAllLiabilities,
     liabilityAccountsDropdown,
+    liabilityApprovalsDropdown,
     liabilityVendorsDropdown,
-    liabilityApprovalsDropdown
+    searchLiability,
+    sortByPaidAmount,
+    updateLiability
 } from "../controllers/liability.controller.js"
-import { verifyEmployeeJWT } from "../middleware/verifyEmployeeJWT.js"
-import { populateCreatedByUpdatedBy } from "../middleware/populateEmpInfo.middleware.js"
 import { upload } from "../middleware/multer.middleware.js"
+import { populateCreatedByUpdatedBy } from "../middleware/populateEmpInfo.middleware.js"
+import { verifyEmployeeJWT } from "../middleware/verifyEmployeeJWT.js"
 
 const router = Router()
 
-router.route("/createLiability").post(verifyEmployeeJWT, populateCreatedByUpdatedBy, upload.fields([{name: "attachment", maxCount: 1}]), createLiability)
+router.route("/createLiability").post(verifyEmployeeJWT, upload.fields([{name: "attachment", maxCount: 1}]), populateCreatedByUpdatedBy, createLiability)
 router.route("/getAll").get(getAllLiabilities)
 router.route("/search").get(searchLiability)
 router.route("/filter").get(filterLiabilities)

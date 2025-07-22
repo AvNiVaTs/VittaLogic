@@ -841,23 +841,44 @@ function InternalTransactionTab({ addTransaction }) {
   }, [formData.referenceType, formData.liabilityType])
 
   // Fetch assets when maintenanceAssetType changes
-  useEffect(() => {
-    if (formData.referenceType === "Maintenance / Repair" && formData.maintenanceAssetType) {
-      const fetchAssets = async () => {
-        try {
-          const response = await fetch(
-            `http://localhost:8000/api/v1/transaction/dropdown/asset-repair?assetType=${formData.maintenanceAssetType}`,
-            { headers: { Authorization: `Bearer ${localStorage.getItem("employeeToken")}` } }
-          )
-          const data = await response.json()
-          setAssets(data.data || [])
-        } catch (error) {
-          toast({ title: "Error", description: "Failed to fetch assets", variant: "destructive" })
+useEffect(() => {
+  const fetchAssets = async () => {
+    if ((formData.referenceType === "Maintenance" || formData.referenceType === "Repair") && formData.maintenanceAssetType) {
+      try {
+        const response = await fetch(
+          `http://localhost:8000/api/v1/transaction/dropdown/assetByType/${formData.maintenanceAssetType}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("employeeToken")}`,
+            },
+          }
+        );
+
+        const data = await response.json();
+
+        if (response.ok && data?.data?.length) {
+          setAssets(data.data);
+        } else {
+          setAssets([]);
+          toast({
+            title: "Notice",
+            description: "No assets found for selected asset type",
+            variant: "default",
+          });
         }
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to fetch assets",
+          variant: "destructive",
+        });
+        setAssets([]);
       }
-      fetchAssets()
     }
-  }, [formData.referenceType, formData.maintenanceAssetType])
+  };
+
+  fetchAssets();
+}, [formData.referenceType, formData.maintenanceAssetType]);
 
   // Update referenceId and amount based on selections
   useEffect(() => {
@@ -883,7 +904,7 @@ function InternalTransactionTab({ addTransaction }) {
       }
     } else if (formData.referenceType === "Refund/Investment") {
       setFormData(prev => ({ ...prev, referenceId: `REF-${Date.now()}` }))
-    } else if (formData.referenceType === "Maintenance / Repair" && formData.maintenanceAssetId) {
+    } else if (formData.referenceType === "Maintenance" || formData.referenceType === "Repair" && formData.maintenanceAssetId) {
       const selectedAsset = assets.find(asset => asset.value === formData.maintenanceAssetId)
       if (selectedAsset) {
         setFormData(prev => ({ ...prev, referenceId: selectedAsset.maintenanceId || "" }))
@@ -936,7 +957,7 @@ const handleSubmit = async (e) => {
     baseData.refundInvestmentDetails = {
       description: formData.expenseName,
     };
-  } else if (formData.referenceType === "Maintenance / Repair") {
+  } else if (formData.referenceType === "Maintenance" || formData.referenceType === "Repair") {
     baseData.maintenanceRepairDetails = {
       assetType: formData.maintenanceAssetType,
       assetId: formData.maintenanceAssetId,
@@ -1066,7 +1087,8 @@ const handleSubmit = async (e) => {
               <SelectItem value="Salary">Salary</SelectItem>
               <SelectItem value="Liability">Liability</SelectItem>
               <SelectItem value="Refund/Investment">Refund/Investment</SelectItem>
-              <SelectItem value="Maintenance / Repair">Maintenance / Repair</SelectItem>
+              <SelectItem value="Maintenance">Maintenance</SelectItem>
+              <SelectItem value="Repair">Repair</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -1188,7 +1210,7 @@ const handleSubmit = async (e) => {
           </>
         )}
 
-        {formData.referenceType === "Maintenance / Repair" && (
+        {(formData.referenceType === "Maintenance" || formData.referenceType === "Repair") && (
           <>
             <div className="space-y-2">
               <Label htmlFor="maintenanceAssetType">Asset Type *</Label>
@@ -1240,7 +1262,8 @@ const handleSubmit = async (e) => {
 
         {formData.referenceType !== "Liability" &&
           formData.referenceType !== "Refund/Investment" &&
-          formData.referenceType !== "Maintenance / Repair" && (
+          formData.referenceType !== "Maintenance" &&
+          formData.referenceType !== "Repair" && (
             <div className="space-y-2">
               <Label htmlFor="referenceId">Reference ID</Label>
               <Input id="referenceId" value={formData.referenceId} disabled className="bg-gray-50" />
@@ -1419,20 +1442,30 @@ const handleSubmit = async (e) => {
 }
 
 const saleTransactionTypes = [
-  "Product Sale", 
-  "Service Sale", 
+  "Product Sale",
+  "Service Sale",
   "Asset Sale",
-  "Scrap Sale", 
-  "Software/License Sale", 
+  "Scrap Sale",
+  "Software/License Sale",
   "Other Sale"
 ];
 
-// Sale Tab Component
+const saleAssetTypes = [
+  "IT Equipment",
+  "Office Furniture",
+  "Machinery",
+  "Vehicles",
+  "Real Estate",
+  "Electrical Appliances",
+  "Software Licenses",
+  "Miscellaneous"
+];
+
+
 function SaleTab({ addTransaction }) {
-  // State for form data
   const [formData, setFormData] = useState({
     transactionId: `TXN-${Date.now()}`,
-    enteredBy: `${LOGGED_IN_EMPLOYEE_ID} (Current User)`,
+    enteredBy: `${LOGGED_IN_EMPLOYEE_ID || "Unknown"} (Current User)`,
     customerType: "",
     customerId: "",
     customerPaymentId: "",
@@ -1444,7 +1477,7 @@ function SaleTab({ addTransaction }) {
     assetType: "",
     assetId: "",
     assetName: "",
-    assetStatus: "Awaiting Disposal", 
+    assetStatus: "Awaiting Disposal",
     disposalId: "",
     transactionMode: "",
     transactionSubMode: "",
@@ -1453,31 +1486,30 @@ function SaleTab({ addTransaction }) {
     status: "",
     narration: "",
     attachments: null,
-    saleDate: "",
-  })
+    saleDate: ""
+  });
 
-  // State for dropdown options
-  const [customerTypes, setCustomerTypes] = useState([
+  const [customerTypes] = useState([
     "Technology",
     "Manufacturing",
     "Retail",
     "Healthcare",
-    "Finance", 
+    "Finance",
     "Education",
     "B2B",
     "B2C",
     "Enterprise",
     "SME",
-    "Others",
-  ])
-  const [customers, setCustomers] = useState([])
-  const [customerPayments, setCustomerPayments] = useState([])
-  const [approvals, setApprovals] = useState([])
-  const [assets, setAssets] = useState([])
-  const [debitAccounts, setDebitAccounts] = useState([])
-  const [creditAccounts, setCreditAccounts] = useState([])
+    "Others"
+  ]);
 
-  // Loading states
+  const [customers, setCustomers] = useState([]);
+  const [customerPayments, setCustomerPayments] = useState([]);
+  const [approvals, setApprovals] = useState([]);
+  const [assets, setAssets] = useState([]);
+  const [debitAccounts, setDebitAccounts] = useState([]);
+  const [creditAccounts, setCreditAccounts] = useState([]);
+
   const [loading, setLoading] = useState({
     customers: false,
     payments: false,
@@ -1485,216 +1517,214 @@ function SaleTab({ addTransaction }) {
     assets: false,
     accounts: false,
     submitting: false
-  })
+  });
 
-  // Load initial data
+  const [error, setError] = useState(null);
+
   useEffect(() => {
-    loadApprovals()
-    loadAccounts()
-  }, [])
+    loadApprovals();
+    loadAccounts();
+  }, []);
 
-  // Load approvals
   const loadApprovals = async () => {
     try {
-      setLoading(prev => ({ ...prev, approvals: true }))
-      const token = employee?.token || localStorage.getItem("authToken")
-      
+      setLoading(prev => ({ ...prev, approvals: true }));
+      const token = employee?.token || localStorage.getItem("authToken");
       const response = await fetch('http://localhost:8000/api/v1/transaction/dropdown/approvals', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        credentials: "include",
-      })
-      
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.status}`)
-      }
-      
-      const data = await response.json()
-      setApprovals(data.data || data)
-    } catch (error) {
-      console.error('Failed to load approvals:', error)
-    } finally {
-      setLoading(prev => ({ ...prev, approvals: false }))
-    }
-  }
+        credentials: "include"
+      });
 
-  // Load debit and credit accounts
+      if (!response.ok) {
+        throw new Error(`Failed to fetch approvals: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setApprovals(data.data || []);
+    } catch (error) {
+      setError(error.message);
+      console.error('Failed to load approvals:', error);
+    } finally {
+      setLoading(prev => ({ ...prev, approvals: false }));
+    }
+  };
+
   const loadAccounts = async () => {
     try {
-      setLoading(prev => ({ ...prev, accounts: true }))
-      const token = employee?.token || localStorage.getItem("authToken")
-      
+      setLoading(prev => ({ ...prev, accounts: true }));
+      const token = employee?.token || localStorage.getItem("authToken");
+
       const [debitResponse, creditResponse] = await Promise.all([
         fetch('http://localhost:8000/api/v1/transaction/dropdown/debit-account', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
-          }
+          },
+          credentials: "include"
         }),
         fetch('http://localhost:8000/api/v1/transaction/dropdown/credit-account', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
-          }
+          },
+          credentials: "include"
         })
-      ])
-      
-      if (!debitResponse.ok || !creditResponse.ok) {
-        throw new Error('Failed to load accounts')
-      }
-      
-      const debitData = await debitResponse.json()
-      const creditData = await creditResponse.json()
-      
-      setDebitAccounts([{ label: "N/A", value: "N/A" }, ...(debitData.data || debitData)])
-      setCreditAccounts([{ label: "N/A", value: "N/A" }, ...(creditData.data || creditData)])
-    } catch (error) {
-      console.error('Failed to load accounts:', error)
-    } finally {
-      setLoading(prev => ({ ...prev, accounts: false }))
-    }
-  }
+      ]);
 
-  // Load customers by type
+      if (!debitResponse.ok || !creditResponse.ok) {
+        throw new Error('Failed to load accounts');
+      }
+
+      const debitData = await debitResponse.json();
+      const creditData = await creditResponse.json();
+
+      setDebitAccounts([{ label: "N/A", value: "NA" }, ...(debitData.data || [])]);
+      setCreditAccounts([{ label: "N/A", value: "NA" }, ...(creditData.data || [])]);
+    } catch (error) {
+      setError(error.message);
+      console.error('Failed to load accounts:', error);
+    } finally {
+      setLoading(prev => ({ ...prev, accounts: false }));
+    }
+  };
+
   const loadCustomers = async (customerType) => {
-    if (!customerType) return
-    
+    if (!customerType) return;
+
     try {
-      setLoading(prev => ({ ...prev, customers: true }))
-      const token = employee?.token || localStorage.getItem("authToken")
-      
-      const response = await fetch(`http://localhost:8000/api/v1/transaction/dropdown/customers`, {
+      setLoading(prev => ({ ...prev, customers: true }));
+      const token = employee?.token || localStorage.getItem("authToken");
+      const response = await fetch(`http://localhost:8000/api/v1/transaction/dropdown/customers?customerType=${customerType}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        credentials: "include",
-      })
-      
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.status}`)
-      }
-      
-      const data = await response.json()
-      setCustomers(data.data || data)
-    } catch (error) {
-      console.error('Failed to load customers:', error)
-      setCustomers([])
-    } finally {
-      setLoading(prev => ({ ...prev, customers: false }))
-    }
-  }
+        credentials: "include"
+      });
 
-  // Load customer payments
+      if (!response.ok) {
+        throw new Error(`Failed to fetch customers: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setCustomers(data.data || []);
+    } catch (error) {
+      setError(error.message);
+      console.error('Failed to load customers:', error);
+      setCustomers([]);
+    } finally {
+      setLoading(prev => ({ ...prev, customers: false }));
+    }
+  };
+
   const loadCustomerPayments = async (customerId) => {
-    if (!customerId) return
-    
+    if (!customerId) return;
+
     try {
-      setLoading(prev => ({ ...prev, payments: true }))
-      const token = employee?.token || localStorage.getItem("authToken")
-      
+      setLoading(prev => ({ ...prev, payments: true }));
+      const token = employee?.token || localStorage.getItem("authToken");
       const response = await fetch(`http://localhost:8000/api/v1/transaction/dropdown/pending-payment?customerId=${customerId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
-        }
-      })
-      
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.status}`)
-      }
-      
-      const data = await response.json()
-      setCustomerPayments(data.data || data)
-    } catch (error) {
-      console.error('Failed to load customer payments:', error)
-      setCustomerPayments([])
-    } finally {
-      setLoading(prev => ({ ...prev, payments: false }))
-    }
-  }
+        },
+        credentials: "include"
+      });
 
-  // Load assets for sale
+      if (!response.ok) {
+        throw new Error(`Failed to fetch payments: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setCustomerPayments(data.data || []);
+    } catch (error) {
+      setError(error.message);
+      console.error('Failed to load customer payments:', error);
+      setCustomerPayments([]);
+    } finally {
+      setLoading(prev => ({ ...prev, payments: false }));
+    }
+  };
+
   const loadAssets = async (assetType) => {
-    if (!assetType) return
-    
+    if (!assetType) return;
+
     try {
-      setLoading(prev => ({ ...prev, assets: true }))
-      const token = employee?.token || localStorage.getItem("authToken")
-      
-      const response = await fetch(`http://localhost:8000/api/v1/transaction/dropdown/assets?assetType=${assetType}`, {
+      setLoading(prev => ({ ...prev, assets: true }));
+      const token = employee?.token || localStorage.getItem("authToken");
+      const response = await fetch(`http://localhost:8000/api/v1/transaction/dropdown/assets`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
-        }
-      })
-      
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.status}`)
-      }
-      
-      const data = await response.json()
-      setAssets(data.data || data)
-    } catch (error) {
-      console.error('Failed to load assets:', error)
-      setAssets([])
-    } finally {
-      setLoading(prev => ({ ...prev, assets: false }))
-    }
-  }
+        },
+        credentials: "include"
+      });
 
-  // Load asset details
+      if (!response.ok) {
+        throw new Error(`Failed to fetch assets: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setAssets(data.data || []);
+    } catch (error) {
+      setError(error.message);
+      console.error('Failed to load assets:', error);
+      setAssets([]);
+    } finally {
+      setLoading(prev => ({ ...prev, assets: false }));
+    }
+  };
+
   const loadAssetDetails = async (assetId) => {
-    if (!assetId) return
-    
+    if (!assetId) return;
+
     try {
-      const token = employee?.token || localStorage.getItem("authToken")
-      
+      const token = employee?.token || localStorage.getItem("authToken");
       const response = await fetch(`http://localhost:8000/api/v1/transaction/dropdown/asset-details?assetId=${assetId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
-        }
-      })
-      
+        },
+        credentials: "include"
+      });
+
       if (!response.ok) {
-        throw new Error(`API Error: ${response.status}`)
+        throw new Error(`Failed to fetch asset details: ${response.status}`);
       }
-      
-      const data = await response.json()
-      const assetDetails = data.data || data
-      
+
+      const data = await response.json();
+      const assetDetails = data.data || {};
+
       setFormData(prev => ({
         ...prev,
         assetName: assetDetails.assetName || '',
         assetStatus: assetDetails.assetStatus || 'Awaiting Disposal',
         disposalId: assetDetails.disposalId || ''
-      }))
+      }));
     } catch (error) {
-      console.error('Failed to load asset details:', error)
+      setError(error.message);
+      console.error('Failed to load asset details:', error);
     }
-  }
+  };
 
-  // Effect for customer type change
   useEffect(() => {
     if (formData.customerType) {
-      loadCustomers(formData.customerType)
-      setFormData(prev => ({ ...prev, customerId: "", customerPaymentId: "" }))
-      setCustomerPayments([])
+      loadCustomers(formData.customerType);
+      setFormData(prev => ({ ...prev, customerId: "", customerPaymentId: "" }));
+      setCustomerPayments([]);
     }
-  }, [formData.customerType])
+  }, [formData.customerType]);
 
-  // Effect for customer change
   useEffect(() => {
     if (formData.customerId) {
-      loadCustomerPayments(formData.customerId)
-      setFormData(prev => ({ ...prev, customerPaymentId: "" }))
+      loadCustomerPayments(formData.customerId);
+      setFormData(prev => ({ ...prev, customerPaymentId: "" }));
     }
-  }, [formData.customerId])
+  }, [formData.customerId]);
 
-  // Effect for transaction type change
   useEffect(() => {
     if (formData.transactionType !== "Asset Sale") {
       setFormData(prev => ({
@@ -1702,134 +1732,160 @@ function SaleTab({ addTransaction }) {
         assetType: "",
         assetId: "",
         assetName: "",
-        disposalId: "",
-      }))
-      setAssets([])
+        disposalId: ""
+      }));
+      setAssets([]);
     }
-  }, [formData.transactionType])
+  }, [formData.transactionType]);
 
-  // Effect for asset type change
   useEffect(() => {
     if (formData.assetType) {
-      loadAssets(formData.assetType)
-      setFormData(prev => ({ ...prev, assetId: "", assetName: "", disposalId: "" }))
+      loadAssets(formData.assetType);
+      setFormData(prev => ({ ...prev, assetId: "", assetName: "", disposalId: "" }));
     }
-  }, [formData.assetType])
+  }, [formData.assetType]);
 
-  // Effect for asset ID change
   useEffect(() => {
     if (formData.assetId) {
-      loadAssetDetails(formData.assetId)
+      loadAssetDetails(formData.assetId);
     }
-  }, [formData.assetId])
+  }, [formData.assetId]);
 
-  // Reset transaction IDs
   useEffect(() => {
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
       transactionId: `TXN-${Date.now()}`,
-      referenceId: `REF-${Date.now()}`,
-    }))
-  }, [])
+      referenceId: `REF-${Date.now()}`
+    }));
+  }, []);
 
-  // Handle form submission
-const handleSubmit = async (e) => {
-  e.preventDefault();
-
-  try {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
     setLoading(prev => ({ ...prev, submitting: true }));
 
-    const payload = {
-      saleDate: formData.saleDate,
-      customerType: formData.customerType,
-      customerId: formData.customerId,
-      paymentId: formData.customerPaymentId,
-      approvalId: formData.approvalId,
-      saleName: formData.saleName,
-      saleAmount: formData.saleAmount,
-      transactionType: formData.transactionType,
-      transactionMode: formData.transactionMode,
-      transactionSubmode: formData.transactionSubMode,
-      debitAccount: formData.debitAccount,
-      creditAccount: formData.creditAccount,
-      status: formData.status,
-      narration: formData.narration,
-      createdBy: employee?.employeeId,
-      updatedBy: employee?.employeeId,
-    };
+    try {
+      const formDataToSend = new FormData();
+      formDataToSend.append("saleDate", formData.saleDate);
+      formDataToSend.append("customerType", formData.customerType);
+      formDataToSend.append("customerId", formData.customerId);
+      formDataToSend.append("paymentId", formData.customerPaymentId);
+      formDataToSend.append("approvalId", formData.approvalId);
+      formDataToSend.append("saleName", formData.saleName);
+      formDataToSend.append("saleAmount", formData.saleAmount);
+      formDataToSend.append("transactionType", formData.transactionType);
+      formDataToSend.append("transactionMode", formData.transactionMode);
+      formDataToSend.append("transactionSubmode", formData.transactionSubMode);
+      formDataToSend.append("debitAccount", formData.debitAccount);
+      formDataToSend.append("creditAccount", formData.creditAccount);
+      formDataToSend.append("status", formData.status);
+      formDataToSend.append("narration", formData.narration);
+      formDataToSend.append("createdBy", employee?.employeeId || "");
+      formDataToSend.append("updatedBy", employee?.employeeId || "");
 
-    if (formData.transactionType === "Asset Sale") {
-      payload.assetDetails = {
-        assetType: formData.assetType,
-        assetId: formData.assetId,
-        assetName: formData.assetName,
-        disposalId: formData.disposalId
-      };
+      if (formData.transactionType === "Asset Sale") {
+        formDataToSend.append("assetDetails", JSON.stringify({
+          assetType: formData.assetType,
+          assetId: formData.assetId,
+          assetName: formData.assetName,
+          disposalId: formData.disposalId
+        }));
+      }
+
+      if (formData.attachments) {
+        formDataToSend.append("attachment", formData.attachments);
+      }
+
+      const token = employee?.token || localStorage.getItem("authToken");
+      const response = await fetch('http://localhost:8000/api/v1/transaction/registerSale', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        credentials: "include",
+        body: formDataToSend
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Failed to create sale transaction: ${response.status}`);
+      }
+
+      const result = await response.json();
+      alert("Sale transaction created successfully!");
+      console.log(result);
+
+      // Reset form after successful submission
+      setFormData({
+        transactionId: `TXN-${Date.now()}`,
+        enteredBy: `${LOGGED_IN_EMPLOYEE_ID || "Unknown"} (Current User)`,
+        customerType: "",
+        customerId: "",
+        customerPaymentId: "",
+        approvalId: "",
+        saleName: "",
+        referenceId: `REF-${Date.now()}`,
+        saleAmount: "",
+        transactionType: "",
+        assetType: "",
+        assetId: "",
+        assetName: "",
+        assetStatus: "Awaiting Disposal",
+        disposalId: "",
+        transactionMode: "",
+        transactionSubMode: "",
+        debitAccount: "",
+        creditAccount: "",
+        status: "",
+        narration: "",
+        attachments: null,
+        saleDate: ""
+      });
+      setCustomers([]);
+      setCustomerPayments([]);
+      setAssets([]);
+    } catch (err) {
+      setError(err.message);
+      console.error("Submission failed:", err);
+      alert(err.message);
+    } finally {
+      setLoading(prev => ({ ...prev, submitting: false }));
     }
-
-    const token = employee?.token || localStorage.getItem("authToken");
-
-    const response = await fetch('http://localhost:8000/api/v1/transaction/registerSale', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      credentials: "include",
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to create sale transaction: ${response.status}`);
-    }
-
-    const result = await response.json();
-    alert("Sale transaction created successfully!");
-    console.log(result);
-  } catch (err) {
-    console.error("Submission failed:", err);
-    alert(err.message);
-  } finally {
-    setLoading(prev => ({ ...prev, submitting: false }));
-  }
-};
-
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {error && <p className="text-red-500">{error}</p>}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
           <Label htmlFor="transactionId">Transaction ID</Label>
           <Input id="transactionId" value={formData.transactionId} disabled className="bg-gray-50" />
         </div>
-
         <div className="space-y-2">
           <Label htmlFor="enteredBy">Entered By</Label>
           <Input id="enteredBy" value={formData.enteredBy} disabled className="bg-gray-50" />
         </div>
-
         <div className="space-y-2">
           <Label htmlFor="saleDate">Sale Date *</Label>
           <Input
             id="saleDate"
             type="date"
             value={formData.saleDate}
-            onChange={(e) => setFormData((prev) => ({ ...prev, saleDate: e.target.value }))}
+            onChange={(e) => setFormData(prev => ({ ...prev, saleDate: e.target.value }))}
             required
           />
         </div>
-
         <div className="space-y-2">
           <Label htmlFor="customerType">Customer Type *</Label>
           <Select
             value={formData.customerType}
-            onValueChange={(value) => setFormData((prev) => ({ ...prev, customerType: value }))}
+            onValueChange={(value) => setFormData(prev => ({ ...prev, customerType: value }))}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select customer type" />
             </SelectTrigger>
             <SelectContent>
-              {customerTypes.map((type) => (
+              {customerTypes.map(type => (
                 <SelectItem key={type} value={type}>
                   {type}
                 </SelectItem>
@@ -1837,23 +1893,22 @@ const handleSubmit = async (e) => {
             </SelectContent>
           </Select>
         </div>
-
         <div className="space-y-2">
           <Label htmlFor="customerId">Customer ID *</Label>
           <Select
             value={formData.customerId}
-            onValueChange={(value) => setFormData((prev) => ({ ...prev, customerId: value }))}
+            onValueChange={(value) => setFormData(prev => ({ ...prev, customerId: value }))}
             disabled={!formData.customerType || loading.customers}
           >
             <SelectTrigger>
               <SelectValue placeholder={
-                loading.customers ? "Loading customers..." : 
-                formData.customerType ? "Select customer" : 
+                loading.customers ? "Loading customers..." :
+                formData.customerType ? "Select customer" :
                 "Select customer type first"
               } />
             </SelectTrigger>
             <SelectContent>
-              {customers.map((customer) => (
+              {customers.map(customer => (
                 <SelectItem key={customer.value} value={customer.value}>
                   {customer.label}
                 </SelectItem>
@@ -1861,23 +1916,22 @@ const handleSubmit = async (e) => {
             </SelectContent>
           </Select>
         </div>
-
         <div className="space-y-2">
           <Label htmlFor="customerPaymentId">Customer Payment ID *</Label>
           <Select
             value={formData.customerPaymentId}
-            onValueChange={(value) => setFormData((prev) => ({ ...prev, customerPaymentId: value }))}
+            onValueChange={(value) => setFormData(prev => ({ ...prev, customerPaymentId: value }))}
             disabled={!formData.customerId || loading.payments}
           >
             <SelectTrigger>
               <SelectValue placeholder={
                 loading.payments ? "Loading payments..." :
-                formData.customerId ? "Select payment ID" : 
+                formData.customerId ? "Select payment ID" :
                 "Select customer first"
               } />
             </SelectTrigger>
             <SelectContent>
-              {customerPayments.map((payment) => (
+              {customerPayments.map(payment => (
                 <SelectItem key={payment.value} value={payment.value}>
                   {payment.label}
                 </SelectItem>
@@ -1888,19 +1942,18 @@ const handleSubmit = async (e) => {
             <p className="text-xs text-amber-600">No pending payments found for this customer</p>
           )}
         </div>
-
         <div className="space-y-2">
           <Label htmlFor="approvalId">Approval ID *</Label>
           <Select
             value={formData.approvalId}
-            onValueChange={(value) => setFormData((prev) => ({ ...prev, approvalId: value }))}
+            onValueChange={(value) => setFormData(prev => ({ ...prev, approvalId: value }))}
             disabled={loading.approvals}
           >
             <SelectTrigger>
               <SelectValue placeholder={loading.approvals ? "Loading approvals..." : "Select approval"} />
             </SelectTrigger>
             <SelectContent>
-              {approvals.map((approval) => (
+              {approvals.map(approval => (
                 <SelectItem key={approval.value} value={approval.value}>
                   {approval.label}
                 </SelectItem>
@@ -1908,23 +1961,20 @@ const handleSubmit = async (e) => {
             </SelectContent>
           </Select>
         </div>
-
         <div className="space-y-2">
           <Label htmlFor="saleName">Sale Name *</Label>
           <Input
             id="saleName"
             value={formData.saleName}
-            onChange={(e) => setFormData((prev) => ({ ...prev, saleName: e.target.value }))}
+            onChange={(e) => setFormData(prev => ({ ...prev, saleName: e.target.value }))}
             placeholder="Enter sale name"
             required
           />
         </div>
-
         <div className="space-y-2">
           <Label htmlFor="referenceId">Reference ID</Label>
           <Input id="referenceId" value={formData.referenceId} disabled className="bg-gray-50" />
         </div>
-
         <div className="space-y-2">
           <Label htmlFor="saleAmount">Sale Amount *</Label>
           <div className="relative">
@@ -1933,25 +1983,24 @@ const handleSubmit = async (e) => {
               id="saleAmount"
               type="number"
               value={formData.saleAmount}
-              onChange={(e) => setFormData((prev) => ({ ...prev, saleAmount: e.target.value }))}
+              onChange={(e) => setFormData(prev => ({ ...prev, saleAmount: e.target.value }))}
               className="pl-8"
               placeholder="0.00"
               required
             />
           </div>
         </div>
-
         <div className="space-y-2">
           <Label htmlFor="transactionType">Transaction Type *</Label>
           <Select
             value={formData.transactionType}
-            onValueChange={(value) => setFormData((prev) => ({ ...prev, transactionType: value }))}
+            onValueChange={(value) => setFormData(prev => ({ ...prev, transactionType: value }))}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select transaction type" />
             </SelectTrigger>
             <SelectContent>
-              {saleTransactionTypes.map((type) => (
+              {saleTransactionTypes.map(type => (
                 <SelectItem key={type} value={type}>
                   {type}
                 </SelectItem>
@@ -1959,20 +2008,19 @@ const handleSubmit = async (e) => {
             </SelectContent>
           </Select>
         </div>
-
         {formData.transactionType === "Asset Sale" && (
           <>
             <div className="space-y-2">
               <Label htmlFor="assetType">Asset Type *</Label>
               <Select
                 value={formData.assetType}
-                onValueChange={(value) => setFormData((prev) => ({ ...prev, assetType: value }))}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, assetType: value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select asset type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {saleAssetTypes.map((type) => (
+                  {saleAssetTypes.map(type => (
                     <SelectItem key={type} value={type}>
                       {type}
                     </SelectItem>
@@ -1980,23 +2028,22 @@ const handleSubmit = async (e) => {
                 </SelectContent>
               </Select>
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="assetId">Asset ID *</Label>
               <Select
                 value={formData.assetId}
-                onValueChange={(value) => setFormData((prev) => ({ ...prev, assetId: value }))}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, assetId: value }))}
                 disabled={!formData.assetType || loading.assets}
               >
                 <SelectTrigger>
                   <SelectValue placeholder={
                     loading.assets ? "Loading assets..." :
-                    formData.assetType ? "Select asset" : 
+                    formData.assetType ? "Select asset" :
                     "Select asset type first"
                   } />
                 </SelectTrigger>
                 <SelectContent>
-                  {assets.map((asset) => (
+                  {assets.map(asset => (
                     <SelectItem key={asset.value} value={asset.value}>
                       {asset.label}
                     </SelectItem>
@@ -2007,37 +2054,33 @@ const handleSubmit = async (e) => {
                 <p className="text-xs text-amber-600">No assets awaiting disposal found for this type</p>
               )}
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="assetName">Asset Name</Label>
               <Input id="assetName" value={formData.assetName} disabled className="bg-gray-50" />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="assetStatus">Asset Status</Label>
               <Input id="assetStatus" value={formData.assetStatus} disabled className="bg-gray-50" />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="disposalId">Disposal ID</Label>
               <Input id="disposalId" value={formData.disposalId} disabled className="bg-gray-50" />
             </div>
           </>
         )}
-
         <div className="space-y-2">
           <Label htmlFor="transactionMode">Transaction Mode *</Label>
           <Select
             value={formData.transactionMode}
             onValueChange={(value) =>
-              setFormData((prev) => ({ ...prev, transactionMode: value, transactionSubMode: "" }))
+              setFormData(prev => ({ ...prev, transactionMode: value, transactionSubMode: "" }))
             }
           >
             <SelectTrigger>
               <SelectValue placeholder="Select transaction mode" />
             </SelectTrigger>
             <SelectContent>
-              {Object.keys(modeCategories).map((category) => (
+              {Object.keys(modeCategories).map(category => (
                 <SelectItem key={category} value={category}>
                   {category}
                 </SelectItem>
@@ -2045,12 +2088,11 @@ const handleSubmit = async (e) => {
             </SelectContent>
           </Select>
         </div>
-
         <div className="space-y-2">
           <Label htmlFor="transactionSubMode">Transaction Sub Mode *</Label>
           <Select
             value={formData.transactionSubMode}
-            onValueChange={(value) => setFormData((prev) => ({ ...prev, transactionSubMode: value }))}
+            onValueChange={(value) => setFormData(prev => ({ ...prev, transactionSubMode: value }))}
             disabled={!formData.transactionMode}
           >
             <SelectTrigger>
@@ -2058,7 +2100,7 @@ const handleSubmit = async (e) => {
             </SelectTrigger>
             <SelectContent>
               {formData.transactionMode &&
-                modeCategories[formData.transactionMode]?.map((mode) => (
+                modeCategories[formData.transactionMode].map(mode => (
                   <SelectItem key={mode} value={mode}>
                     {mode}
                   </SelectItem>
@@ -2066,19 +2108,18 @@ const handleSubmit = async (e) => {
             </SelectContent>
           </Select>
         </div>
-
         <div className="space-y-2">
           <Label htmlFor="debitAccount">Debit Account *</Label>
           <Select
             value={formData.debitAccount}
-            onValueChange={(value) => setFormData((prev) => ({ ...prev, debitAccount: value }))}
+            onValueChange={(value) => setFormData(prev => ({ ...prev, debitAccount: value }))}
             disabled={loading.accounts}
           >
             <SelectTrigger>
               <SelectValue placeholder={loading.accounts ? "Loading accounts..." : "Select debit account"} />
             </SelectTrigger>
             <SelectContent>
-              {debitAccounts.map((account) => (
+              {debitAccounts.map(account => (
                 <SelectItem key={account.value} value={account.value}>
                   {account.label}
                 </SelectItem>
@@ -2086,19 +2127,18 @@ const handleSubmit = async (e) => {
             </SelectContent>
           </Select>
         </div>
-
         <div className="space-y-2">
           <Label htmlFor="creditAccount">Credit Account *</Label>
           <Select
             value={formData.creditAccount}
-            onValueChange={(value) => setFormData((prev) => ({ ...prev, creditAccount: value }))}
+            onValueChange={(value) => setFormData(prev => ({ ...prev, creditAccount: value }))}
             disabled={loading.accounts}
           >
             <SelectTrigger>
               <SelectValue placeholder={loading.accounts ? "Loading accounts..." : "Select credit account"} />
             </SelectTrigger>
             <SelectContent>
-              {creditAccounts.map((account) => (
+              {creditAccounts.map(account => (
                 <SelectItem key={account.value} value={account.value}>
                   {account.label}
                 </SelectItem>
@@ -2106,18 +2146,17 @@ const handleSubmit = async (e) => {
             </SelectContent>
           </Select>
         </div>
-
         <div className="space-y-2">
           <Label htmlFor="status">Status *</Label>
           <Select
             value={formData.status}
-            onValueChange={(value) => setFormData((prev) => ({ ...prev, status: value }))}
+            onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select status" />
             </SelectTrigger>
             <SelectContent>
-              {statuses.map((status) => (
+              {statuses.map(status => (
                 <SelectItem key={status} value={status}>
                   {status}
                 </SelectItem>
@@ -2126,36 +2165,33 @@ const handleSubmit = async (e) => {
           </Select>
         </div>
       </div>
-
       <div className="space-y-2">
         <Label htmlFor="narration">Narration</Label>
         <Textarea
           id="narration"
           value={formData.narration}
-          onChange={(e) => setFormData((prev) => ({ ...prev, narration: e.target.value }))}
+          onChange={(e) => setFormData(prev => ({ ...prev, narration: e.target.value }))}
           placeholder="Enter transaction description"
           rows={3}
         />
       </div>
-
       <div className="space-y-2">
         <Label htmlFor="attachments">Attachments</Label>
         <div className="flex items-center space-x-2">
           <Input
             id="attachments"
             type="file"
-            onChange={(e) => setFormData((prev) => ({ ...prev, attachments: e.target.files?.[0] || null }))}
+            onChange={(e) => setFormData(prev => ({ ...prev, attachments: e.target.files?.[0] || null }))}
             accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
           />
           <Upload className="h-4 w-4 text-gray-400" />
         </div>
       </div>
-
       <Button type="submit" className="w-full" disabled={loading.submitting}>
         {loading.submitting ? "Creating Sale Transaction..." : "Create Sale Transaction"}
       </Button>
     </form>
-  )
+  );
 }
 
 export default function TransactionPage() {

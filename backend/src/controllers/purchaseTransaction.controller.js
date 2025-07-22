@@ -27,7 +27,8 @@ const createPurchaseTransaction = asyncHandler(async (req, res) => {
     debitAccount,
     creditAccount,
     status,
-    narration
+    narration,
+    createdBy,
   } = req.body;
 
   if (debitAccount === "NA" && creditAccount === "NA") {
@@ -36,9 +37,7 @@ const createPurchaseTransaction = asyncHandler(async (req, res) => {
 
   // ✅ Vendor check
   const vendor = await Vendor.findOne({ vendor_id: vendorId });
-  if (!vendor) {
-    throw new ApiErr(404, "Vendor not found");
-  }
+  if (!vendor) throw new ApiErr(404, "Vendor not found");
 
   if (!vendor.vendor_type.includes(vendorType)) {
     throw new ApiErr(400, `Vendor type mismatch: Vendor does not belong to type '${vendorType}'`);
@@ -46,9 +45,7 @@ const createPurchaseTransaction = asyncHandler(async (req, res) => {
 
   // ✅ VendorPayment check
   const vendorPayment = await VendorPayment.findOne({ payment_id: paymentId });
-  if (!vendorPayment) {
-    throw new ApiErr(404, "Vendor Payment not found");
-  }
+  if (!vendorPayment) throw new ApiErr(404, "Vendor Payment not found");
 
   if (vendorPayment.vendor_id !== vendorId) {
     throw new ApiErr(400, "Vendor Payment is not associated with the selected Vendor");
@@ -56,30 +53,72 @@ const createPurchaseTransaction = asyncHandler(async (req, res) => {
 
   // ✅ Approval check
   const approval = await Approval.findOne({ approval_id: approvalId });
-  if (!approval) {
-    throw new ApiErr(404, "Approval not found");
-  }
+  if (!approval) throw new ApiErr(404, "Approval not found");
 
   if (approval.approvalfor !== "Vendor Payment") {
     throw new ApiErr(400, `Approval is not applicable for 'Vendor Payment'. Found: '${approval.approvalfor}'`);
   }
 
-  // ✅ Clean assetDetails
-  let parsedAssetDetails = assetDetails;
-  if (typeof assetDetails === "string") {
-    try {
-      parsedAssetDetails = JSON.parse(assetDetails);
-    } catch (err) {
-      throw new ApiErr(400, "Invalid JSON in assetDetails");
+  // ✅ Parse and validate assetDetails or serviceDetails
+  let cleanAssetDetails = null;
+  let cleanServiceDetails = null;
+
+  if (referenceType === "Asset") {
+    let parsedAssetDetails = assetDetails;
+
+    if (!parsedAssetDetails) {
+      throw new ApiErr(400, "Missing assetDetails for referenceType 'Asset'");
     }
+
+    if (typeof parsedAssetDetails === "string") {
+      try {
+        parsedAssetDetails = JSON.parse(parsedAssetDetails);
+      } catch (err) {
+        throw new ApiErr(400, "Invalid JSON in assetDetails");
+      }
+    }
+
+    if (!parsedAssetDetails?.assetName && !parsedAssetDetails?.name) {
+      throw new ApiErr(400, "Missing assetName in assetDetails");
+    }
+
+    cleanAssetDetails = {
+      assetName: parsedAssetDetails.assetName || parsedAssetDetails.name,
+      quantity: Number(parsedAssetDetails.quantity),
+    };
   }
 
-  const cleanAssetDetails = {
-    assetName: parsedAssetDetails.assetName || parsedAssetDetails.name,
-    quantity: Number(parsedAssetDetails.quantity)
-  };
+  if (referenceType === "Service") {
+    let parsedServiceDetails = serviceDetails;
 
-  // ✅ Optional: clean serviceDetails too if needed (not shown here)
+    if (!parsedServiceDetails) {
+      throw new ApiErr(400, "Missing serviceDetails for referenceType 'Service'");
+    }
+
+    if (typeof parsedServiceDetails === "string") {
+      try {
+        parsedServiceDetails = JSON.parse(parsedServiceDetails);
+      } catch (err) {
+        throw new ApiErr(400, "Invalid JSON in serviceDetails");
+      }
+    }
+
+    // ✅ Force single service detail into array (for future extensibility)
+    if (!Array.isArray(parsedServiceDetails)) {
+      parsedServiceDetails = [parsedServiceDetails];
+    }
+
+    parsedServiceDetails.forEach((service) => {
+      if (!service?.serviceName) {
+        throw new ApiErr(400, "Missing serviceName in serviceDetails");
+      }
+      if (typeof service.serviceDurationMonths !== "number") {
+        throw new ApiErr(400, "Invalid or missing serviceDurationMonths in serviceDetails");
+      }
+    });
+
+    cleanServiceDetails = parsedServiceDetails;
+  }
 
   // ✅ Handle attachment upload
   let attachmentUrl = null;
@@ -95,14 +134,18 @@ const createPurchaseTransaction = asyncHandler(async (req, res) => {
   }
 
   // ✅ Generate IDs
-  const transactionId = `PUR_TXN-${(await getNextSequence("purchase_transaction")).toString().padStart(5, "0")}`;
-  const referenceId = `REF-${(await getNextSequence("transaction")).toString().padStart(5, "0")}`;
+  const transactionId = `PUR_TXN-${(await getNextSequence("purchase_transaction"))
+    .toString()
+    .padStart(5, "0")}`;
+  const referenceId = `REF-${(await getNextSequence("transaction"))
+    .toString()
+    .padStart(5, "0")}`;
 
   // ✅ Create transaction
   const transaction = await PurchaseTransaction.create({
     transactionId,
     referenceId,
-    enteredBy: req.body.createdBy,
+    enteredBy: createdBy,
     departmentWhoPurchased,
     purchaseDate,
     vendorType,
@@ -110,8 +153,8 @@ const createPurchaseTransaction = asyncHandler(async (req, res) => {
     paymentId,
     approvalId,
     referenceType,
-    assetDetails: cleanAssetDetails, // ✅ Fixed here
-    serviceDetails,
+    assetDetails: cleanAssetDetails,
+    serviceDetails: cleanServiceDetails,
     purchaseAmount,
     transactionType,
     transactionMode,
@@ -120,7 +163,7 @@ const createPurchaseTransaction = asyncHandler(async (req, res) => {
     creditAccount,
     status,
     narration,
-    attachments: attachmentUrl
+    attachments: attachmentUrl,
   });
 
   // ✅ Update vendorPayment paid amount
@@ -136,9 +179,9 @@ const createPurchaseTransaction = asyncHandler(async (req, res) => {
     await vendorPayment.save();
   }
 
-  return res.status(201).json(
-    new ApiResponse(201, transaction, "Purchase Transaction created successfully")
-  );
+  return res
+    .status(201)
+    .json(new ApiResponse(201, transaction, "Purchase Transaction created successfully"));
 });
 
 
@@ -212,25 +255,43 @@ const getApprovedApprovalsForDropdown = asyncHandler(async (req, res) => {
 });
 
 const getFinancialDebitAccountDropdown = asyncHandler(async (req, res) => {
-  const accounts = await FinancialAccount.find({ account_category: "Debit Account" });
-  const options = [
-    ...accounts.map(a => ({
-      label: `${a.account_id} - ${a.account_name}`,
-      value: a.account_id
-    }))
+  const debitAccounts = await FinancialAccount.find(
+    { account_category: "Debit Account" },
+    "account_id account_name"
+  );
+
+  const formatAccounts = (accounts) => [
+    ...accounts.map((acc) => ({
+      value: acc.account_id,
+      label: `${acc.account_id}-${acc.account_name}`,
+    })),
   ];
-  return res.status(200).json(new ApiResponse(200, options, "Debit accounts fetched"));
+
+  return res.status(200).json(
+    new ApiResponse(200, {
+      debitAccounts: formatAccounts(debitAccounts)
+    }, "Financial accounts dropdown data fetched")
+  );
 });
 
 const getFinancialCreditAccountDropdown = asyncHandler(async (req, res) => {
-  const accounts = await FinancialAccount.find({ account_category: "Credit Account" });
-  const options = [
-    ...accounts.map(a => ({
-      label: `${a.account_id} - ${a.account_name}`,
-      value: a.account_id
-    }))
+  const creditAccounts = await FinancialAccount.find(
+    { account_category: "Credit Account" },
+    "account_id account_name"
+  );
+
+  const formatAccounts = (accounts) => [
+    ...accounts.map((acc) => ({
+      value: acc.account_id,
+      label: `${acc.account_id}-${acc.account_name}`,
+    })),
   ];
-  return res.status(200).json(new ApiResponse(200, options, "Credit accounts fetched"));
+
+  return res.status(200).json(
+    new ApiResponse(200, {
+      creditAccounts: formatAccounts(creditAccounts)
+    }, "Financial accounts dropdown data fetched")
+  );
 });
 
 export {

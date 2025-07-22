@@ -109,7 +109,7 @@ export default function VendorsPage() {
     "Construction",
     "Healthcare",
     "Liability",
-    "Other",
+    "Others",
   ]
 
   const paymentMethods = ["Bank Transfer", "Wire Transfer", "Check", "Cash", "Online Payment", "UPI", "NEFT", "RTGS"]

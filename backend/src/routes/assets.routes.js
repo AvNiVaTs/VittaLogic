@@ -2,8 +2,6 @@ import { Router } from "express"
 import {
     createAssets,
     deleteAsset,
-    getDepartmentsForDropdown,
-    getEmployeesForDropdown,
     fetchMaintenanceTransactionDetails,
     getAssetById,
     getAssetDetailsFromPurchaseTransactionOnCard,
@@ -14,7 +12,9 @@ import {
     getAssetListCards,
     // getAssetMaintenanceSummary,
     getAssetsEligibleForDisposalDropdown,
+    getDepartmentsForDropdown,
     getDisposedAssetsDetails,
+    getEmployeesForDropdown,
     // getAssetTransactionHistory,
     getMaintenanceCardDetails,
     getMaintenanceHistory,
@@ -35,7 +35,7 @@ import { populateCreatedByUpdatedBy } from "../middleware/populateEmpInfo.middle
 import { verifyEmployeeJWT } from "../middleware/verifyEmployeeJWT.js"
 
 const router = Router()
-
+router.route("/eligible-for-disposal").get(getAssetsEligibleForDisposalDropdown)
 //asset
 router.route("/purchase-details").get(getAssetDetailsFromPurchaseTransactionOnCard)
 router.route("/create").post(verifyEmployeeJWT, upload.fields([{name: "attachment", maxCount: 2}]), populateCreatedByUpdatedBy, createAssets)
@@ -48,7 +48,7 @@ router.route("/list").get(getAssetListCards)
 router.route("/asset-dropdown").get(getAssetDropdown)
 router.route("/getById/:assetId").get(getAssetById)
 // router.route("/transaction-history/:assetId").get(getAssetTransactionHistory)
-router.route("/eligible-for-disposal").get(getAssetsEligibleForDisposalDropdown)
+
 router.route("/dropdown/department").get(getDepartmentsForDropdown)
 router.route("/dropdown/employee/:departmentId").get(getEmployeesForDropdown)
 
