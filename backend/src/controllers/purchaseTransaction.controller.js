@@ -212,43 +212,25 @@ const getApprovedApprovalsForDropdown = asyncHandler(async (req, res) => {
 });
 
 const getFinancialDebitAccountDropdown = asyncHandler(async (req, res) => {
-  const debitAccounts = await FinancialAccount.find(
-    { account_category: "Debit Account" },
-    "account_id account_name"
-  );
-
-  const formatAccounts = (accounts) => [
-    ...accounts.map((acc) => ({
-      value: acc.account_id,
-      label: `${acc.account_id}-${acc.account_name}`,
-    })),
+  const accounts = await FinancialAccount.find({ account_category: "Debit Account" });
+  const options = [
+    ...accounts.map(a => ({
+      label: `${a.account_id} - ${a.account_name}`,
+      value: a.account_id
+    }))
   ];
-
-  return res.status(200).json(
-    new ApiResponse(200, {
-      debitAccounts: formatAccounts(debitAccounts)
-    }, "Financial accounts dropdown data fetched")
-  );
+  return res.status(200).json(new ApiResponse(200, options, "Debit accounts fetched"));
 });
 
 const getFinancialCreditAccountDropdown = asyncHandler(async (req, res) => {
-  const creditAccounts = await FinancialAccount.find(
-    { account_category: "Credit Account" },
-    "account_id account_name"
-  );
-
-  const formatAccounts = (accounts) => [
-    ...accounts.map((acc) => ({
-      value: acc.account_id,
-      label: `${acc.account_id}-${acc.account_name}`,
-    })),
+  const accounts = await FinancialAccount.find({ account_category: "Credit Account" });
+  const options = [
+    ...accounts.map(a => ({
+      label: `${a.account_id} - ${a.account_name}`,
+      value: a.account_id
+    }))
   ];
-
-  return res.status(200).json(
-    new ApiResponse(200, {
-      creditAccounts: formatAccounts(creditAccounts)
-    }, "Financial accounts dropdown data fetched")
-  );
+  return res.status(200).json(new ApiResponse(200, options, "Credit accounts fetched"));
 });
 
 export {
