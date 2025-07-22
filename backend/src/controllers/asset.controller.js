@@ -127,8 +127,17 @@ const updateAssetAssignment = asyncHandler(async (req, res) => {
 
   updates.updatedBy = req.body.updatedBy;
 
-  // Auto-clear assignment fields if unassigning
-  if (updates.assignmentStatus === "Unassigned") {
+  // Validation & auto-modification based on assignment status
+  if (updates.assignmentStatus === "Assigned") {
+    const { assignedDepartment, assignedToEmployee, assignedDate } = updates;
+
+    if (!assignedDepartment || !assignedToEmployee || !assignedDate) {
+      throw new ApiErr(
+        400,
+        "For status 'Assigned', 'assignedDepartment', 'assignedToEmployee', and 'assignedDate' are required."
+      );
+    }
+  } else if (updates.assignmentStatus === "Unassigned") {
     updates.assignedDepartment = null;
     updates.assignedToEmployee = null;
     updates.assignedDate = null;
