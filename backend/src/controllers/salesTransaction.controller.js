@@ -1,4 +1,5 @@
 import fs from "fs";
+import mongoose from "mongoose";
 import { Approval } from "../models/approval.model.js";
 import { Asset } from "../models/assets.model.js";
 import { FinancialAccount } from "../models/companyFinancial.model.js";
@@ -244,3 +245,4 @@ export {
   getSalesCreditAccounts,
   getSalesDebitAccounts
 };
+
