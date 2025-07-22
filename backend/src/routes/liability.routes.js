@@ -17,7 +17,7 @@ import { upload } from "../middleware/multer.middleware.js"
 const router = Router()
 
 router.route("/createLiability").post(verifyEmployeeJWT, populateCreatedByUpdatedBy, upload.fields([{name: "attachment", maxCount: 1}]), createLiability)
-router.route("/").get(getAllLiabilities)
+router.route("/getAll").get(getAllLiabilities)
 router.route("/search").get(searchLiability)
 router.route("/filter").get(filterLiabilities)
 router.route("/sort/paid-amount").get(sortByPaidAmount)

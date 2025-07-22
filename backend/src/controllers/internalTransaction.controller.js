@@ -213,7 +213,7 @@ const getAssetsForMaintenanceRepair = asyncHandler(async (req, res) => {
   }
   const assets = await Asset.find({
     assetType,
-    assetStatus: { $in: ["Maintenance Needed", "Repair Needed", "Under Maintenance", "Under Repair"] }
+    status: { $in: ["Maintenance Needed", "Repair Needed", "Under Maintenance", "Under Repair"] }
   });
   const options = assets.map((a) => ({
     label: `${a.assetId} - ${a.assetName}`,
