@@ -214,25 +214,52 @@ const getEligibleEmpForSalary = asyncHandler(async (req, res) => {
     )
 })
 
-const getDropDownData = asyncHandler(async (req, res) => {
-    const departments = await Department.find().select("department_id departmentName")
-    const departmentOptions = departments.map(d => ({
-        label: `${d.department_id} - ${d.departmentName}`,
-        value: d.department_id
-    }))
+const getDepartmentDropdown = asyncHandler(async (req, res) => {
+  const departments = await Department.find().select("department_id departmentName");
 
-    const employees = await Employee.find().select("employeeId employeeName")
-    const employeeOptions = employees.map(e => ({
-        label: `${e.employeeId} - ${e.employeeName}`,
-        value: e.employeeId
-    }))
+  const options = departments.map(d => ({
+    label: `${d.department_id} - ${d.departmentName}`,
+    value: d.department_id
+  }));
 
-    const roles = await Employee.find().distinct("designation")
+  return res.status(200).json(
+    new ApiResponse(200, options, "Department dropdown data fetched")
+  );
+});
 
-    return res.status(200).json(
-        new ApiResponse(200, { departments: departmentOptions, employees: employeeOptions, roles }, "Dropdown data")
-    )
-})
+const getRolesByDepartment = asyncHandler(async (req, res) => {
+  const { departmentId } = req.query;
+
+  if (!departmentId) {
+    throw new ApiErr(400, "Department ID is required");
+  }
+
+  const roles = await Employee.find({ department: departmentId }).distinct("role");
+
+  return res.status(200).json(
+    new ApiResponse(200, roles, "Roles for department fetched")
+  );
+});
+
+const getEmployeesByDepartmentAndRole = asyncHandler(async (req, res) => {
+  const { departmentId, role } = req.query;
+
+  if (!departmentId || !role) {
+    throw new ApiErr(400, "Both department ID and role are required");
+  }
+
+  const employees = await Employee.find({ department: departmentId, role }).select("employeeId employeeName");
+
+  const options = employees.map(e => ({
+    label: `${e.employeeId} - ${e.employeeName}`,
+    value: e.employeeId
+  }));
+
+  return res.status(200).json(
+    new ApiResponse(200, options, "Employees by department and role fetched")
+  );
+});
+
 
 export {
     registerSalary,
@@ -240,5 +267,7 @@ export {
     getEmpSalaryDetails,
     searchSalaryByEmpName,
     getEligibleEmpForSalary,
-    getDropDownData
+    getDepartmentDropdown,
+    getRolesByDepartment,
+    getEmployeesByDepartmentAndRole
 }

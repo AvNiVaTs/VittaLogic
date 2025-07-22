@@ -82,10 +82,17 @@ const createSaleTransaction = asyncHandler(async (req, res) => {
     if (!customerPayment) {
       throw new ApiErr(404, "Linked customer payment not found");
     }
-    customerPayment.paid_amount += saleAmount;
-    if (customerPayment.paid_amount >= customerPayment.payment_amount_in_inr) {
+
+    const paidAmount = parseFloat(customerPayment.paid_amount.toString());
+    const updatedPaidAmount = paidAmount + saleAmount;
+
+    customerPayment.paid_amount = mongoose.Types.Decimal128.fromString(updatedPaidAmount.toString());
+
+    const totalDue = parseFloat(customerPayment.payment_amount_in_inr.toString());
+    if (updatedPaidAmount >= totalDue) {
       customerPayment.status = "Completed";
     }
+
     await customerPayment.save();
   }
 
@@ -138,11 +145,18 @@ const completeSaleTransaction = asyncHandler(async (req, res) => {
 // Dropdown Controllers
 const getCustomersByType = asyncHandler(async (req, res) => {
   const { customerType } = req.query;
-  const customers = await Customer.find({ customerType: { $in: [customerType] } });
+
+  const query = customerType
+    ? { customer_Types: { $regex: `^${customerType}$`, $options: "i" } }
+    : {};
+
+  const customers = await Customer.find(query);
+
   const options = customers.map(c => ({
     label: `${c.customer_Id} - ${c.company_Name}`,
     value: c.customer_Id
   }));
+
   return res.status(200).json(new ApiResponse(200, options, "Customers fetched"));
 });
 
@@ -180,7 +194,7 @@ const getApprovedCustomerPaymentApprovals = asyncHandler(async (req, res) => {
 
 const getAssetsForAssetSale = asyncHandler(async (req, res) => {
   const { assetType } = req.query;
-  const assets = await Asset.find({ assetType, assetStatus: "Awaiting Disposal" });
+  const assets = await Asset.find({ assetType, status: "Awaiting Disposal" });
   const options = assets.map(a => ({
     label: `${a.assetId} - ${a.assetName}`,
     value: a.assetId
@@ -196,7 +210,7 @@ const getAssetDetailsById = asyncHandler(async (req, res) => {
   return res.status(200).json(
     new ApiResponse(200, {
       assetName: asset.assetName,
-      assetStatus: asset.assetStatus,
+      status: asset.status,
       disposalId: asset.disposalDetails?.disposalId || null
     }, "Asset details fetched")
   );
@@ -235,3 +249,4 @@ export {
   getSalesCreditAccounts,
   getSalesDebitAccounts
 };
+

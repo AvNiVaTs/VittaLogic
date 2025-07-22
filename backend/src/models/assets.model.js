@@ -129,13 +129,13 @@ const requestStatuses = [
   "Completed"
 ];
 
-const depriciationMethod = [
-        "Straight Line Method",
-        "Written Down Method",
-        "Units of Production Method",
-        "Double Declining Method",
-        "Sum-of-the-Years Digits Method"
-        ]
+const depreciationMethod = [
+  "Straight Line Method",
+  "Written Down Method",
+  "Units of Production Method",
+  "Double Declining Method",
+  "Sum-of-the-Years Digits Method"
+]
 
 const assetSchema = new Schema({
   assetId: { 
@@ -370,7 +370,7 @@ const assetSchema = new Schema({
     },
     depreciationMethod: {
         type: String,
-        enum: depriciationMethod
+        enum: depreciationMethod
     },
     depreciationStartDate: {
         type: Date

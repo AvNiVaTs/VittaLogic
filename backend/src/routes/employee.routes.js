@@ -13,7 +13,9 @@ import {
     getDepartmentsForDropdown
 } from "../controllers/employee.controller.js"
 import {
-    getDropDownData,
+    getDepartmentDropdown,
+    getRolesByDepartment,
+    getEmployeesByDepartmentAndRole,
     getEligibleEmpForSalary,
     getEmpSalaryDetails,
     registerSalary,
@@ -47,6 +49,8 @@ router.route("/salary/update/:salaryId").patch(verifyEmployeeJWT, populateCreate
 router.route("/salary/employee/:employeeId").get(getEmpSalaryDetails)
 router.route("/salary/search").get(searchSalaryByEmpName)
 router.route("/salary/eligible").get(getEligibleEmpForSalary)
-router.route("/salary/dropdown-data").get(getDropDownData)
+router.route("/salary/dept-dropdown").get(getDepartmentDropdown)
+router.route("/salary/dept-role-dropdown").get(getRolesByDepartment)
+router.route("/salary/emp-role-dropdown").get(getEmployeesByDepartmentAndRole)
 
 export default router

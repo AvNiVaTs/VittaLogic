@@ -3,6 +3,8 @@ import { Asset } from "../models/assets.model.js"
 import { InternalTransaction } from "../models/internalTransaction.model.js"
 import { PurchaseTransaction } from "../models/purchaseTransaction.model.js"
 import { SaleTransaction } from "../models/saleTransaction.model.js"
+import { Department } from "../models/department.model.js"
+import { Employee } from "../models/employee.model.js"
 import { ApiErr } from "../utils/ApiError.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
@@ -11,24 +13,46 @@ import { getNextSequence } from "../utils/getNextSequence.js"
 
 // Asset
 const getAssetDetailsFromPurchaseTransactionOnCard = asyncHandler(async (req, res) => {
-  const purchase = await PurchaseTransaction.find({ referenceType: "Asset" });
+  const purchases = await PurchaseTransaction.find({ referenceType: "Asset" });
 
-  if (!Array.isArray(purchase) || purchase.length === 0) {
+  if (!Array.isArray(purchases) || purchases.length === 0) {
     throw new ApiErr(404, "Purchase transaction not found for assets");
   }
 
-  const result = purchase.map((purchase) => ({
-    assetName: purchase.assetDetails.assetName,
-    referenceId: purchase.referenceId,
-    quantity: purchase.assetDetails.quantity,
-    transactionId: purchase.transactionId,
-    totalAmount: purchase.purchaseAmount,
-    costPerUnit: purchase.purchaseAmount / purchase.assetDetails.quantity,
-    vendorId: purchase.vendorId,
-    purchaseDate: purchase.purchaseDate,
-  }));
+  const result = [];
 
-  return res.status(200).json(new ApiResponse(200, result, "Asset details fetched from purchase"));
+  for (const purchase of purchases) {
+    const refId = purchase.referenceId;
+
+    // Log each referenceId being checked
+    console.log("Checking referenceId:", refId);
+
+    const linkedAsset = await Asset.findOne({
+      linkedreferenceId: refId,
+      assetType: { $exists: true, $ne: null, $ne: "" },
+      assetSubtype: { $exists: true, $ne: null, $ne: "" },
+    });
+
+    // Log asset if found
+    if (linkedAsset) {
+      console.log("Skipping: asset already exists for", refId);
+      continue;
+    }
+
+    // Include in result if no linked asset exists
+    result.push({
+      assetName: purchase.assetDetails.assetName,
+      referenceId: refId,
+      quantity: purchase.assetDetails.quantity,
+      transactionId: purchase.transactionId,
+      totalAmount: purchase.purchaseAmount,
+      costPerUnit: purchase.purchaseAmount / purchase.assetDetails.quantity,
+      vendorId: purchase.vendorId,
+      purchaseDate: purchase.purchaseDate,
+    });
+  }
+
+  return res.status(200).json(new ApiResponse(200, result, "Eligible asset purchases fetched for asset entry card"));
 });
 
 const createAssets = asyncHandler(async (req, res) => {
@@ -197,7 +221,8 @@ const getAssetListCards = asyncHandler(async (req, res) => {
         assignmentStatus: asset.assignmentStatus,
         purchaseCost: asset.unitCost,
         assignedToEmployee: asset.assignedToEmployee,
-        assignedToDepartment: asset.assignedDepartment
+        assignedToDepartment: asset.assignedDepartment,
+        updatedBy: asset.updatedBy,
       };
     })
   );
@@ -272,6 +297,29 @@ const getAssetById = asyncHandler(async (req, res) => {
 
 //   return res.status(200).json(new ApiResponse(200, history, "Asset transaction history fetched"));
 // });
+
+const getDepartmentsForDropdown = asyncHandler(async (req, res) => {
+  const departments = await Department.find().select("department_id departmentName");
+  const dropdown = departments.map(dep => ({
+    label: `${dep.department_id} - ${dep.departmentName}`,
+    value: dep.department_id,
+  }));
+
+  return res.status(200).json(new ApiResponse(200, dropdown, "Departments fetched"));
+});
+
+const getEmployeesForDropdown = asyncHandler(async (req, res) => {
+  const { departmentId } = req.params;
+
+  const employees = await Employee.find({ department: departmentId }).select("employeeId employeeName");
+
+  const dropdown = employees.map(emp => ({
+    label: `${emp.employeeId} - ${emp.employeeName}`,
+    value: emp.employeeId,
+  }));
+
+  return res.status(200).json(new ApiResponse(200, dropdown, "Employees fetched"));
+});
 
 //Asset Disposal
 
@@ -370,14 +418,8 @@ const getDisposedAssetsDetails = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, result, "Disposed and Awaiting Disposal assets fetched successfully"));
 });
 
-
-
 const getAssetsEligibleForDisposalDropdown = asyncHandler(async (req, res) => {
   const { assetType, assetSubtype } = req.query;
-
-  console.log("▶ HIT /asset/eligible-for-disposal");
-  console.log("▶ assetType:", assetType);
-  console.log("▶ assetSubtype:", assetSubtype);
 
   if (!assetType || !assetSubtype) {
     throw new ApiErr(400, "Asset Type and Asset Subtype are required");
@@ -388,8 +430,6 @@ const getAssetsEligibleForDisposalDropdown = asyncHandler(async (req, res) => {
     assetSubtype,
     status: { $nin: ["Awaiting Disposal", "Disposed"] },
   }).select("assetId assetName");
-
-  console.log("▶ Assets found:", assets.length);
 
   if (!assets || assets.length === 0) {
     throw new ApiErr(404, "No eligible assets found");
@@ -429,7 +469,7 @@ const fetchMaintenanceTransactionDetails = asyncHandler(async (req, res) => {
   const { assetId } = req.params;
 
   const maintenanceTxn = await InternalTransaction.findOne({
-    referenceType: "Maintenance / Repair",
+    reference_type: {$in: ["Maintenance", "Repair"]},
     "maintenanceRepairDetails.assetId": assetId,
   });
 
@@ -442,7 +482,7 @@ const fetchMaintenanceTransactionDetails = asyncHandler(async (req, res) => {
     amount: maintenanceTxn.amount,
     transactionDate: maintenanceTxn.transactionDate,
     status: maintenanceTxn.status,
-    maintenanceType: maintenanceTxn.maintenanceRepairDetails?.maintenanceType,
+    maintenanceType: maintenanceTxn.maintenanceRepairDetails?.maintenance_type,
     referenceId: maintenanceTxn.maintenanceRepairDetails?.referenceId,
   };
 
@@ -453,9 +493,9 @@ const searchAssetsOnMaintenanceList = asyncHandler(async (req, res) => {
   const { maintenanceId, assetId, assetName, assetType, status } = req.query;
   const filter = {};
 
-  if (maintenanceId) filter["maintenanceDetails.maintenance_Id"] = maintenanceId;
-  if (assetId) filter.asset_Id = assetId;
-  if (assetName) filter.asset_Name = { $regex: assetName, $options: "i" };
+  if (maintenanceId) filter["maintenanceDetails.maintenanceId"] = maintenanceId;
+  if (assetId) filter.assetId = assetId;
+  if (assetName) filter.assetName = { $regex: assetName, $options: "i" };
   if (assetType) filter.assetType = assetType;
   if (status) filter.status = status;
 
@@ -466,49 +506,48 @@ const searchAssetsOnMaintenanceList = asyncHandler(async (req, res) => {
 const getMaintenanceHistory = asyncHandler(async (req, res) => {
   const { assetId } = req.params;
 
-  const asset = await Asset.findOne({ asset_Id: assetId });
+  const asset = await Asset.findOne({ assetId });
   if (!asset) throw new ApiErr(404, "Asset not found");
 
-  // Sum all maintenance costs linked to this asset
+  const md = asset.maintenanceDetails;
+
+  let maintenanceDetailsWithFinancials = [];
   let totalMaintenanceCost = 0;
 
-  const maintenanceDetailsWithFinancials = await Promise.all(
-    asset.maintenanceDetails.map(async (md) => {
-      // Find related transaction in InternalTransaction for this maintenance Id
-      const txn = await InternalTransaction.findOne({
-        referenceType: "Maintenance / Repair",
-        "maintenanceRepairDetails.referenceId": md.maintenance_Id,
-      });
+  if (md && md.maintenanceId) {
+    const txn = await InternalTransaction.findOne({
+      reference_type: { $in: ["Maintenance", "Repair"] },
+      "maintenanceRepairDetails.referenceId": { $regex: `^${md.maintenanceId}$`, $options: "i" },
+    });
 
-      if (txn) totalMaintenanceCost += txn.amount;
+    if (txn) totalMaintenanceCost = txn.amount;
 
-      return {
-        maintenanceId: md.maintenance_Id,
-        maintenanceType: md.maintenanceType,
-        requestType: md.requestType,
-        requestStatus: md.requestStatus,
-        createdAt: md.createdAt,
-        serviceProvider: md.serviceProvider || null,
-        serviceStartDate: md.serviceStartDate,
-        serviceEndDate: md.serviceEndDate,
-        maintenancePeriod:
-          (new Date(md.serviceEndDate) - new Date(md.serviceStartDate)) / (1000 * 3600 * 24), // in days
-        transactionId: txn?.transactionId || null,
-        maintenanceCost: txn?.amount || 0,
-        serviceNote: md.serviceNote || null,
-      };
-    })
-  );
+    maintenanceDetailsWithFinancials.push({
+      maintenanceId: md.maintenanceId,
+      maintenanceType: md.maintenanceType,
+      requestType: md.requestType,
+      requestStatus: md.requestStatus,
+      createdAt: asset.createdAt,
+      serviceProvider: md.serviceProvider || null,
+      serviceStartDate: md.serviceStartDate,
+      serviceEndDate: md.serviceEndDate,
+      maintenancePeriod: (new Date(md.serviceEndDate) - new Date(md.serviceStartDate)) / (1000 * 3600 * 24), // in days
+      transactionId: txn?.transactionId || null,
+      maintenanceCost: txn?.amount || 0,
+      serviceNote: md.serviceNote || null,
+    });
+  }
 
   const result = {
-    assetName: asset.asset_Name,
-    assetId: asset.asset_Id,
+    assetName: asset.assetName,
+    assetId: asset.assetId,
     totalMaintenanceCost,
     maintenanceDetails: maintenanceDetailsWithFinancials,
   };
 
   return res.status(200).json(new ApiResponse(200, result, "Maintenance history fetched"));
 });
+
 
 const getMaintenanceCardDetails = asyncHandler(async (req, res) => {
   const { assetId, maintenanceId } = req.query;
@@ -518,17 +557,21 @@ const getMaintenanceCardDetails = asyncHandler(async (req, res) => {
   }
 
   const asset = await Asset.findOne({
-    asset_Id: assetId,
-    "maintenanceDetails.maintenance_Id": maintenanceId,
+    assetId,
+    "maintenanceDetails.maintenanceId": maintenanceId,
   });
 
   if (!asset) throw new ApiErr(404, "Maintenance details not found for given asset and maintenance ID");
 
-  const maintenanceDetail = asset.maintenanceDetails.find(md => md.maintenance_Id === maintenanceId);
+  const maintenanceDetail = asset.maintenanceDetails;
+
+  if (maintenanceDetail.maintenanceId !== maintenanceId) {
+    throw new ApiErr(404, "Maintenance ID not found on this asset");
+  }
 
   const details = {
-    assetName: asset.asset_Name,
-    assetId: asset.asset_Id,
+    assetName: asset.assetName,
+    assetId: asset.assetId,
     requestType: maintenanceDetail.requestType,
     requestStatus: maintenanceDetail.requestStatus,
     serviceProvider: maintenanceDetail.serviceProvider || null,
@@ -558,10 +601,19 @@ const getMaintenanceCardDetails = asyncHandler(async (req, res) => {
 // });
 
 const syncMaintenanceStatus = asyncHandler(async (req, res) => {
-  const { assetId, maintenanceType, serviceStartDate, serviceEndDate, createdBy, serviceProvider, serviceNote } = req.body;
+  const { assetId, maintenanceType, maintenancePeriod, serviceStartDate, serviceEndDate, serviceProvider, serviceNote } = req.body;
 
-  const asset = await Asset.findOne({ asset_Id: assetId });
+  const asset = await Asset.findOne({ assetId });
   if (!asset) throw new ApiErr(404, "Asset not found");
+
+  // Fetch transaction for this maintenance
+  const transaction = await InternalTransaction.findOne({
+    reference_type: {$in: ["Maintenance", "Repair"]},
+    "maintenanceRepairDetails.assetId": assetId
+  }).sort({ transactionDate: -1 }); // latest one
+
+  const maintenanceCost = transaction?.amount;
+  const transactionId = transaction?.transactionId;
 
   const maintenanceId = `MAINT-${(await getNextSequence("maintenance_Id")).toString().padStart(5, "0")}`;
   const now = new Date();
@@ -587,18 +639,21 @@ const syncMaintenanceStatus = asyncHandler(async (req, res) => {
   }
 
   asset.status = status;
-  asset.maintenanceDetails.push({
-    maintenance_Id: maintenanceId,
+  asset.maintenanceDetails = {
+    maintenanceId,
     serviceStartDate,
     serviceEndDate,
     maintenanceType,
+    maintenancePeriod,
     requestType,
     requestStatus,
     createdBy: req.body.createdBy,
     updatedBy: req.body.updatedBy,
     serviceProvider,
     serviceNote,
-  });
+    maintenanceCost,
+    transactionId
+  };
 
   await asset.save();
   return res.status(200).json(new ApiResponse(200, asset, "Maintenance status synced"));
@@ -631,26 +686,28 @@ const syncMaintenanceStatus = asyncHandler(async (req, res) => {
 // });
 
 export {
-  createAssets, 
-  deleteAsset, 
-  fetchMaintenanceTransactionDetails, 
-  getAssetById, 
-  getAssetDetailsFromPurchaseTransactionOnCard, 
+  createAssets,
+  deleteAsset,
+  getDepartmentsForDropdown,
+  getEmployeesForDropdown,
+  fetchMaintenanceTransactionDetails,
+  getAssetById,
+  getAssetDetailsFromPurchaseTransactionOnCard,
   // getAssetDisposalList,
   // getAssetForEditCard,
-  getAssetDropdown, 
+  getAssetDropdown,
   // getAssetForDisposalEditCard, 
-  getAssetListCards, 
+  getAssetListCards,
   // getAssetMaintenanceSummary, 
-  getAssetsEligibleForDisposalDropdown, 
+  getAssetsEligibleForDisposalDropdown, getDisposedAssetsDetails,
   // getAssetTransactionHistory, 
-  getMaintenanceCardDetails, 
-  getMaintenanceHistory, 
-  markAssetForDisposal, 
-  searchAsset, 
-  searchAssetsOnMaintenanceList, 
-  syncMaintenanceStatus, 
+  getMaintenanceCardDetails,
+  getMaintenanceHistory,
+  markAssetForDisposal,
+  searchAsset,
+  searchAssetsOnMaintenanceList,
+  syncMaintenanceStatus,
   updateAssetAssignment,
-  updateAssetStatus, 
-  getDisposedAssetsDetails
+  updateAssetStatus
 }
+

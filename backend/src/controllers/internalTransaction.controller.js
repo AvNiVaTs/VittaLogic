@@ -35,7 +35,7 @@ const createInternalTransaction = asyncHandler(async (req, res) => {
         throw new ApiErr(400, "Only one of Debit or Credit account can be N/A");
     }
 
-    const disallowedApprovals = ["Asset", "Customer Payment", "Vendor Payment"];
+    const disallowedApprovals = ["Customer Payment", "Vendor Payment"];
 
     const approvalRecord = await Approval.findOne({
         approval_id: approvalId,
@@ -80,8 +80,8 @@ const createInternalTransaction = asyncHandler(async (req, res) => {
         }
 
         const liabilityRecord = await Liability.findOne({
-        liability_type: liabilityType,
-        liability_name: liabilityName
+          liability_type: liabilityType,
+          liability_name: liabilityName
         });
 
         if (!liabilityRecord) {
@@ -102,17 +102,17 @@ const createInternalTransaction = asyncHandler(async (req, res) => {
         await liabilityRecord.save();
     }
 
-    if (referenceType === "Maintenance / Repair") {
+    if (referenceType === "Maintenance" || referenceType === "Repair") {
         const { assetType, assetId } = maintenanceRepairDetails || {};
 
         if (!assetType || !assetId) {
-        throw new ApiErr(400, "Asset Type and Asset ID are required for Maintenance / Repair reference");
+          throw new ApiErr(400, "Asset Type and Asset ID are required for Maintenance / Repair reference");
         }
 
         const assetRecord = await Asset.findOne({
         assetType,
         assetId,
-        assetStatus: { $in: ["Maintenance Needed", "Repair Needed", "Under Maintenance", "Under Repair"] }
+        "maintenanceDetails.maintenanceType" : { $in: ["Maintenance Needed", "Repair Needed", "Under Maintenance", "Under Repair"] }
         });
 
         if (!assetRecord) {
@@ -260,6 +260,19 @@ const getInternalTransactionDropdownApprovals = asyncHandler(async (req, res) =>
   return res.status(200).json(new ApiResponse(200, options, "Approvals fetched"));
 });
 
+const getAssetIdByAssetTypeDropdown = asyncHandler(async (req, res) => {
+  const { assetType } = req.params;
+
+  const assets = await Asset.find({ assetType }).select("assetId assetName");
+
+  const dropdown = assets.map(asset => ({
+    label: `${asset.assetId} - ${asset.assetName}`,
+    value: asset.assetId,
+  }));
+
+  return res.status(200).json(new ApiResponse(200, dropdown, "Employees fetched"));
+});
+
 export {
   createInternalTransaction,
   getAssetsForMaintenanceRepair,
@@ -268,5 +281,6 @@ export {
   getInternalCreditAccounts,
   getInternalDebitAccounts,
   getLiabilitiesByType,
-  getInternalTransactionDropdownApprovals
+  getInternalTransactionDropdownApprovals,
+  getAssetIdByAssetTypeDropdown
 };
