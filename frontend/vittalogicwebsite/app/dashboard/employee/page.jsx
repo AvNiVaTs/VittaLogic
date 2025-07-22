@@ -22,7 +22,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const employee = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("loggedInEmployee")) : null
-
 const LOGGED_IN_EMPLOYEE_ID = employee?.employeeId || null
 
 // Available services for permissions
@@ -62,25 +61,7 @@ export default function EmployeePage() {
   const [level, setLevel] = useState("")
   const [designation, setDesignation] = useState("")
   const [selectedPermissions, setSelectedPermissions] = useState([])
-  const [departmentOptions, setDepartmentOptions] = useState([]);
-
-  useEffect(() => {
-    const fetchDepartments = async () => {
-      try {
-        const res = await fetch("http://localhost:8000/api/v1/emp/dropdown");
-        const data = await res.json();
-        if (data.success) {
-          setDepartmentOptions(data.data);
-        } else {
-          console.error("Failed to fetch departments:", data.message);
-        }
-      } catch (error) {
-        console.error("Error fetching departments:", error);
-      }
-    };
-
-    fetchDepartments();
-  }, []);
+  const [departmentOptions, setDepartmentOptions] = useState([])
 
   // Employee Salaries Form State
   const [salaryDepartment, setSalaryDepartment] = useState("")
@@ -96,55 +77,123 @@ export default function EmployeePage() {
   const [availableRoles, setAvailableRoles] = useState([])
   const [availableEmployees, setAvailableEmployees] = useState([])
 
+  // Fetch departments for dropdown
   useEffect(() => {
-    if (!salaryDepartment) return;
-
-    const fetchRoles = async () => {
+    const fetchDepartments = async () => {
       try {
-        const res = await fetch(`http://localhost:8000/api/v1/emp/salary/dropdown-data`);
-        const data = await res.json();
+        const res = await fetch("http://localhost:8000/api/v1/emp/dropdown", {
+          credentials: "include",
+        })
+        const data = await res.json()
         if (data.success) {
-          setAvailableRoles(data.data.roles);
+          setDepartmentOptions(data.data)
         } else {
-          console.error("Failed to fetch roles:", data.message);
+          setSubmitMessage(data.message || "Failed to fetch departments")
         }
       } catch (error) {
-        console.error("Error fetching roles:", error);
+        console.error("Error fetching departments:", error)
+        setSubmitMessage("Error fetching departments")
       }
-    };
+    }
+    fetchDepartments()
+  }, [])
 
-    fetchRoles();
-  }, [salaryDepartment]);
-
+  // Fetch all employees
   useEffect(() => {
-    if (!salaryDepartment || !salaryRole) return;
+    const fetchEmployees = async () => {
+      try {
+        const res = await fetch("http://localhost:8000/api/v1/emp/allEmps", {
+          credentials: "include",
+        })
+        const data = await res.json()
+        if (data.success) {
+          setEmployees(data.data)
+        } else {
+          setSubmitMessage(data.message || "Failed to fetch employees")
+        }
+      } catch (error) {
+        console.error("Error fetching employees:", error)
+        setSubmitMessage("Error fetching employees")
+      }
+    }
+    fetchEmployees()
+  }, [])
 
+  // Fetch all salary records
+  useEffect(() => {
+    const fetchSalaryRecords = async () => {
+      try {
+        const res = await fetch("http://localhost:8000/api/v1/emp/salary/search", {
+          credentials: "include",
+        })
+        const data = await res.json()
+        if (data.success) {
+          setSalaryRecords(data.data)
+        } else {
+          setSubmitMessage(data.message || "Failed to fetch salary records")
+        }
+      } catch (error) {
+        console.error("Error fetching salary records:", error)
+        setSubmitMessage("Error fetching salary records")
+      }
+    }
+    fetchSalaryRecords()
+  }, [])
+
+  // Fetch roles by department
+  useEffect(() => {
+    if (!salaryDepartment) return
+    const fetchRoles = async () => {
+      try {
+        const res = await fetch(
+          `http://localhost:8000/api/v1/emp/salary/dept-role-dropdown?departmentId=${salaryDepartment}`,
+          { credentials: "include" }
+        )
+        const data = await res.json()
+        if (data.success) {
+          setAvailableRoles(data.data)
+        } else {
+          setSubmitMessage(data.message || "Failed to fetch roles")
+        }
+      } catch (error) {
+        console.error("Error fetching roles:", error)
+        setSubmitMessage("Error fetching roles")
+      }
+    }
+    fetchRoles()
+  }, [salaryDepartment])
+
+  // Fetch employees by department and role
+  useEffect(() => {
+    if (!salaryDepartment || !salaryRole) return
     const fetchEmployees = async () => {
       try {
         const res = await fetch(
-          `http://localhost:8000/api/v1/emp/salary/dropdown-data`
-        );
-        const data = await res.json();
+          `http://localhost:8000/api/v1/emp/salary/emp-role-dropdown?departmentId=${salaryDepartment}&role=${encodeURIComponent(salaryRole)}`,
+          { credentials: "include" }
+        )
+        const data = await res.json()
+        console.log("Employees API response:", data) // Debugging
         if (data.success) {
-          setAvailableEmployees(data.data.employees);
+          setAvailableEmployees(data.data || [])
         } else {
-          console.error("Failed to fetch employees:", data.message);
+          setAvailableEmployees([])
+          setSubmitMessage(data.message || "Failed to fetch employees")
         }
       } catch (error) {
-        console.error("Error fetching employees:", error);
+        console.error("Error fetching employees:", error)
+        setAvailableEmployees([])
+        setSubmitMessage("Error fetching employees")
       }
-    };
-
-    fetchEmployees();
-  }, [salaryDepartment, salaryRole]);
-
+    }
+    fetchEmployees()
+  }, [salaryDepartment, salaryRole])
 
   // Generate employee ID on component mount
   useEffect(() => {
-    const generateEmployeeId = () => {
+    const generateEmployeeId = async () => {
       const timestamp = Date.now()
-      const id = `EMP${timestamp.toString().slice(-6)}`
-      setEmployeeId(id)
+      setEmployeeId(`EMP${timestamp.toString().slice(-6)}`)
     }
     generateEmployeeId()
   }, [])
@@ -156,8 +205,7 @@ export default function EmployeePage() {
       const year = now.getFullYear()
       const month = String(now.getMonth() + 1).padStart(2, "0")
       const timestamp = now.getTime().toString().slice(-3)
-      const id = `SAL${year}${month}${timestamp}`
-      setSalaryId(id)
+      setSalaryId(`SAL${year}${month}${timestamp}`)
     }
     generateSalaryId()
   }, [])
@@ -170,11 +218,6 @@ export default function EmployeePage() {
     const calculated = base + bonusAmount - deductionAmount
     setNetSalary(calculated.toFixed(2))
   }, [baseSalary, bonus, deduction])
-
-  // Get employees based on selected role
-  const getEmployeesByRole = (selectedDepartment, selectedRole) => {
-    return employees.filter((emp) => emp.department === selectedDepartment && emp.role === selectedRole)
-  }
 
   // Handle permission selection
   const handlePermissionChange = (serviceId, checked) => {
@@ -191,151 +234,157 @@ export default function EmployeePage() {
     setIsSubmitting(true)
     setSubmitMessage("")
 
-    const newEmployee = {
-      id: employeeId,
-      name: employeeName,
-      email,
-      contact: contactNumber,
-      department,
-      role,
-      level,
-      designation,
-      dateOfJoining,
-      createdBy: LOGGED_IN_EMPLOYEE_ID, // This would come from authentication
-      permissions: selectedPermissions,
-    }
-
-    // Simulate API call
-    await fetch("http://localhost:8000/api/v1/emp/registerEmp", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
-      body: JSON.stringify({
-        employeeName,
-        emailAddress: email,
-        contactNumber,
-        password: initialPassword,
-        designation,
-        dateOfJoining,
-        department,
-        role,
-        level,
-        servicePermissions: selectedPermissions,
-        createdBy: LOGGED_IN_EMPLOYEE_ID, // Or from auth
-        updatedBy: LOGGED_IN_EMPLOYEE_ID,
-      }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data?.success) {
-          setEmployees((prev) => [...prev, data?.data])
-          setSubmitMessage("Employee created successfully!")
-          // Reset fields here
-
-        } else {
-          setSubmitMessage(data.message || "Failed to create employee")
-        }
-      })
-      .catch((err) => {
-        console.error(err)
-        setSubmitMessage("Something went wrong.")
-      })
-      .finally(() => setIsSubmitting(false))
-    }
-
-  // Handle salary form submission
-  const handleSalarySubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setSubmitMessage("");
-
     try {
-      const res = await fetch("http://localhost:8000/api/v1/emp/salary/register", {
+      const res = await fetch("http://localhost:8000/api/v1/emp/registerEmp", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         credentials: "include",
         body: JSON.stringify({
-          employee: selectedEmployee,
-          department: salaryDepartment,
-          role: salaryRole,
-          payMonth,
-          baseSalary: Number.parseFloat(baseSalary),
-          bonus: Number.parseFloat(bonus) || 0,
-          deduction: Number.parseFloat(deduction) || 0,
-          paymentDate,
+          employeeName,
+          emailAddress: email,
+          contactNumber,
+          password: initialPassword,
+          designation,
+          dateOfJoining,
+          department,
+          role,
+          level,
+          servicePermissions: selectedPermissions,
           createdBy: LOGGED_IN_EMPLOYEE_ID,
           updatedBy: LOGGED_IN_EMPLOYEE_ID,
         }),
-      });
-
-      const data = await res.json();
-
+      })
+      const data = await res.json()
       if (data.success) {
-        setSalaryRecords((prev) => [...prev, data.data]);
-        setSubmitMessage("Salary record created successfully!");
-
+        setEmployees((prev) => [...prev, data.data])
+        setSubmitMessage("Employee created successfully!")
         // Reset form fields
-        setSalaryDepartment("");
-        setSalaryRole("");
-        setSelectedEmployee("");
-        setPayMonth("");
-        setBaseSalary("");
-        setBonus("");
-        setDeduction("");
-        setNetSalary("");
-        setPaymentDate("");
-
-        // Generate new salary ID (if still needed on frontend)
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, "0");
-        const timestamp = now.getTime().toString().slice(-3);
-        setSalaryId(`SAL${year}${month}${timestamp}`);
+        setEmployeeName("")
+        setEmail("")
+        setContactNumber("")
+        setInitialPassword("")
+        setDateOfJoining("")
+        setDepartment("")
+        setRole("")
+        setLevel("")
+        setDesignation("")
+        setSelectedPermissions([])
+        // Generate new employee ID
+        const timestamp = Date.now()
+        setEmployeeId(`EMP${timestamp.toString().slice(-6)}`)
       } else {
-        setSubmitMessage(data.message || "Failed to create salary record");
+        setSubmitMessage(data.message || "Failed to create employee")
       }
     } catch (error) {
-      console.error("Error submitting salary:", error);
-      setSubmitMessage("Something went wrong.");
+      console.error("Error creating employee:", error)
+      setSubmitMessage("Something went wrong.")
     } finally {
-      setIsSubmitting(false);
-      setTimeout(() => setSubmitMessage(""), 3000);
+      setIsSubmitting(false)
+      setTimeout(() => setSubmitMessage(""), 3000)
     }
   }
 
+  // Handle salary form submission
+const handleSalarySubmit = async (e) => {
+  e.preventDefault();
+  setIsSubmitting(true);
+  setSubmitMessage("");
+
+  try {
+    // Format payMonth from "YYYY-MM" to "MM-YYYY"
+    const formattedPayMonth = (() => {
+      if (!payMonth) return "";
+      const [year, month] = payMonth.split("-");
+      return `${month}-${year}`;
+    })();
+
+    const res = await fetch("http://localhost:8000/api/v1/emp/salary/register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({
+        employee: selectedEmployee,
+        department: salaryDepartment,
+        role: salaryRole,
+        payMonth: formattedPayMonth, // ✅ Correct format
+        baseSalary: Number.parseFloat(baseSalary),
+        bonus: Number.parseFloat(bonus) || 0,
+        deduction: Number.parseFloat(deduction) || 0,
+        paymentDate,
+        createdBy: LOGGED_IN_EMPLOYEE_ID,
+        updatedBy: LOGGED_IN_EMPLOYEE_ID,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      setSalaryRecords((prev) => [...prev, data.data]);
+      setSubmitMessage("Salary record created successfully!");
+
+      // Reset form fields
+      setSalaryDepartment("");
+      setSalaryRole("");
+      setSelectedEmployee("");
+      setPayMonth("");
+      setBaseSalary("");
+      setBonus("");
+      setDeduction("");
+      setNetSalary("");
+      setPaymentDate("");
+
+      // Generate new salary ID
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const timestamp = now.getTime().toString().slice(-3);
+      setSalaryId(`SAL${year}${month}${timestamp}`);
+    } else {
+      setSubmitMessage(data.message || "Failed to create salary record");
+    }
+  } catch (error) {
+    console.error("Error submitting salary:", error);
+    setSubmitMessage("Something went wrong.");
+  } finally {
+    setIsSubmitting(false);
+    setTimeout(() => setSubmitMessage(""), 3000);
+  }
+};
 
   // Handle employee edit
   const handleEditEmployee = (employee) => {
-    setEditingEmployee({ ...employee })
+    setEditingEmployee({
+      ...employee,
+      department: employee.department?.department_id || employee.department,
+    })
     setEditDialogOpen(true)
   }
 
+  // Handle employee delete
   const handleDeleteEmployee = async (employeeId) => {
     try {
       const res = await fetch(`http://localhost:8000/api/v1/emp/delete/${employeeId}`, {
         method: "DELETE",
+        credentials: "include",
       })
-
       const data = await res.json()
-
       if (data.success) {
-        setEmployees(employees.filter((emp) => emp.id !== employeeId))
+        setEmployees(employees.filter((emp) => emp.employeeId !== employeeId))
         setSubmitMessage("Employee deleted successfully!")
       } else {
         setSubmitMessage(data.message || "Delete failed")
       }
-    } catch (err) {
-      console.error("Error deleting employee:", err)
+    } catch (error) {
+      console.error("Error deleting employee:", error)
       setSubmitMessage("Something went wrong.")
     } finally {
       setTimeout(() => setSubmitMessage(""), 3000)
     }
   }
-
 
   // Handle salary edit
   const handleEditSalary = (salary) => {
@@ -344,45 +393,92 @@ export default function EmployeePage() {
   }
 
   // Save employee changes
-  const saveEmployeeChanges = () => {
-    const updatedEmployee = {
-      ...editingEmployee,
-      updatedBy: LOGGED_IN_EMPLOYEE_ID, // Current user
-      lastUpdated: new Date().toISOString(),
+  const saveEmployeeChanges = async () => {
+    try {
+      const res = await fetch(`http://localhost:8000/api/v1/emp/update/${editingEmployee.employeeId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          employeeName: editingEmployee.employeeName,
+          emailAddress: editingEmployee.emailAddress,
+          contactNumber: editingEmployee.contactNumber,
+          designation: editingEmployee.designation,
+          department: editingEmployee.department,
+          role: editingEmployee.role,
+          level: editingEmployee.level,
+          servicePermissions: editingEmployee.servicePermissions,
+          updatedBy: LOGGED_IN_EMPLOYEE_ID,
+        }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setEmployees(employees.map((emp) =>
+          emp.employeeId === editingEmployee.employeeId ? data.data : emp
+        ))
+        setEditDialogOpen(false)
+        setSubmitMessage("Employee updated successfully!")
+      } else {
+        setSubmitMessage(data.message || "Failed to update employee")
+      }
+    } catch (error) {
+      console.error("Error updating employee:", error)
+      setSubmitMessage("Something went wrong.")
+    } finally {
+      setTimeout(() => setSubmitMessage(""), 3000)
     }
-    setEmployees(employees.map((emp) => (emp.id === editingEmployee.id ? updatedEmployee : emp)))
-    setEditDialogOpen(false)
-    setSubmitMessage("Employee updated successfully!")
-    setTimeout(() => setSubmitMessage(""), 3000)
   }
 
   // Save salary changes
-  const saveSalaryChanges = () => {
-    const updatedSalary = {
-      ...editingSalary,
-      updatedBy: LOGGED_IN_EMPLOYEE_ID, // Current user
-      lastUpdated: new Date().toISOString(),
+  const saveSalaryChanges = async () => {
+    try {
+      const res = await fetch(`http://localhost:8000/api/v1/emp/salary/update/${editingSalary.salaryId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          baseSalary: Number.parseFloat(editingSalary.baseSalary),
+          bonus: Number.parseFloat(editingSalary.bonus) || 0,
+          deduction: Number.parseFloat(editingSalary.deduction) || 0,
+          paymentDate: editingSalary.paymentDate,
+          updatedBy: LOGGED_IN_EMPLOYEE_ID,
+        }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setSalaryRecords(salaryRecords.map((record) =>
+          record.salaryId === editingSalary.salaryId ? data.data : record
+        ))
+        setEditingSalaryDialogOpen(false)
+        setSubmitMessage("Salary record updated successfully!")
+      } else {
+        setSubmitMessage(data.message || "Failed to update salary record")
+      }
+    } catch (error) {
+      console.error("Error updating salary:", error)
+      setSubmitMessage("Something went wrong.")
+    } finally {
+      setTimeout(() => setSubmitMessage(""), 3000)
     }
-    setSalaryRecords(salaryRecords.map((record) => (record.id === editingSalary.id ? updatedSalary : record)))
-    setEditingSalaryDialogOpen(false)
-    setSubmitMessage("Salary record updated successfully!")
-    setTimeout(() => setSubmitMessage(""), 3000)
   }
 
-const filteredEmployees = employees.filter(
-  (emp) =>
-    emp?.name?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
-    emp?.id?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
-    emp?.department?.toLowerCase()?.includes(searchTerm.toLowerCase()),
-)
+  const filteredEmployees = employees.filter(
+    (emp) =>
+      emp?.employeeName?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
+      emp?.employeeId?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
+      emp?.department?.departmentName?.toLowerCase()?.includes(searchTerm.toLowerCase())
+  )
 
-const filteredSalaryRecords = salaryRecords.filter(
-  (record) =>
-    record?.employeeName?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
-    record?.employeeId?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
-    record?.department?.toLowerCase()?.includes(searchTerm.toLowerCase())
-)
-
+  const filteredSalaryRecords = salaryRecords.filter(
+    (record) =>
+      record?.employee?.employeeName?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
+      record?.employee?.employeeId?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
+      record?.department?.departmentName?.toLowerCase()?.includes(searchTerm.toLowerCase())
+  )
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
@@ -547,7 +643,7 @@ const filteredSalaryRecords = salaryRecords.filter(
                           value={department}
                           onValueChange={(value) => {
                             setDepartment(value)
-                            setRole("") // Reset role when department changes
+                            setRole("")
                           }}
                           required
                         >
@@ -566,13 +662,13 @@ const filteredSalaryRecords = salaryRecords.filter(
 
                       <div className="space-y-2">
                         <Label htmlFor="role">Role</Label>
-                          <Input
-                            id="role"
-                            type="text"
-                            value={role}
-                            onChange={(e) => setRole(e.target.value)}
-                            placeholder="Enter Role (e.g., HR Manager)"
-                          />
+                        <Input
+                          id="role"
+                          type="text"
+                          value={role}
+                          onChange={(e) => setRole(e.target.value)}
+                          placeholder="Enter Role (e.g., HR Manager)"
+                        />
                       </div>
                     </div>
 
@@ -681,24 +777,25 @@ const filteredSalaryRecords = salaryRecords.filter(
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {filteredEmployees.map((employee) => (
-                        <Card key={employee.id} className="hover:shadow-md transition-shadow">
+                        <Card key={employee.employeeId} className="hover:shadow-md transition-shadow">
                           <CardHeader className="pb-3">
                             <div className="flex items-center justify-between">
-                              <CardTitle className="text-lg">{employee.name}</CardTitle>
+                              <CardTitle className="text-lg">{employee.employeeName}</CardTitle>
                               <div className="flex items-center space-x-2">
                                 <Button variant="ghost" size="icon" onClick={() => handleEditEmployee(employee)}>
                                   <Edit className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="icon" onClick={() => handleDeleteEmployee(employee.id)}>
+                                <Button variant="ghost" size="icon" onClick={() => handleDeleteEmployee(employee.employeeId)}>
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
                             </div>
-                            <CardDescription>{employee.id}</CardDescription>
+                            <CardDescription>{employee.employeeId}</CardDescription>
                           </CardHeader>
                           <CardContent className="space-y-2">
                             <div className="text-sm">
-                              <span className="font-medium">Department:</span> {employee.department}
+                              <span className="font-medium">Department:</span>{" "}
+                              {employee.department?.departmentName || employee.department}
                             </div>
                             <div className="text-sm">
                               <span className="font-medium">Role:</span> {employee.role}
@@ -707,10 +804,10 @@ const filteredSalaryRecords = salaryRecords.filter(
                               <span className="font-medium">Level:</span> Level {employee.level}
                             </div>
                             <div className="text-sm">
-                              <span className="font-medium">Email:</span> {employee.email}
+                              <span className="font-medium">Email:</span> {employee.emailAddress}
                             </div>
                             <div className="text-sm">
-                              <span className="font-medium">Contact:</span> {employee.contact}
+                              <span className="font-medium">Contact:</span> {employee.contactNumber}
                             </div>
                             {employee.updatedBy && (
                               <div className="text-xs text-gray-500 pt-2 border-t">
@@ -745,9 +842,10 @@ const filteredSalaryRecords = salaryRecords.filter(
                         <Select
                           value={salaryDepartment}
                           onValueChange={(value) => {
-                            setSalaryDepartment(value);
-                            setSalaryRole("");
-                            setSelectedEmployee("");
+                            setSalaryDepartment(value)
+                            setSalaryRole("")
+                            setSelectedEmployee("")
+                            setAvailableEmployees([]) // Reset employees when department changes
                           }}
                           required
                         >
@@ -757,7 +855,7 @@ const filteredSalaryRecords = salaryRecords.filter(
                           <SelectContent>
                             {departmentOptions.map((dept) => (
                               <SelectItem key={dept.value} value={dept.value}>
-                              {dept.label}
+                                {dept.label}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -769,8 +867,9 @@ const filteredSalaryRecords = salaryRecords.filter(
                         <Select
                           value={salaryRole}
                           onValueChange={(value) => {
-                            setSalaryRole(value);
-                            setSelectedEmployee("");
+                            setSalaryRole(value)
+                            setSelectedEmployee("")
+                            setAvailableEmployees([]) // Reset employees when role changes
                           }}
                           required
                           disabled={!salaryDepartment}
@@ -779,6 +878,11 @@ const filteredSalaryRecords = salaryRecords.filter(
                             <SelectValue placeholder="Select role" />
                           </SelectTrigger>
                           <SelectContent>
+                            {availableRoles.map((role) => (
+                              <SelectItem key={role} value={role}>
+                                {role}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
@@ -791,15 +895,15 @@ const filteredSalaryRecords = salaryRecords.filter(
                           value={selectedEmployee}
                           onValueChange={setSelectedEmployee}
                           required
-                          disabled={!salaryRole}
+                          disabled={!salaryRole || availableEmployees.length === 0}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select employee" />
+                            <SelectValue placeholder={availableEmployees.length === 0 ? "No employees available" : "Select employee"} />
                           </SelectTrigger>
                           <SelectContent>
-                            {getEmployeesByRole(salaryDepartment, salaryRole).map((emp) => (
-                              <SelectItem key={emp.id} value={emp.id}>
-                                {emp.id} - {emp.name}
+                            {availableEmployees.map((emp) => (
+                              <SelectItem key={emp.value} value={emp.value}>
+                                {emp.label}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -901,7 +1005,7 @@ const filteredSalaryRecords = salaryRecords.filter(
 
                       <div className="space-y-2">
                         <Label htmlFor="createdBy">Created By</Label>
-                        <Input id="createdBy" value="EMP000 - Admin User" className="bg-gray-50" readOnly />
+                        <Input id="createdBy" value={LOGGED_IN_EMPLOYEE_ID} className="bg-gray-50" readOnly />
                       </div>
                     </div>
 
@@ -955,15 +1059,15 @@ const filteredSalaryRecords = salaryRecords.filter(
                       </TableHeader>
                       <TableBody>
                         {filteredSalaryRecords.map((record) => (
-                          <TableRow key={record.id}>
+                          <TableRow key={record.salaryId}>
                             <TableCell className="font-medium">{record.salaryId}</TableCell>
                             <TableCell>
                               <div>
-                                <div className="font-medium">{record.employeeName}</div>
-                                <div className="text-sm text-gray-500">{record.employeeId}</div>
+                                <div className="font-medium">{record.employee?.employeeName}</div>
+                                <div className="text-sm text-gray-500">{record.employee?.employeeId}</div>
                               </div>
                             </TableCell>
-                            <TableCell>{record.department}</TableCell>
+                            <TableCell>{record.department?.departmentName}</TableCell>
                             <TableCell>{record.payMonth}</TableCell>
                             <TableCell>₹{record.netSalary.toLocaleString()}</TableCell>
                             <TableCell>
@@ -996,13 +1100,13 @@ const filteredSalaryRecords = salaryRecords.filter(
                 <div className="space-y-2">
                   <Label>Employee Name</Label>
                   <Input
-                    value={editingEmployee.name}
-                    onChange={(e) => setEditingEmployee({ ...editingEmployee, name: e.target.value })}
+                    value={editingEmployee.employeeName}
+                    onChange={(e) => setEditingEmployee({ ...editingEmployee, employeeName: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Employee ID</Label>
-                  <Input value={editingEmployee.id} className="bg-gray-50" readOnly />
+                  <Input value={editingEmployee.employeeId} className="bg-gray-50" readOnly />
                   <p className="text-xs text-gray-500">Employee ID cannot be changed</p>
                 </div>
               </div>
@@ -1010,15 +1114,15 @@ const filteredSalaryRecords = salaryRecords.filter(
                 <div className="space-y-2">
                   <Label>Email Address</Label>
                   <Input
-                    value={editingEmployee.email}
-                    onChange={(e) => setEditingEmployee({ ...editingEmployee, email: e.target.value })}
+                    value={editingEmployee.emailAddress}
+                    onChange={(e) => setEditingEmployee({ ...editingEmployee, emailAddress: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Contact Number</Label>
                   <Input
-                    value={editingEmployee.contact}
-                    onChange={(e) => setEditingEmployee({ ...editingEmployee, contact: e.target.value })}
+                    value={editingEmployee.contactNumber}
+                    onChange={(e) => setEditingEmployee({ ...editingEmployee, contactNumber: e.target.value })}
                   />
                 </div>
               </div>
@@ -1112,17 +1216,17 @@ const filteredSalaryRecords = salaryRecords.filter(
                     <div key={service.id} className="flex items-center space-x-2">
                       <Checkbox
                         id={`edit-${service.id}`}
-                        checked={editingEmployee?.permissions?.includes(service.id) || false}
+                        checked={editingEmployee?.servicePermissions?.includes(service.id) || false}
                         onCheckedChange={(checked) => {
                           if (!editingEmployee) return
-                          const currentPermissions = editingEmployee.permissions || []
+                          const currentPermissions = editingEmployee.servicePermissions || []
                           let newPermissions
                           if (checked) {
                             newPermissions = [...currentPermissions, service.id]
                           } else {
                             newPermissions = currentPermissions.filter((id) => id !== service.id)
                           }
-                          setEditingEmployee({ ...editingEmployee, permissions: newPermissions })
+                          setEditingEmployee({ ...editingEmployee, servicePermissions: newPermissions })
                         }}
                       />
                       <Label htmlFor={`edit-${service.id}`} className="text-sm font-normal">
@@ -1176,7 +1280,7 @@ const filteredSalaryRecords = salaryRecords.filter(
                     value={editingSalary.baseSalary}
                     onChange={(e) => {
                       const newBaseSalary = Number.parseFloat(e.target.value) || 0
-                      const newNetSalary = newBaseSalary + editingSalary.bonus - editingSalary.deduction
+                      const newNetSalary = newBaseSalary + (editingSalary.bonus || 0) - (editingSalary.deduction || 0)
                       setEditingSalary({
                         ...editingSalary,
                         baseSalary: newBaseSalary,
@@ -1196,7 +1300,7 @@ const filteredSalaryRecords = salaryRecords.filter(
                     value={editingSalary.bonus}
                     onChange={(e) => {
                       const newBonus = Number.parseFloat(e.target.value) || 0
-                      const newNetSalary = editingSalary.baseSalary + newBonus - editingSalary.deduction
+                      const newNetSalary = editingSalary.baseSalary + newBonus - (editingSalary.deduction || 0)
                       setEditingSalary({
                         ...editingSalary,
                         bonus: newBonus,
@@ -1216,7 +1320,7 @@ const filteredSalaryRecords = salaryRecords.filter(
                     value={editingSalary.deduction}
                     onChange={(e) => {
                       const newDeduction = Number.parseFloat(e.target.value) || 0
-                      const newNetSalary = editingSalary.baseSalary + editingSalary.bonus - newDeduction
+                      const newNetSalary = editingSalary.baseSalary + (editingSalary.bonus || 0) - newDeduction
                       setEditingSalary({
                         ...editingSalary,
                         deduction: newDeduction,
@@ -1243,7 +1347,7 @@ const filteredSalaryRecords = salaryRecords.filter(
               </div>
               <div className="space-y-2">
                 <Label>Updated By</Label>
-                <Input value="EMP000 - Admin User" className="bg-gray-50" readOnly />
+                <Input value={LOGGED_IN_EMPLOYEE_ID} className="bg-gray-50" readOnly />
                 <p className="text-xs text-gray-500">Auto-filled from current user</p>
               </div>
             </div>
