@@ -42,7 +42,7 @@ const handleLogin = async (e) => {
       localStorage.setItem("accessToken", result.data.accessToken);
       localStorage.setItem("refreshToken", result.data.refreshToken);
 
-      alert("✅ Logged in successfully!");
+      // alert("✅ Logged in successfully!");
       
       // ✅ Redirect to the org profile/dashboard
       window.location.href = "/services"; // or use router.push() if using next/router

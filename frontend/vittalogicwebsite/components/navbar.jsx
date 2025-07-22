@@ -32,8 +32,14 @@ export default function Navbar() {
       <div className="container mx-auto max-w-6xl px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="text-2xl font-bold text-blue-600">
-            VittaLogic
+          <Link href="/" className="flex items-center space-x-2">
+              <img
+                src="/favicon2.png"
+                alt="Logo"
+                className="w-14 h-14 rounded-full object-cover"
+                style={{ boxShadow: '1px 1px 5px rgba(0, 0, 0, 0.5)' }}
+              />
+              <span className="text-2xl font-bold text-blue-600">VittaLogic</span>
           </Link>
 
           {/* Desktop Navigation */}

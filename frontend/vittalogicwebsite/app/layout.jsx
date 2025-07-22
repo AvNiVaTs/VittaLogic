@@ -2,8 +2,10 @@ import './globals.css'
 
 export const metadata = {
   title: 'VittaLogic',
-  description: 'Created By Team Funcodes'
-  //generator: 'v0.dev',
+  description: 'Created By Team Funcodes',
+  icons: {
+    icon: '/Picture1.png'
+  }
 }
 
 export default function RootLayout({ children }) {

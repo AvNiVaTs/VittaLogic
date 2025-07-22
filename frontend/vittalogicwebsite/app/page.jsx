@@ -142,7 +142,7 @@ export default function HomePage() {
           <Button asChild size="lg">
             <Link
               href="/signup"
-              className="bg-white text-blue-600 hover:bg-gray-50 px-8 py-3 text-lg rounded-full flex items-center justify-center"
+              className="bg-white !text-black hover:!text-white hover:!bg-gray-800 px-8 py-3 text-lg rounded-full flex items-center justify-center transition-colors"
             >
               Get Started Today
               <ArrowRight className="ml-2 h-5 w-5" />
