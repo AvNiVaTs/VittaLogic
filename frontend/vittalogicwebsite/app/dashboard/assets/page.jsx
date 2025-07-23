@@ -48,118 +48,129 @@ import { toast } from "sonner"
 // Authentication check
 const employee = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("loggedInEmployee")) : null
 const LOGGED_IN_EMPLOYEE_ID = employee?.employeeId || null
+const token = employee?.token || null; 
+
+const API_BASE_URL = "http://localhost:8000/api/v1/asset";
+
+// API base configuration
+const getAuthHeaders = () => ({
+  'Content-Type': 'application/json',
+  ...(employee?.token && { Authorization: `Bearer ${employee.token}` }),
+});
 
 // Assignment Form Component
 function AssignmentForm({ assetId, assetName, onAssign }) {
-  const [departments, setDepartments] = useState([])
-  const [selectedDepartment, setSelectedDepartment] = useState("")
-  const [selectedEmployee, setSelectedEmployee] = useState("")
-  const [employees, setEmployees] = useState([])
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isLoadingEmployees, setIsLoadingEmployees] = useState(false)
+  const [departments, setDepartments] = useState([]);
+  const [selectedDepartment, setSelectedDepartment] = useState("");
+  const [selectedEmployee, setSelectedEmployee] = useState("");
+  const [employees, setEmployees] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingEmployees, setIsLoadingEmployees] = useState(false);
 
-  // Fetch departments using the new dropdown API
+  // Fetch departments using the API endpoint
   useEffect(() => {
     const fetchDepartments = async () => {
       try {
-        const response = await fetch("http://localhost:8000/api/v1/asset/dropdown/department", {
-          headers: {
-            Authorization: `Bearer ${employee?.token}`,
-          },
-        })
-        const data = await response.json()
+        const response = await fetch(`${API_BASE_URL}/dropdown/department`, {
+          headers: getAuthHeaders(),
+          credentials: 'include',
+        });
+        
+        const data = await response.json();
+        
         if (data.success) {
-          setDepartments(data.data)
+          setDepartments(data.data);
         } else {
-          toast.error("Failed to fetch departments")
+          toast.error(data.message || "Failed to fetch departments");
         }
       } catch (error) {
-        console.error("Error fetching departments:", error)
-        toast.error("Error fetching departments")
+        console.error("Error fetching departments:", error);
+        toast.error("Error fetching departments");
       }
-    }
-    fetchDepartments()
-  }, [])
+    };
+    
+    fetchDepartments();
+  }, []);
 
-  // Fetch employees when department is selected using the new dropdown API
+  // Fetch employees when department is selected using the API endpoint
   useEffect(() => {
     if (selectedDepartment) {
       const fetchEmployees = async () => {
-        setIsLoadingEmployees(true)
+        setIsLoadingEmployees(true);
         try {
           const response = await fetch(
-            `http://localhost:8000/api/v1/asset/dropdown/employee/${selectedDepartment}`,
+            `${API_BASE_URL}/dropdown/employee/${selectedDepartment}`,
             {
-              headers: {
-                Authorization: `Bearer ${employee?.token}`,
-              },
+              headers: getAuthHeaders(),
+              credentials: 'include',
             }
-          )
-          const data = await response.json()
+          );
+          
+          const data = await response.json();
+          
           if (data.success) {
-            setEmployees(data.data)
+            setEmployees(data.data);
           } else {
-            toast.error("Failed to fetch employees")
-            setEmployees([])
+            toast.error(data.message || "Failed to fetch employees");
+            setEmployees([]);
           }
         } catch (error) {
-          console.error("Error fetching employees:", error)
-          toast.error("Error fetching employees")
-          setEmployees([])
+          console.error("Error fetching employees:", error);
+          toast.error("Error fetching employees");
+          setEmployees([]);
         } finally {
-          setIsLoadingEmployees(false)
+          setIsLoadingEmployees(false);
         }
-      }
-      fetchEmployees()
+      };
+      
+      fetchEmployees();
     } else {
-      setEmployees([])
+      setEmployees([]);
     }
-  }, [selectedDepartment])
+  }, [selectedDepartment]);
 
   const handleSubmit = async () => {
     if (!selectedDepartment || !selectedEmployee) {
-      toast.error("Please select department and employee")
-      return
+      toast.error("Please select department and employee");
+      return;
     }
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
     try {
-      const response = await fetch(`http://localhost:8000/api/v1/asset/update-assignment/${assetId}`, {
-        method: "PATCH", 
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${employee?.token}`,
-        },
+      const response = await fetch(`${API_BASE_URL}/update-assignment/${assetId}`, {
+        method: "PATCH",
+        headers: getAuthHeaders(),
         credentials: "include",
         body: JSON.stringify({
-          employeeId: selectedEmployee,
-          departmentId: selectedDepartment,
-          assignmentStatus: "Assigned", // ✅ Add this if required by your schema
-          assignedBy: LOGGED_IN_EMPLOYEE_ID,
+          assignedToEmployee: selectedEmployee,
+          assignedDepartment: selectedDepartment,
+          assignmentStatus: "Assigned",
+          assignedDate: new Date().toISOString(),
           updatedBy: LOGGED_IN_EMPLOYEE_ID,
         }),
-      })  
+      });
 
-      const data = await response.json()
+      const data = await response.json();
+      
       if (data.success) {
         // Find the selected department and employee names for display
-        const selectedDeptName = departments.find(d => d.value === selectedDepartment)?.label || selectedDepartment
-        const selectedEmpName = employees.find(e => e.value === selectedEmployee)?.label || selectedEmployee
+        const selectedDeptName = departments.find(d => d.value === selectedDepartment)?.label || selectedDepartment;
+        const selectedEmpName = employees.find(e => e.value === selectedEmployee)?.label || selectedEmployee;
         
-        onAssign(assetId, selectedEmployee, selectedDepartment)
-        toast.success(`Asset assigned successfully to ${selectedEmpName}!`)
-        setSelectedDepartment("")
-        setSelectedEmployee("")
+        onAssign(assetId, selectedEmployee, selectedDepartment);
+        toast.success(`Asset assigned successfully to ${selectedEmpName}!`);
+        setSelectedDepartment("");
+        setSelectedEmployee("");
       } else {
-        toast.error(data.message || "Failed to assign asset")
+        toast.error(data.message || "Failed to assign asset");
       }
     } catch (error) {
-      console.error("Error assigning asset:", error)
-      toast.error("Error assigning asset")
+      console.error("Error assigning asset:", error);
+      toast.error("Error assigning asset");
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  } 
+  };
 
   return (
     <div className="space-y-4">
@@ -168,8 +179,8 @@ function AssignmentForm({ assetId, assetName, onAssign }) {
         <Select
           value={selectedDepartment}
           onValueChange={(value) => {
-            setSelectedDepartment(value)
-            setSelectedEmployee("")
+            setSelectedDepartment(value);
+            setSelectedEmployee("");
           }}
         >
           <SelectTrigger>
@@ -249,12 +260,12 @@ function AssignmentForm({ assetId, assetName, onAssign }) {
         </Button>
       </DialogFooter>
     </div>
-  )
+  );
 }
 
-// Historical Maintenance Dialog Component (unchanged as it uses passed props)
+// Historical Maintenance Dialog Component
 function HistoricalMaintenanceDialog({ asset, maintenanceRecords }) {
-  const assetMaintenanceHistory = maintenanceRecords.filter((record) => record.assetId === asset.id)
+  const assetMaintenanceHistory = maintenanceRecords.filter((record) => record.assetId === asset.id);
 
   return (
     <Dialog>
@@ -422,7 +433,7 @@ function HistoricalMaintenanceDialog({ asset, maintenanceRecords }) {
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
 // Entered Assets Tab Component
@@ -867,11 +878,19 @@ function AssetListTab({
             'Authorization': `Bearer ${localStorage.getItem('employeeToken')}`,
             'Content-Type': 'application/json',
           },
+          credentials: "include",
         });
 
         if (!response.ok) throw new Error('Failed to fetch assets');
         const result = await response.json();
-        setAssets(result.data || []);
+        const normalizedAssets = result.data.map((asset) => ({
+          ...asset,
+          status: asset.status?.toLowerCase().replace(/ /g, "_"), // normalize status key
+          assignedTo: asset.assignedToEmployee, // optional normalization for assignment badge
+        }));
+
+        setAssets(normalizedAssets);
+        //setAssets(result.data || []);
       } catch (error) {
         console.error('Error fetching assets:', error);
       }
@@ -882,12 +901,16 @@ function AssetListTab({
 
   const handleAssetEdit = async (asset) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/v1/asset/${asset.assetId}`, {
+      const response = await fetch(`http://localhost:8000/api/v1/asset/update-status/${asset.assetId}`, {
+        method: "PATCH",
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('employeeToken')}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // include token if needed
         },
+        credentials: "include",
+        body: JSON.stringify({ status: "Active" }), // replace with actual status or data
       });
+
       if (!response.ok) throw new Error('Failed to fetch asset details');
       const result = await response.json();
       setEditingAsset({
@@ -912,6 +935,7 @@ function AssetListTab({
           'Authorization': `Bearer ${localStorage.getItem('employeeToken')}`,
           'Content-Type': 'application/json',
         },
+        credentials: "include",
       });
       if (!response.ok) throw new Error('Failed to delete asset');
       setAssets(assets.filter((asset) => asset.assetId !== assetId));
@@ -947,6 +971,7 @@ const handleAssetAssignment = async (assetId, employeeId, departmentId) => {
             assignedToEmployee: result.data.assignedToEmployee,
             assignedDepartment: result.data.assignedDepartment,
             assignmentStatus: result.data.assignmentStatus,
+            status: result.data.status,
           }
         : asset
     ));
@@ -964,6 +989,7 @@ const handleAssetAssignment = async (assetId, employeeId, departmentId) => {
         'Authorization': `Bearer ${localStorage.getItem('employeeToken')}`,
         'Content-Type': 'application/json',
       },
+      credentials: "include",
       body: JSON.stringify({
         employeeId: updatedAsset.assignedTo, // ✅ FIXED
         departmentId: updatedAsset.assignedDepartment, // ✅ FIXED
@@ -983,6 +1009,7 @@ const handleAssetAssignment = async (assetId, employeeId, departmentId) => {
             assignedToEmployee: result.data.assignedToEmployee,
             assignedDepartment: result.data.assignedDepartment,
             assignmentStatus: result.data.assignmentStatus,
+            status: result.data.status,
           }
         : asset
     ));
@@ -1271,92 +1298,102 @@ const handleAssetAssignment = async (assetId, employeeId, departmentId) => {
 }
 
 // Maintenance List Tab Component
-function MaintenanceListTab({
-  getStatusBadge,
-}) {
+function MaintenanceListTab({ getStatusBadge }) {
   const [assets, setAssets] = useState([]);
-  const [maintenanceRecords, setMaintenanceRecords] = useState([]);
-  const [assetSearch, setAssetSearch] = useState('');
-  const [maintenanceTypeFilter, setMaintenanceTypeFilter] = useState('all');
-  const [maintenanceStatusFilter, setMaintenanceStatusFilter] = useState('all');
-  const [isLoading, setIsLoading] = useState(false);
+  const [assetSearch, setAssetSearch] = useState("");
+  const [maintenanceTypeFilter, setMaintenanceTypeFilter] = useState("all");
+  const [maintenanceStatusFilter, setMaintenanceStatusFilter] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Fetch assets and maintenance records
+  const employee = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("loggedInEmployee")) : null;
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const LOGGED_IN_EMPLOYEE_ID = employee?.employeeId || null;
+
+  // Debug: Log authentication data
+  console.log("Authentication Data:", { employee, token, LOGGED_IN_EMPLOYEE_ID });
+
+  // Fetch maintenance card details from the backend
   useEffect(() => {
     const fetchMaintenanceData = async () => {
-      setIsLoading(true);
+      if (!token || !LOGGED_IN_EMPLOYEE_ID) {
+        setError("User not authenticated. Please log in.");
+        setLoading(false);
+        return;
+      }
+
       try {
-        const response = await fetch('http://localhost:8000/api/v1/asset/maintenance/search', {
+        setLoading(true);
+        const response = await fetch("http://localhost:8000/api/v1/asset/maintenance/card-details", {
           headers: {
-            'Authorization': `Bearer ${employee?.token}`,
-            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
           },
+          credentials: "include", // Include cookies for backend compatibility
         });
-        
         const result = await response.json();
-        if (result.statusCode === 200) {
+        console.log("API Response:", result); // Debug: Log the full response
+
+        if (result.statusCode === 200 && Array.isArray(result.data)) {
+          console.log("Fetched Assets:", result.data); // Debug: Log the assets
           setAssets(result.data);
-          
-          // Fetch maintenance card details for each asset
-          const maintenanceDetails = await Promise.all(
-            result.data.map(async (asset) => {
-              try {
-                const cardResponse = await fetch(
-                  ` http://localhost:8000/api/v1/asset/maintenance/card-details?assetId=${assets.assetId}&maintenanceId=${assets.maintenanceId}`,
-                  {
-                    headers: {
-                      'Authorization': `Bearer ${employee?.token}`,
-                      'Content-Type': 'application/json',
-                    },
-                  }
-                );
-                const cardResult = await cardResponse.json();
-                return cardResult.statusCode === 200 ? cardResult.data : null;
-              } catch (error) {
-                console.error(`Error fetching maintenance details for asset ${asset.asset_Id}:`, error);
-                return null;
-              }
-            })
-          );
-          
-          setMaintenanceRecords(maintenanceDetails.filter(Boolean));
+        } else {
+          throw new Error(result.message || "Failed to fetch maintenance data");
         }
-      } catch (error) {
-        console.error('Error fetching maintenance data:', error);
-        toast.error('Failed to load maintenance data');
+      } catch (err) {
+        console.error("Fetch Error:", err); // Debug: Log any fetch errors
+        setError(err.message);
+        toast({
+          title: "Error",
+          description: err.message,
+          variant: "destructive",
+        });
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
 
     fetchMaintenanceData();
-  }, []);
+  }, [LOGGED_IN_EMPLOYEE_ID, token]);
 
+  // Filter assets based on search and filter criteria
   const filteredMaintenanceAssets = assets.filter((asset) => {
-    if (!["maintenance_needed", "repair_needed", "under_maintenance", "under_repair"].includes(asset.status))
+    if (!asset || !asset.assetId) {
+      console.log("Skipping invalid asset:", asset); // Debug: Log invalid assets
       return false;
+    }
 
+    // Check status filter
+    const validStatuses = ["maintenance_needed", "repair_needed", "under_maintenance", "under_repair"];
+    const matchesStatus = maintenanceStatusFilter === "all" || validStatuses.includes(asset.status);
+
+    // Check type filter (using requestType as a proxy for maintenanceType)
+    const matchesType = maintenanceTypeFilter === "all" || asset.requestType === maintenanceTypeFilter;
+
+    // Check search filter
     const matchesSearch =
-      asset.asset_Name.toLowerCase().includes(assetSearch.toLowerCase()) ||
-      asset.asset_Id.toLowerCase().includes(assetSearch.toLowerCase());
+      (asset.assetName?.toLowerCase().includes(assetSearch.toLowerCase()) || false) ||
+      (asset.assetId?.toLowerCase().includes(assetSearch.toLowerCase()) || false);
 
-    const matchesType = maintenanceTypeFilter === "all" || asset.assetType === maintenanceTypeFilter;
-
-    const matchesStatus = maintenanceStatusFilter === "all" || asset.status === maintenanceStatusFilter;
+    console.log("Asset Filter Check:", { asset, matchesSearch, matchesType, matchesStatus }); // Debug: Log filter results
 
     return matchesSearch && matchesType && matchesStatus;
   });
 
-  const handleUpdateServiceDates = async (maintenanceId, assetId, startDate, endDate) => {
+  console.log("Filtered Assets:", filteredMaintenanceAssets); // Debug: Log filtered assets
+
+  // Handle updating maintenance dates
+  const updateMaintenanceDates = async (assetId, maintenanceId, startDate, endDate) => {
     try {
-      const response = await fetch('http://localhost:8000/api/v1/asset/sync-maintenance', {
-        method: 'PATCH',
+      const response = await fetch("http://localhost:8000/api/v1/asset/sync-maintenance", {
+        method: "PATCH",
         headers: {
-          'Authorization': `Bearer ${employee?.token}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
+        credentials: "include", // Include cookies for backend compatibility
         body: JSON.stringify({
           assetId,
+          maintenanceId,
           serviceStartDate: startDate,
           serviceEndDate: endDate,
           updatedBy: LOGGED_IN_EMPLOYEE_ID,
@@ -1365,22 +1402,49 @@ function MaintenanceListTab({
 
       const result = await response.json();
       if (result.statusCode === 200) {
-        setMaintenanceRecords((records) =>
-          records.map((r) =>
-            r.maintenanceId === maintenanceId
-              ? { ...r, serviceStartDate: startDate, serviceEndDate: endDate, updatedBy: LOGGED_IN_EMPLOYEE_ID }
-              : r
+        setAssets((prevAssets) =>
+          prevAssets.map((asset) =>
+            asset.assetId === assetId
+              ? {
+                  ...asset,
+                  serviceStartDate: startDate,
+                  serviceEndDate: endDate,
+                  updatedBy: LOGGED_IN_EMPLOYEE_ID,
+                }
+              : asset
           )
         );
-        toast.success('Service dates updated successfully!');
+        toast({
+          title: "Success",
+          description: "Service dates updated successfully!",
+        });
       } else {
-        throw new Error(result.message || 'Failed to update service dates');
+        throw new Error(result.message || "Failed to update maintenance dates");
       }
-    } catch (error) {
-      console.error('Error updating service dates:', error);
-      toast.error('Failed to update service dates');
+    } catch (err) {
+      console.error("Update Error:", err); // Debug: Log update errors
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive",
+      });
     }
   };
+
+  if (loading) {
+    return <div>Loading maintenance data...</div>;
+  }
+
+  if (error) {
+    return (
+      <div>
+        <p>Error: {error}</p>
+        <Link to="/login">
+          <Button>Go to Login</Button>
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <Card>
@@ -1392,210 +1456,216 @@ function MaintenanceListTab({
         <CardDescription>Assets currently under maintenance or repair</CardDescription>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
-          <div className="text-center py-8">Loading...</div>
-        ) : (
-          <>
-            <div className="flex flex-col sm:flex-row gap-4 mb-6">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
-                    placeholder="Search by asset name or ID..."
-                    value={assetSearch}
-                    onChange={(e) => setAssetSearch(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              <Select value={maintenanceTypeFilter} onValueChange={setMaintenanceTypeFilter}>
-                <SelectTrigger className="w-48">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="IT Equipment">IT Equipment</SelectItem>
-                  <SelectItem value="Office Furniture">Office Furniture</SelectItem>
-                  <SelectItem value="Machinery">Machinery</SelectItem>
-                  <SelectItem value="Vehicles">Vehicles</SelectItem>
-                  <SelectItem value="Real Estate">Real Estate</SelectItem>
-                  <SelectItem value="Electrical Appliances">Electrical Appliances</SelectItem>
-                  <SelectItem value="Software Licenses">Software Licenses</SelectItem>
-                  <SelectItem value="Miscellaneous">Miscellaneous</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={maintenanceStatusFilter} onValueChange={setMaintenanceStatusFilter}>
-                <SelectTrigger className="w-48">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="maintenance_needed">Maintenance Needed</SelectItem>
-                  <SelectItem value="repair_needed">Repair Needed</SelectItem>
-                  <SelectItem value="under_maintenance">Under Maintenance</SelectItem>
-                  <SelectItem value="under_repair">Under Repair</SelectItem>
-                </SelectContent>
-              </Select>
+        {/* Search and Filters */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search by asset name or ID..."
+                value={assetSearch}
+                onChange={(e) => setAssetSearch(e.target.value)}
+                className="pl-10"
+              />
             </div>
+          </div>
+          <Select value={maintenanceTypeFilter} onValueChange={setMaintenanceTypeFilter}>
+            <SelectTrigger className="w-48">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="Maintenance">Maintenance</SelectItem>
+              <SelectItem value="Repair">Repair</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={maintenanceStatusFilter} onValueChange={setMaintenanceStatusFilter}>
+            <SelectTrigger className="w-48">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="maintenance_needed">Maintenance Needed</SelectItem>
+              <SelectItem value="repair_needed">Repair Needed</SelectItem>
+              <SelectItem value="under_maintenance">Under Maintenance</SelectItem>
+              <SelectItem value="under_repair">Under Repair</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredMaintenanceAssets.filter(Boolean).map((asset) => {
-                if (!asset || !asset.asset_Id) return null;
-                const maintenanceRecord = maintenanceRecords.find((r) => r.assetId === asset.asset_Id);
-                if (!maintenanceRecord) return null;
-                return (
-                  <Card
-                    key={asset.asset_Id}
-                    className={`hover:shadow-md transition-shadow border-l-4 ${
-                      asset.status === "under_maintenance"
-                        ? "border-l-blue-500"
-                        : asset.status === "under_repair"
-                          ? "border-l-red-500"
-                          : asset.status === "repair_needed"
-                            ? "border-l-red-500"
-                            : "border-l-yellow-500"
-                    }`}
-                  >
-                    <CardHeader className="pb-3">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <CardTitle className="text-lg">{asset.asset_Name}</CardTitle>
-                          <p className="text-sm text-gray-500">{asset.asset_Id}</p>
+        {/* Maintenance Assets Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredMaintenanceAssets.map((asset) => {
+            console.log("Rendering Asset:", asset); // Debug: Log each asset being rendered
+            if (!asset || !asset.assetId) return null;
+
+            return (
+              <Card
+                key={asset.assetId}
+                className={`hover:shadow-md transition-shadow border-l-4 ${
+                  asset.status === "under_maintenance"
+                    ? "border-l-blue-500"
+                    : asset.status === "under_repair"
+                    ? "border-l-red-500"
+                    : asset.status === "repair_needed"
+                    ? "border-l-red-500"
+                    : "border-l-yellow-500"
+                }`}
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle className="text-lg">{asset.assetName || "Unknown Asset"}</CardTitle>
+                      <p className="text-sm text-gray-500">{asset.assetId}</p>
+                    </div>
+                    {getStatusBadge(asset.status)}
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Request Type:</span>
+                    <Badge
+                      className={
+                        asset.requestType === "repair"
+                          ? "bg-red-100 text-red-800"
+                          : "bg-blue-100 text-blue-800"
+                      }
+                    >
+                      {asset.requestType || "Unknown"}
+                    </Badge>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Request Status:</span>
+                    <Badge
+                      className={
+                        asset.requestStatus === "in_progress"
+                          ? "bg-blue-100 text-blue-800"
+                          : asset.requestStatus === "requested"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : "bg-green-100 text-green-800"
+                      }
+                    >
+                      {asset.requestStatus === "in_progress"
+                        ? "In Progress"
+                        : asset.requestStatus === "requested"
+                        ? "Requested"
+                        : asset.requestStatus === "completed"
+                        ? "Completed"
+                        : "Unknown"}
+                    </Badge>
+                  </div>
+
+                  {asset.serviceProvider && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Service Provider:</span>
+                      <span className="text-sm">{asset.serviceProvider}</span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Updated By:</span>
+                    <span className="text-sm font-mono">{asset.updatedBy || "Unknown"}</span>
+                  </div>
+
+                  {/* Edit Button for Service Dates */}
+                  <div className="flex justify-end mt-2">
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button size="sm" variant="outline" className="text-xs h-7 px-2 bg-transparent">
+                          <Edit className="h-3 w-3 mr-1" />
+                          Edit
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Edit Maintenance Dates</DialogTitle>
+                          <DialogDescription>Update service start and end dates for {asset.assetName || "Unknown Asset"}</DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div>
+                            <label htmlFor="startDate" className="text-sm font-medium">Service Start Date</label>
+                            <Input
+                              id="startDate"
+                              type="date"
+                              value={asset.serviceStartDate || ""}
+                              onChange={(e) => {
+                                setAssets((prevAssets) =>
+                                  prevAssets.map((a) =>
+                                    a.assetId === asset.assetId
+                                      ? { ...a, serviceStartDate: e.target.value }
+                                      : a
+                                  )
+                                );
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <label htmlFor="endDate" className="text-sm font-medium">Service End Date</label>
+                            <Input
+                              id="endDate"
+                              type="date"
+                              value={asset.serviceEndDate || ""}
+                              onChange={(e) => {
+                                setAssets((prevAssets) =>
+                                  prevAssets.map((a) =>
+                                    a.assetId === asset.assetId
+                                      ? { ...a, serviceEndDate: e.target.value }
+                                      : a
+                                  )
+                                );
+                              }}
+                            />
+                          </div>
                         </div>
-                        {getStatusBadge(asset.status)}
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Request Type:</span>
-                        <Badge
-                          className={
-                            maintenanceRecord.requestType === "Repair"
-                              ? "bg-red-100 text-red-800"
-                              : "bg-blue-100 text-blue-800"
-                          }
-                        >
-                          {maintenanceRecord.requestType}
-                        </Badge>
-                      </div>
+                        <DialogFooter>
+                          <Button
+                            onClick={() => {
+                              updateMaintenanceDates(
+                                asset.assetId,
+                                asset.maintenanceId,
+                                asset.serviceStartDate,
+                                asset.serviceEndDate
+                              );
+                            }}
+                          >
+                            Save Changes
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
 
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Request Status:</span>
-                        <Badge
-                          className={
-                            maintenanceRecord.requestStatus === "In Progress"
-                              ? "bg-blue-100 text-blue-800"
-                              : maintenanceRecord.requestStatus === "Requested"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-green-100 text-green-800"
-                          }
-                        >
-                          {maintenanceRecord.requestStatus}
-                        </Badge>
-                      </div>
+                  {asset.serviceStartDate && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Start Date:</span>
+                      <span className="text-sm">{new Date(asset.serviceStartDate).toLocaleDateString()}</span>
+                    </div>
+                  )}
+                  {asset.serviceEndDate && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">End Date:</span>
+                      <span className="text-sm">{new Date(asset.serviceEndDate).toLocaleDateString()}</span>
+                    </div>
+                  )}
+                  {asset.serviceNote && (
+                    <div className="mt-3">
+                      <span className="text-sm font-medium text-gray-600">Service Notes:</span>
+                      <p className="text-sm bg-gray-50 p-2 rounded mt-1">{asset.serviceNote}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
 
-                      {maintenanceRecord.serviceProvider && (
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">Service Provider:</span>
-                          <span className="text-sm">{maintenanceRecord.serviceProvider}</span>
-                        </div>
-                      )}
-
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Updated By:</span>
-                        <span className="text-sm font-mono">{maintenanceRecord.updatedBy}</span>
-                      </div>
-
-                      <div className="flex justify-end mt-2">
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button size="sm" variant="outline" className="text-xs h-7 px-2 bg-transparent">
-                              <Edit className="h-3 w-3 mr-1" />
-                              Edit
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Edit Maintenance Dates</DialogTitle>
-                              <DialogDescription>Update service start and end dates for {asset.asset_Name}</DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-4">
-                              <div>
-                                <Label>Service Start Date</Label>
-                                <Input
-                                  type="date"
-                                  value={maintenanceRecord.serviceStartDate || ""}
-                                  onChange={(e) => {
-                                    handleUpdateServiceDates(
-                                      maintenanceRecord.maintenanceId,
-                                      asset.asset_Id,
-                                      e.target.value,
-                                      maintenanceRecord.serviceEndDate
-                                    );
-                                  }}
-                                />
-                              </div>
-                              <div>
-                                <Label>Service End Date</Label>
-                                <Input
-                                  type="date"
-                                  value={maintenanceRecord.serviceEndDate || ""}
-                                  onChange={(e) => {
-                                    handleUpdateServiceDates(
-                                      maintenanceRecord.maintenanceId,
-                                      asset.asset_Id,
-                                      maintenanceRecord.serviceStartDate,
-                                      e.target.value
-                                    );
-                                  }}
-                                />
-                              </div>
-                            </div>
-                            <DialogFooter>
-                              <Button
-                                onClick={() => {
-                                  toast.success("Service dates updated successfully!");
-                                }}
-                              >
-                                Save Changes
-                              </Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
-                      </div>
-
-                      {maintenanceRecord.serviceStartDate && (
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">Start Date:</span>
-                          <span className="text-sm">{new Date(maintenanceRecord.serviceStartDate).toLocaleDateString()}</span>
-                        </div>
-                      )}
-                      {maintenanceRecord.serviceEndDate && (
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">End Date:</span>
-                          <span className="text-sm">{new Date(maintenanceRecord.serviceEndDate).toLocaleDateString()}</span>
-                        </div>
-                      )}
-                      {maintenanceRecord.serviceNote && (
-                        <div className="mt-3">
-                          <span className="text-sm font-medium text-gray-600">Service Notes:</span>
-                          <p className="text-sm bg-gray-50 p-2 rounded mt-1">{maintenanceRecord.serviceNote}</p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-
-            {filteredMaintenanceAssets.length === 0 && (
-              <div className="text-center py-8">
-                <Clock className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                <p className="text-gray-500">No assets found matching your criteria.</p>
-                <p className="text-sm text-gray-400">Assets will appear here when maintenance requests are submitted.</p>
-              </div>
-            )}
-          </>
+        {filteredMaintenanceAssets.length === 0 && (
+          <div className="text-center py-8">
+            <Clock className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+            <p className="text-gray-500">No assets found matching your criteria.</p>
+            <p className="text-sm text-gray-400">Assets will appear here when maintenance requests are submitted.</p>
+          </div>
         )}
       </CardContent>
     </Card>
@@ -1862,7 +1932,7 @@ const assetService = {
 //    const query = new URLSearchParams({
 //      assetType,
  //     assetSubtype,
- //    }).toString();
+ //   }).toString();
     try {
       const response = await fetch(
         `http://localhost:8000/api/v1/asset/eligible-for-disposal?assetType=${assetType}&assetSubtype=${assetSubtype}(
@@ -2684,65 +2754,52 @@ function DepreciationTrackingTab({
   setDepreciationMethodFilter,
 }) {
   const [depreciationRecords, setDepreciationRecords] = useState([]);
-  const [assets, setAssets] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const employee = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("loggedInEmployee")) : null;
+  const employee =
+    typeof window !== "undefined"
+      ? JSON.parse(localStorage.getItem("loggedInEmployee"))
+      : null;
 
-  // Fetch all assets and their depreciation details
   useEffect(() => {
     const fetchDepreciationData = async () => {
       setLoading(true);
       try {
-        const assetsResponse = await fetch(`http://localhost:8000/api/v1/asset/depreciation/dropdown/asset`, {
-          headers: {
-            Authorization: `Bearer ${employee?.token}`,
-          },
-        });
-        const assetsResult = await assetsResponse.json();
-        if (assetsResult.status === 200) {
-          const assetsData = assetsResult.data;
+        const response = await fetch(
+          `http://localhost:8000/api/v1/asset/depreciation/tracking`,
+          {
+            headers: {
+              Authorization: `Bearer ${employee?.token}`,
+            },
+          }
+        );
 
-          // Fetch depreciation details for each asset
-          const depreciationPromises = assetsData
-            .filter(asset => asset.depreciationDetails)
-            .map(asset =>
-              fetch(`http://localhost:8000/api/v1/asset/depreciation/tracking/${asset.assetId}`, {
-                headers: {
-                  Authorization: `Bearer ${employee?.token}`,
-                },
-              }).then(res => res.json())
-            );
+        const result = await response.json();
+        console.log("API Result:", result);
 
-          const depreciationResults = await Promise.all(depreciationPromises);
-          const validDepreciations = depreciationResults
-            .filter(result => result.status === 200)
-            .map(result => result.data);
-
-          setAssets(assetsData);
-          setDepreciationRecords(validDepreciations);
+        if (result.statusCode === 200) {
+          setDepreciationRecords(result.data || []);
         } else {
-          setError(assetsResult.message || 'Failed to fetch assets');
+          setError(result.message || "Failed to fetch depreciation data");
         }
       } catch (err) {
-        setError('Error fetching depreciation data');
+        setError("Error fetching depreciation data");
       } finally {
         setLoading(false);
       }
     };
+
     fetchDepreciationData();
   }, []);
 
   const filteredDepreciation = depreciationRecords.filter((record) => {
-    const asset = assets.find((a) => a.assetId === record.assetId);
-    if (!asset) return false;
-
     const matchesSearch =
-      asset.assetName.toLowerCase().includes(depreciationSearch.toLowerCase()) ||
-      record.assetId.toLowerCase().includes(depreciationSearch.toLowerCase());
+      record.assetName?.toLowerCase().includes(depreciationSearch.toLowerCase()) ||
+      record.assetId?.toLowerCase().includes(depreciationSearch.toLowerCase());
 
-    const matchesType = depreciationTypeFilter === "all" || asset.assetType === depreciationTypeFilter;
+    const matchesType =
+      depreciationTypeFilter === "all" || record.assetType === depreciationTypeFilter;
 
     const matchesMethod =
       depreciationMethodFilter === "all" || record.depreciationMethod === depreciationMethodFilter;
@@ -2759,8 +2816,11 @@ function DepreciationTrackingTab({
         </CardTitle>
         <CardDescription>Track asset depreciation over time</CardDescription>
       </CardHeader>
+
       <CardContent>
         {error && <p className="text-red-500 mb-4">{error}</p>}
+
+        {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
           <div className="flex-1">
             <div className="relative">
@@ -2773,6 +2833,7 @@ function DepreciationTrackingTab({
               />
             </div>
           </div>
+
           <Select value={depreciationTypeFilter} onValueChange={setDepreciationTypeFilter}>
             <SelectTrigger className="w-48">
               <SelectValue />
@@ -2789,6 +2850,7 @@ function DepreciationTrackingTab({
               <SelectItem value="Miscellaneous">Miscellaneous</SelectItem>
             </SelectContent>
           </Select>
+
           <Select value={depreciationMethodFilter} onValueChange={setDepreciationMethodFilter}>
             <SelectTrigger className="w-56">
               <SelectValue />
@@ -2804,95 +2866,97 @@ function DepreciationTrackingTab({
           </Select>
         </div>
 
+        {/* Cards */}
         {loading ? (
           <p>Loading depreciation records...</p>
-        ) : (
+        ) : filteredDepreciation.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredDepreciation.map((record) => {
-              const asset = assets.find((a) => a.assetId === record.assetId);
-              if (!asset) return null;
+            {filteredDepreciation.map((record) => (
+              <Card
+                key={record.assetId}
+                className="hover:shadow-md transition-shadow border-l-4 border-l-green-500"
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle className="text-lg">{record.assetName || "Unnamed Asset"}</CardTitle>
+                      <p className="text-sm text-gray-500">{record.assetId}</p>
+                    </div>
+                    <Badge variant="outline">{record.assetType}</Badge>
+                  </div>
+                </CardHeader>
 
-              return (
-                <Card key={record.assetId} className="hover:shadow-md transition-shadow border-l-4 border-l-green-500">
-                  <CardHeader className="pb-3">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-lg">{record.assetName}</CardTitle>
-                        <p className="text-sm text-gray-500">{record.assetId}</p>
-                      </div>
-                      <Badge variant="outline">{record.assetType}</Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Depreciation Method:</span>
-                      <Badge className="bg-blue-100 text-blue-800 text-xs">{record.depreciationMethod}</Badge>
-                    </div>
+                <CardContent className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Depreciation Method:</span>
+                    <Badge className="bg-blue-100 text-blue-800 text-xs">
+                      {record.depreciationMethod || "N/A"}
+                    </Badge>
+                  </div>
+
+                  {record.purchaseCost && (
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-600">Purchase Cost:</span>
                       <span className="font-semibold">₹{record.purchaseCost.toLocaleString()}</span>
                     </div>
+                  )}
+
+                  {record.bookValue && (
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-600">Current Book Value:</span>
                       <span className="font-semibold text-green-600">₹{record.bookValue.toLocaleString()}</span>
                     </div>
+                  )}
+
+                  {record.annualDepreciation && (
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-600">Annual Depreciation:</span>
                       <span className="font-semibold text-red-600">₹{record.annualDepreciation.toLocaleString()}</span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Entered By:</span>
-                      <span className="text-sm font-mono">{record.enteredBy}</span>
-                    </div>
-                    {record.salvageValue && (
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Salvage Value:</span>
-                        <span className="text-sm">₹{record.salvageValue.toLocaleString()}</span>
-                      </div>
-                    )}
-                    {record.usefulLifeYears && (
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Useful Life:</span>
-                        <span className="text-sm">{record.usefulLifeYears} years</span>
-                      </div>
-                    )}
-                    {record.depreciationRate && (
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Depreciation Rate:</span>
-                        <span className="text-sm">{record.depreciationRate}%</span>
-                      </div>
-                    )}
-                    {record.totalUnitsProduced && (
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Total Units Produced:</span>
-                        <span className="text-sm">{record.totalUnitsProduced}</span>
-                      </div>
-                    )}
-                    {record.unitsUsedThisYear && (
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Units Used This Year:</span>
-                        <span className="text-sm">{record.unitsUsedThisYear}</span>
-                      </div>
-                    )}
-                    {record.notes && (
-                      <div className="mt-3">
-                        <span className="text-sm font-medium text-gray-600">Notes:</span>
-                        <p className="text-sm bg-gray-50 p-2 rounded mt-1">{record.notes}</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
+                  )}
 
-        {!loading && filteredDepreciation.length === 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Entered By:</span>
+                    <span className="text-sm font-mono">{record.enteredBy || "N/A"}</span>
+                  </div>
+
+                  {record.salvageValue && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Salvage Value:</span>
+                      <span className="text-sm">₹{record.salvageValue.toLocaleString()}</span>
+                    </div>
+                  )}
+
+                  {record.usefulLifeYears && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Useful Life:</span>
+                      <span className="text-sm">{record.usefulLifeYears} years</span>
+                    </div>
+                  )}
+
+                  {record.depreciationRate && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Depreciation Rate:</span>
+                      <span className="text-sm">{record.depreciationRate}%</span>
+                    </div>
+                  )}
+
+                  {record.notes && (
+                    <div className="mt-3">
+                      <span className="text-sm font-medium text-gray-600">Notes:</span>
+                      <p className="text-sm bg-gray-50 p-2 rounded mt-1">{record.notes}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
           <div className="text-center py-8">
             <Calculator className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-            <p className="text-gray-500">No depreciation records found matching your criteria.</p>
+            <p className="text-gray-500">No depreciation records found.</p>
             <p className="text-sm text-gray-400">
-              Records will appear here when depreciation calculations are performed.
+              Records will appear here once depreciation is recorded.
             </p>
           </div>
         )}
@@ -2982,113 +3046,7 @@ export default function AssetService() {
   // Add this new state after the other states
   const [isFromTransaction, setIsFromTransaction] = useState(false)
 
-  // Mock current user ID
   const currentUserId = LOGGED_IN_EMPLOYEE_ID
-
-  // Mock data initialization
-  useEffect(() => {
-    const mockAssets = [
-      {
-        id: "AST-1703123456789",
-        name: "Dell Laptop",
-        type: "IT Equipment",
-        subtype: "Laptop",
-        description: "Dell Inspiron 15 3000 Series",
-        purchaseFrom: "VEN-001",
-        purchaseCost: 45000,
-        purchaseDate: "2024-01-15",
-        expectedUsefulLife: 5,
-        status: "active",
-        assignedTo: "EMP-001",
-        assignedDepartment: "Information Technology",
-        createdBy: "EMP-ADMIN",
-        updatedBy: "USR-UPDATE-001",
-        createdAt: "2024-01-15T10:30:00Z",
-      },
-    ]
-
-    const mockMaintenance = [
-      {
-        id: "MNT-1703123456789",
-        assetId: "AST-1703123456791",
-        maintenanceType: "Maintenance Needed",
-        lastServiceDate: "2024-01-20",
-        maintenancePeriod: "90 days",
-        updatedMaintenanceDate: "2024-04-20",
-        serviceProvider: "HP Service Center",
-        amcProvider: "HP Service Center",
-        startDate: "2024-01-20",
-        endDate: "2025-01-20",
-        amcStartDate: "2024-01-20",
-        amcEndDate: "2025-01-20",
-        cost: 2500,
-        serviceNotes: "Regular maintenance and toner replacement. Cleaned internal components and updated firmware.",
-        createdAt: "2024-01-20T10:00:00Z",
-        createdBy: "USR-MAINT-001",
-        updatedBy: "USR-MAINT-UPDATE-001",
-        requestType: "maintenance",
-        status: "completed",
-        transactionId: "TXN-MNT-2024-001",
-        paymentMethod: "Bank Transfer",
-        paymentDate: "2024-01-20",
-        invoiceNumber: "INV-HP-2024-001",
-        documents: ["maintenance_report.pdf", "invoice.pdf"],
-      },
-    ]
-
-    const mockDepreciation = [
-      {
-        id: "DEP-1703123456789",
-        assetId: "AST-1703123456789",
-        purchaseCost: 45000,
-        purchaseDate: "2024-01-15",
-        depreciationStartDate: "2024-01-15",
-        depreciationType: "straight_line",
-        salvageValue: 5000,
-        usefulLife: 5,
-        bookValue: 37000,
-        annualDepreciation: 8000,
-        notes: "Standard laptop depreciation",
-        enteredBy: "USR-DEP-001",
-        createdAt: "2024-01-15T11:00:00Z",
-      },
-    ]
-
-    const mockDisposalRequests = [
-      {
-        id: "DIS-1703123456789",
-        assetId: "AST-1703123456792",
-        assetType: "IT Equipment",
-        assetSubtype: "Desktop",
-        reason: "End of useful life, outdated technology",
-        status: "awaiting_disposal",
-        createdBy: "USR-DISP-001",
-        createdAt: "2024-12-01T10:00:00Z",
-      },
-      {
-        id: "DIS-1703123456790",
-        assetId: "AST-1703123456793",
-        assetType: "IT Equipment",
-        assetSubtype: "Laptop",
-        reason: "End of useful life, sold to recover value",
-        status: "disposed",
-        createdBy: "USR-DISP-002",
-        createdAt: "2024-11-15T10:00:00Z",
-        saleAmount: 45000, // Sale amount from transaction
-        saleDate: "2024-11-20",
-        saleTransactionId: "TXN-SALE-001",
-      },
-    ]
-
-    setAssets(mockAssets)
-    setMaintenanceRecords(mockMaintenance)
-    setDepreciationRecords(mockDepreciation)
-    setDisposalRequests(mockDisposalRequests)
-
-    // Load entered assets from localStorage
-    const savedEnteredAssets = JSON.parse(localStorage.getItem("enteredAssets") || "[]")
-    setEnteredAssets(savedEnteredAssets)
-  }, [])
 
   // Add this useEffect after the existing useEffect
   useEffect(() => {
@@ -3573,13 +3531,12 @@ const handleAssetFromTransaction = (assetData) => {
     return <Badge className={`${config.color} text-white`}>{config.text}</Badge>
   }
 
-  const getAssignmentStatusBadge = (asset) => {
-    if (asset.assignedTo) {
-      return <Badge className="bg-blue-500 text-white">Assigned</Badge>
-    } else {
-      return <Badge className="bg-gray-500 text-white">Unassigned</Badge>
-    }
-  }
+const getAssignmentStatusBadge = (asset) => {
+  const isAssigned = asset.assignedTo || asset.assignedToEmployee;
+  return isAssigned
+    ? <Badge className="bg-blue-500 text-white">Assigned</Badge>
+    : <Badge className="bg-gray-500 text-white">Unassigned</Badge>;
+}
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">

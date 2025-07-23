@@ -142,6 +142,9 @@ export default function FinancialsPage() {
   const [financialHistory, setFinancialHistory] = useState([])
   const [vendors, setVendors] = useState([])
   const [approvals, setApprovals] = useState([])
+  const [paymentHistory, setPaymentHistory] = useState({}) // Store payment history by liability ID
+  const [isLoadingHistory, setIsLoadingHistory] = useState({}) // Track loading state by liability ID
+  const [errorHistory, setErrorHistory] = useState({}) // Track errors by liability ID
 
   // Sorting states for liabilities
   const [sortBy, setSortBy] = useState("")
@@ -215,14 +218,62 @@ export default function FinancialsPage() {
         }
 
         // Fetch liabilities
-        const liabilitiesResponse = await fetch(`http://localhost:8000/api/v1/use/getAll`, {
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-        })
-        const liabilitiesData = await liabilitiesResponse.json()
-        if (liabilitiesData.statusCode === 200) {
-          setLiabilities(liabilitiesData.data)
-        }
+        
+const liabilitiesResponse = await fetch(`http://localhost:8000/api/v1/use/getAll`, {
+  headers: { "Content-Type": "application/json" },
+  credentials: "include",
+});
+
+const liabilitiesData = await liabilitiesResponse.json();
+
+if (liabilitiesData.statusCode === 200) {
+  const normalizedLiabilities = liabilitiesData.data.map((liability) => {
+    const principalAmount = Number(liability.principle_amount?.$numberDecimal || 0);
+    const interestRate = Number(liability.interest_rate?.$numberDecimal || 0);
+    const paidAmount = Number(liability.paid_amount?.$numberDecimal || 0);
+    const totalPayableAmount = Number(liability.calculated_payment_amount?.$numberDecimal || 0);
+
+    return {
+      id: liability.liability_id,
+      name: liability.liability_name,
+      type: liability.liability_type,
+      approvalId: liability.approval_id,
+      liabilityAccount: liability.liability_account,
+      startDate: liability.start_date,
+      dueDate: liability.due_date,
+      principalAmount,
+      interestRate,
+      paidAmount,
+      totalPayableAmount:
+        totalPayableAmount ||
+        calculateTotalPayableAmount(
+          principalAmount,
+          interestRate,
+          liability.interest_type || "None",
+          liability.payment_terms || "One-time",
+          liability.start_date,
+          liability.due_date
+        ),
+      remainingAmount:
+        (totalPayableAmount ||
+          calculateTotalPayableAmount(
+            principalAmount,
+            interestRate,
+            liability.interest_type || "None",
+            liability.payment_terms || "One-time",
+            liability.start_date,
+            liability.due_date
+          )) - paidAmount,
+      interestType: liability.interest_type || "None",
+      paymentTerms: liability.payment_terms || "One-time",
+      priority: liability.priority || "Low",
+      currentStatus: liability.current_status || "Active",
+    };
+  });
+
+  setLiabilities(normalizedLiabilities);
+}
+
 
         // Fetch vendors
         const vendorsResponse = await fetch(`http://localhost:8000/api/v1/use/dropdown/vendors`, {
@@ -250,6 +301,7 @@ export default function FinancialsPage() {
     }
 
     fetchInitialData()
+    
 
     // Set current date as default
     const currentDate = new Date().toISOString().split("T")[0]
@@ -536,23 +588,48 @@ export default function FinancialsPage() {
     return sortOrder === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
   }
 
+
   const getPaymentHistory = async (liabilityId) => {
     try {
+
       const response = await fetch(`http://localhost:8000/api/v1/use/search?id=${liabilityId}`, {
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-      })
-      const data = await response.json()
-      if (data.statusCode === 200 && data.data.length > 0) {
-        // Assuming the backend returns payment history in the liability data or a separate endpoint
-        // For now, we'll return an empty array since payment history endpoint isn't provided
-        return []
+      });
+      const data = await response.json();
+      console.log(`Payment history response for ${liabilityId}:`, data); // Debug log
+      if (data.statusCode === 200 && Array.isArray(data.data)) {
+        return data.data;
       }
-      return []
+      console.warn(`No valid payment history for liability ${liabilityId}`);
+      return [];
     } catch (error) {
-      return []
+      console.error("Error fetching payment history:", error);
+      return [];
     }
-  }
+  };
+
+  const handleOpenHistoryDialog = async (liability) => {
+    console.log("Opening dialog for liability:", liability); // Debug log
+    setHistoryDialogFor(liability);
+    if (liability.id && !paymentHistory[liability.id]) {
+      setIsLoadingHistory((prev) => ({ ...prev, [liability.id]: true }));
+      try {
+        const history = await getPaymentHistory(liability.id);
+        console.log(`Fetched payment history for ${liability.id}:`, history); // Debug log
+        setPaymentHistory((prev) => ({
+          ...prev,
+          [liability.id]: history,
+        }));
+        setErrorHistory((prev) => ({ ...prev, [liability.id]: null }));
+      } catch (error) {
+        console.error("Error in handleOpenHistoryDialog:", error);
+        setErrorHistory((prev) => ({ ...prev, [liability.id]: error.message }));
+      } finally {
+        setIsLoadingHistory((prev) => ({ ...prev, [liability.id]: false }));
+      }
+    }
+  };
 
   // Helper function to get interest calculation explanation
   const getInterestExplanation = (liability) => {
@@ -1633,505 +1710,776 @@ export default function FinancialsPage() {
               </Card>
             )}
                         {/* Liabilities List */}
-            {activeSection === "liabilitiesList" && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <FileText className="h-5 w-5 mr-2 text-orange-600" />
-                    Liabilities List
-                  </CardTitle>
-                  <CardDescription>View and manage all company liabilities</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex flex-col sm:flex-row gap-4">
-                      <div className="flex items-center space-x-2 flex-1">
-                        <Search className="h-4 w-4 text-gray-400" />
-                        <Input
-                          placeholder="Search by liability name or ID..."
-                          value={liabilitySearchTerm}
-                          onChange={(e) => setLiabilitySearchTerm(e.target.value)}
-                          className="max-w-sm"
-                        />
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleSort("totalPayable")}
-                          className="flex items-center space-x-1"
-                        >
-                          {getSortIcon("totalPayable")}
-                          <span>Total Payable</span>
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleSort("startDate")}
-                          className="flex items-center space-x-1"
-                        >
-                          {getSortIcon("startDate")}
-                          <span>Start Date</span>
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleSort("dueDate")}
-                          className="flex items-center space-x-1"
-                        >
-                          {getSortIcon("dueDate")}
-                          <span>Due Date</span>
-                        </Button>
-                      </div>
-                    </div>
+                {activeSection === "liabilitiesList" && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center">
+                        <FileText className="h-5 w-5 mr-2 text-orange-600" />
+                        Liabilities List
+                      </CardTitle>
+                      <CardDescription>View and manage all company liabilities</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="flex flex-col sm:flex-row gap-4">
+                          <div className="flex items-center space-x-2 flex-1">
+                            <Search className="h-4 w-4 text-gray-400" />
+                            <Input
+                              placeholder="Search by liability name or ID..."
+                              value={liabilitySearchTerm}
+                              onChange={(e) => setLiabilitySearchTerm(e.target.value)}
+                              className="max-w-sm"
+                            />
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleSort("totalPayable")}
+                              className="flex items-center space-x-1"
+                            >
+                              {getSortIcon("totalPayable")}
+                              <span>Total Payable</span>
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleSort("startDate")}
+                              className="flex items-center space-x-1"
+                            >
+                              {getSortIcon("startDate")}
+                              <span>Start Date</span>
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleSort("dueDate")}
+                              className="flex items-center space-x-1"
+                            >
+                              {getSortIcon("dueDate")}
+                              <span>Due Date</span>
+                            </Button>
+                          </div>
+                        </div>
 
-                    <div className="grid gap-4">
-                      {getSortedLiabilities().map((liability) => {
-                        const totalPayable = calculateTotalPayableAmount(
-                          liability.principle_amount,
-                          liability.interest_rate,
-                          liability.interest_type,
-                          liability.payment_terms,
-                          liability.start_date,
-                          liability.due_date
-                        )
-                        return (
-                          <Card key={liability.liability_id} className="border-l-4 border-l-red-500">
-                            <CardContent className="pt-6">
-                              <div className="flex justify-between items-start">
-                                <div className="space-y-2">
-                                  <div className="flex items-center space-x-2">
-                                    <h3 className="font-semibold text-lg">{liability.liability_name}</h3>
-                                    <Badge
-                                      variant={
-                                        liability.priority === "High"
-                                          ? "destructive"
-                                          : liability.priority === "Medium"
-                                          ? "default"
-                                          : "secondary"
-                                      }
-                                    >
-                                      {liability.priority}
-                                    </Badge>
-                                    <Badge
-                                      variant={
-                                        liability.current_status === "Overdue"
-                                          ? "destructive"
-                                          : liability.current_status === "Active"
-                                          ? "default"
-                                          : "outline"
-                                      }
-                                    >
-                                      {liability.current_status}
-                                    </Badge>
-                                  </div>
-                                  <p className="text-sm text-gray-600">ID: {liability.liability_id}</p>
-                                  <p className="text-sm text-gray-600">Type: {liability.liability_type}</p>
-                                  <p className="text-sm text-gray-600">Approval ID: {liability.approval_id}</p>
-                                  <p className="text-sm text-gray-600">
-                                    Liability Account: {getAccountNameById(liability.liability_account)} (
-                                    {liability.liability_account})
-                                  </p>
-                                  <p className="text-sm text-gray-600">
-                                    Start Date: {new Date(liability.start_date).toLocaleDateString()}
-                                  </p>
-                                  <p className="text-sm text-gray-600">
-                                    Due Date: {new Date(liability.due_date).toLocaleDateString()}
-                                  </p>
+                        <div className="grid gap-4">
+                          {getSortedLiabilities().map((liability) => (
+                            <Card key={liability.id} className="border-l-4 border-l-red-500">
+                              <CardContent className="pt-6">
+                                <div className="flex justify-between items-start">
+                                  <div className="space-y-2">
+                                    <div className="flex items-center space-x-2">
+                                      <h3 className="font-semibold text-lg">{liability.name}</h3>
+                                      <Badge
+                                        variant={
+                                          liability.priority === "High"
+                                            ? "destructive"
+                                            : liability.priority === "Medium"
+                                              ? "default"
+                                              : "secondary"
+                                        }
+                                      >
+                                        {liability.priority}
+                                      </Badge>
+                                      <Badge
+                                        variant={
+                                          liability.currentStatus === "Overdue"
+                                            ? "destructive"
+                                            : liability.currentStatus === "Active"
+                                              ? "default"
+                                              : "outline"
+                                        }
+                                      >
+                                        {liability.currentStatus}
+                                      </Badge>
+                                    </div>
+                                    <p className="text-sm text-gray-600">ID: {liability.id}</p>
+                                    <p className="text-sm text-gray-600">Type: {liability.type}</p>
+                                    <p className="text-sm text-gray-600">Approval ID: {liability.approvalId}</p>
+                                    <p className="text-sm text-gray-600">
+                                      Liability Account: {getAccountNameById(liability.liabilityAccount)} (
+                                      {liability.liabilityAccount})
+                                    </p>
+                                    <p className="text-sm text-gray-600">
+                                      Start Date: {new Date(liability.startDate).toLocaleDateString()}
+                                    </p>
+                                    <p className="text-sm text-gray-600">
+                                      Due Date: {new Date(liability.dueDate).toLocaleDateString()}
+                                    </p>
 
-                                  <div className="bg-gray-50 p-3 rounded-lg mt-3">
-                                    <p className="text-sm font-medium text-gray-700 mb-1">Interest Details</p>
-                                    <p className="text-xs text-gray-600">{getInterestExplanation(liability)}</p>
-                                  </div>
+                                    {/* Interest Information */}
+                                    <div className="bg-gray-50 p-3 rounded-lg mt-3">
+                                      <p className="text-sm font-medium text-gray-700 mb-1">Interest Details</p>
+                                      <p className="text-xs text-gray-600">{getInterestExplanation(liability)}</p>
+                                    </div>
 
-                                  <div className="grid grid-cols-4 gap-4 mt-4">
+                                    <div className="grid grid-cols-4 gap-4 mt-4">
                                     <div>
                                       <p className="text-sm font-medium">Principal Amount</p>
                                       <p className="text-lg font-semibold text-blue-600">
-                                        ₹{parseFloat(liability.principle_amount?.$numberDecimal)}
+                                        ₹{(liability.principalAmount || 0).toLocaleString()}
                                       </p>
                                     </div>
                                     <div>
                                       <p className="text-sm font-medium">Total Payable</p>
                                       <p className="text-lg font-semibold text-red-600">
-                                        ₹{totalPayable.toLocaleString()}
+                                        ₹{(liability.totalPayableAmount || 0).toLocaleString()}
                                       </p>
                                     </div>
                                     <div>
                                       <p className="text-sm font-medium">Paid Amount</p>
                                       <p className="text-lg font-semibold text-green-600">
-                                        ₹{liability.paid_amount.toLocaleString()}
+                                        ₹{(liability.paidAmount || 0).toLocaleString()}
                                       </p>
                                     </div>
                                     <div>
                                       <p className="text-sm font-medium">Remaining</p>
                                       <p className="text-lg font-semibold text-orange-600">
-                                        ₹{(totalPayable - liability.paid_amount).toLocaleString()}
+                                        ₹{(liability.remainingAmount || 0).toLocaleString()}
                                       </p>
                                     </div>
                                   </div>
 
-                                  <div className="grid grid-cols-2 gap-4 mt-2">
-                                    <div>
-                                      <p className="text-sm font-medium">Interest Rate</p>
-                                      <p className="text-sm">
-                                        {liability.interest_rate}% ({liability.interest_type})
-                                      </p>
-                                    </div>
-                                    <div>
-                                      <p className="text-sm font-medium">Payment Terms</p>
-                                      <p className="text-sm">{liability.payment_terms}</p>
+                                    <div className="grid grid-cols-2 gap-4 mt-2">
+                                      <div>
+                                        <p className="text-sm font-medium">Interest Rate</p>
+                                        <p className="text-sm">
+                                          {liability.interestRate}% ({liability.interestType})
+                                        </p>
+                                      </div>
+                                      <div>
+                                        <p className="text-sm font-medium">Payment Terms</p>
+                                        <p className="text-sm">{liability.paymentTerms}</p>
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                                <div className="flex flex-col space-y-2">
-                                  <Dialog
-                                    open={editingLiability?.liability_id === liability.liability_id}
-                                    onOpenChange={(open) =>
-                                      open ? setEditingLiability(liability) : setEditingLiability(null)
-                                    }
-                                  >
-                                    <DialogTrigger asChild>
-                                      <Button variant="outline" size="sm">
-                                        <Edit className="h-4 w-4" />
-                                      </Button>
-                                    </DialogTrigger>
-                                    <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-                                      <DialogHeader>
-                                        <DialogTitle>Edit Liability</DialogTitle>
-                                        <DialogDescription>Update liability information</DialogDescription>
-                                      </DialogHeader>
-                                      {editingLiability && (
-                                        <div className="space-y-4 pr-2">
-                                          <div className="space-y-2">
-                                            <Label>Liability Name</Label>
-                                            <Input value={editingLiability.liability_name} className="bg-gray-50" readOnly />
-                                            <p className="text-xs text-gray-500">Liability name cannot be edited</p>
-                                          </div>
-                                          <div className="space-y-2">
-                                            <Label>Liability Type</Label>
-                                            <Input value={editingLiability.liability_type} className="bg-gray-50" readOnly />
-                                            <p className="text-xs text-gray-500">Liability type cannot be edited</p>
-                                          </div>
-                                          <div className="space-y-2">
-                                            <Label>Principal Amount</Label>
-                                            <div className="relative">
-                                              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-                                                ₹
-                                              </span>
+                                  <div className="flex flex-col space-y-2">
+                                    <Dialog
+                                      open={editingLiability?.id === liability.id}
+                                      onOpenChange={(open) =>
+                                        open ? setEditingLiability(liability) : setEditingLiability(null)
+                                      }
+                                    >
+                                      <DialogTrigger asChild>
+                                        <Button variant="outline" size="sm" onClick={() => setEditingLiability(liability)}>
+                                          <Edit className="h-4 w-4" />
+                                        </Button>
+                                      </DialogTrigger>
+                                      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+                                        <DialogHeader>
+                                          <DialogTitle>Edit Liability</DialogTitle>
+                                          <DialogDescription>Update liability information</DialogDescription>
+                                        </DialogHeader>
+                                        {editingLiability && (
+                                          <div className="space-y-4 pr-2">
+                                            <div className="space-y-2">
+                                              <Label>Liability Name</Label>
+                                              <Input value={editingLiability.name} className="bg-gray-50" readOnly />
+                                              <p className="text-xs text-gray-500">Liability name cannot be edited</p>
+                                            </div>
+                                            <div className="space-y-2">
+                                              <Label>Liability Type</Label>
+                                              <Input value={editingLiability.type} className="bg-gray-50" readOnly />
+                                              <p className="text-xs text-gray-500">Liability type cannot be edited</p>
+                                            </div>
+                                            <div className="space-y-2">
+                                              <Label>Principal Amount</Label>
+                                              <div className="relative">
+                                                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                                                  ₹
+                                                </span>
+                                                <Input
+                                                  type="number"
+                                                  value={editingLiability.principalAmount}
+                                                  onChange={(e) =>
+                                                    setEditingLiability({
+                                                      ...editingLiability,
+                                                      principalAmount: Number.parseFloat(e.target.value) || 0,
+                                                    })
+                                                  }
+                                                  className="pl-8"
+                                                  step="0.01"
+                                                  min="0"
+                                                />
+                                              </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                              <Label>Paid Amount</Label>
+                                              <div className="relative">
+                                                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                                                  ₹
+                                                </span>
+                                                <Input
+                                                  type="number"
+                                                  value={editingLiability.paidAmount}
+                                                  onChange={(e) =>
+                                                    setEditingLiability({
+                                                      ...editingLiability,
+                                                      paidAmount: Number.parseFloat(e.target.value) || 0,
+                                                    })
+                                                  }
+                                                  className="pl-8"
+                                                  step="0.01"
+                                                  min="0"
+                                                />
+                                              </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                              <Label>Start Date</Label>
+                                              <Input
+                                                type="date"
+                                                value={editingLiability.startDate}
+                                                onChange={(e) =>
+                                                  setEditingLiability({ ...editingLiability, startDate: e.target.value })
+                                                }
+                                              />
+                                            </div>
+                                            <div className="space-y-2">
+                                              <Label>Due Date</Label>
+                                              <Input
+                                                type="date"
+                                                value={editingLiability.dueDate}
+                                                onChange={(e) =>
+                                                  setEditingLiability({ ...editingLiability, dueDate: e.target.value })
+                                                }
+                                              />
+                                            </div>
+                                            <div className="space-y-2">
+                                              <Label>Interest Type</Label>
+                                              <Select
+                                                value={editingLiability.interestType}
+                                                onValueChange={(value) =>
+                                                  setEditingLiability({ ...editingLiability, interestType: value })
+                                                }
+                                              >
+                                                <SelectTrigger>
+                                                  <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                  {interestTypes.map((type) => (
+                                                    <SelectItem key={type} value={type}>
+                                                      {type}
+                                                    </SelectItem>
+                                                  ))}
+                                                </SelectContent>
+                                              </Select>
+                                            </div>
+                                            <div className="space-y-2">
+                                              <Label>Interest Rate (%)</Label>
                                               <Input
                                                 type="number"
-                                                value={editingLiability.principle_amount}
+                                                value={editingLiability.interestRate}
                                                 onChange={(e) =>
                                                   setEditingLiability({
                                                     ...editingLiability,
-                                                    principle_amount: Number.parseFloat(e.target.value) || 0,
+                                                    interestRate: Number.parseFloat(e.target.value),
                                                   })
                                                 }
-                                                className="pl-8"
                                                 step="0.01"
                                                 min="0"
+                                                disabled={editingLiability.interestType === "None"}
                                               />
                                             </div>
-                                          </div>
-                                          <div className="space-y-2">
-                                            <Label>Paid Amount</Label>
-                                            <div className="relative">
-                                              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-                                                ₹
-                                              </span>
-                                              <Input
-                                                type="number"
-                                                value={editingLiability.paid_amount}
-                                                onChange={(e) =>
-                                                  setEditingLiability({
-                                                    ...editingLiability,
-                                                    paid_amount: Number.parseFloat(e.target.value) || 0,
-                                                  })
+                                            <div className="space-y-2">
+                                              <Label>Payment Terms</Label>
+                                              <Select
+                                                value={editingLiability.paymentTerms}
+                                                onValueChange={(value) =>
+                                                  setEditingLiability({ ...editingLiability, paymentTerms: value })
                                                 }
-                                                className="pl-8"
-                                                step="0.01"
-                                                min="0"
-                                              />
+                                              >
+                                                <SelectTrigger>
+                                                  <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                  {paymentTerms.map((term) => (
+                                                    <SelectItem key={term} value={term}>
+                                                      {term}
+                                                    </SelectItem>
+                                                  ))}
+                                                </SelectContent>
+                                              </Select>
                                             </div>
-                                          </div>
-                                          <div className="space-y-2">
-                                            <Label>Start Date</Label>
-                                            <Input
-                                              type="date"
-                                              value={editingLiability.start_date}
-                                              onChange={(e) =>
-                                                setEditingLiability({ ...editingLiability, start_date: e.target.value })
-                                              }
-                                            />
-                                          </div>
-                                          <div className="space-y-2">
-                                            <Label>Due Date</Label>
-                                            <Input
-                                              type="date"
-                                              value={editingLiability.due_date}
-                                              onChange={(e) =>
-                                                setEditingLiability({ ...editingLiability, due_date: e.target.value })
-                                              }
-                                            />
-                                          </div>
-                                          <div className="space-y-2">
-                                            <Label>Interest Type</Label>
-                                            <Select
-                                              value={editingLiability.interest_type}
-                                              onValueChange={(value) =>
-                                                setEditingLiability({ ...editingLiability, interest_type: value })
-                                              }
-                                            >
-                                              <SelectTrigger>
-                                                <SelectValue />
-                                              </SelectTrigger>
-                                              <SelectContent>
-                                                {interestTypes.map((type) => (
-                                                  <SelectItem key={type} value={type}>
-                                                    {type}
-                                                  </SelectItem>
-                                                ))}
-                                              </SelectContent>
-                                            </Select>
-                                          </div>
-                                          <div className="space-y-2">
-                                            <Label>Interest Rate (%)</Label>
-                                            <Input
-                                              type="number"
-                                              value={editingLiability.interest_rate}
-                                              onChange={(e) =>
-                                                setEditingLiability({
+                                            <div className="space-y-2">
+                                              <Label>Current Status</Label>
+                                              <Select
+                                                value={editingLiability.currentStatus}
+                                                onValueChange={(value) =>
+                                                  setEditingLiability({ ...editingLiability, currentStatus: value })
+                                                }
+                                              >
+                                                <SelectTrigger>
+                                                  <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                  {statusOptions.map((status) => (
+                                                    <SelectItem key={status} value={status}>
+                                                      {status}
+                                                    </SelectItem>
+                                                  ))}
+                                                </SelectContent>
+                                              </Select>
+                                            </div>
+                                            <div className="space-y-2">
+                                              <Label>Priority</Label>
+                                              <Select
+                                                value={editingLiability.priority}
+                                                onValueChange={(value) =>
+                                                  setEditingLiability({ ...editingLiability, priority: value })
+                                                }
+                                              >
+                                                <SelectTrigger>
+                                                  <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                  {priorityLevels.map((level) => (
+                                                    <SelectItem key={level} value={level}>
+                                                      {level}
+                                                    </SelectItem>
+                                                  ))}
+                                                </SelectContent>
+                                              </Select>
+                                            </div>
+                                            <Button
+                                              onClick={() => {
+                                                // Recalculate total payable amount with updated values
+                                                const updatedLiability = {
                                                   ...editingLiability,
-                                                  interest_rate: Number.parseFloat(e.target.value) || 0,
-                                                })
-                                              }
-                                              step="0.01"
-                                              min="0"
-                                              disabled={editingLiability.interest_type === "None"}
-                                            />
-                                          </div>
-                                          <div className="space-y-2">
-                                            <Label>Payment Terms</Label>
-                                            <Select
-                                              value={editingLiability.payment_terms}
-                                              onValueChange={(value) =>
-                                                setEditingLiability({ ...editingLiability, payment_terms: value })
-                                              }
-                                            >
-                                              <SelectTrigger>
-                                                <SelectValue />
-                                              </SelectTrigger>
-                                              <SelectContent>
-                                                {paymentTerms.map((term) => (
-                                                  <SelectItem key={term} value={term}>
-                                                    {term}
-                                                  </SelectItem>
-                                                ))}
-                                              </SelectContent>
-                                            </Select>
-                                          </div>
-                                          <div className="space-y-2">
-                                            <Label>Current Status</Label>
-                                            <Select
-                                              value={editingLiability.current_status}
-                                              onValueChange={(value) =>
-                                                setEditingLiability({ ...editingLiability, current_status: value })
-                                              }
-                                            >
-                                              <SelectTrigger>
-                                                <SelectValue />
-                                              </SelectTrigger>
-                                              <SelectContent>
-                                                {statusOptions.map((status) => (
-                                                  <SelectItem key={status} value={status}>
-                                                    {status}
-                                                  </SelectItem>
-                                                ))}
-                                              </SelectContent>
-                                            </Select>
-                                          </div>
-                                          <div className="space-y-2">
-                                            <Label>Priority</Label>
-                                            <Select
-                                              value={editingLiability.priority}
-                                              onValueChange={(value) =>
-                                                setEditingLiability({ ...editingLiability, priority: value })
-                                              }
-                                            >
-                                              <SelectTrigger>
-                                                <SelectValue />
-                                              </SelectTrigger>
-                                              <SelectContent>
-                                                {priorityLevels.map((level) => (
-                                                  <SelectItem key={level} value={level}>
-                                                    {level}
-                                                  </SelectItem>
-                                                ))}
-                                              </SelectContent>
-                                            </Select>
-                                          </div>
-                                          <Button
-                                            onClick={async () => {
-                                              try {
-                                                const formData = new FormData()
-                                                formData.append("principle_amount", editingLiability.principle_amount)
-                                                formData.append("paid_amount", editingLiability.paid_amount)
-                                                formData.append("start_date", editingLiability.start_date)
-                                                formData.append("due_date", editingLiability.due_date)
-                                                formData.append("interest_type", editingLiability.interest_type)
-                                                formData.append("interest_rate", editingLiability.interest_rate)
-                                                formData.append("payment_terms", editingLiability.payment_terms)
-                                                formData.append("current_status", editingLiability.current_status)
-                                                formData.append("priority", editingLiability.priority)
-                                                formData.append("updatedBy", createdBy)
-
-                                                const response = await fetch(
-                                                  `${API_BASE_URL}/liabilities/update/${editingLiability.liability_id}`,
-                                                  {
-                                                    method: "PATCH",
-                                                    credentials: "include",
-                                                    body: formData,
-                                                  }
-                                                )
-                                                const data = await response.json()
-                                                if (data.statusCode === 200) {
-                                                  const updatedLiability = {
-                                                    ...data.data,
-                                                    totalPayableAmount: calculateTotalPayableAmount(
-                                                      data.data.principle_amount,
-                                                      data.data.interest_rate,
-                                                      data.data.interest_type,
-                                                      data.data.payment_terms,
-                                                      data.data.start_date,
-                                                      data.data.due_date
-                                                    ),
-                                                    remaining_amount: calculateTotalPayableAmount(
-                                                      data.data.principle_amount,
-                                                      data.data.interest_rate,
-                                                      data.data.interest_type,
-                                                      data.data.payment_terms,
-                                                      data.data.start_date,
-                                                      data.data.due_date
-                                                    ) - data.data.paid_amount,
-                                                  }
-                                                  setLiabilities(
-                                                    liabilities.map((lib) =>
-                                                      lib.liability_id === editingLiability.liability_id ? updatedLiability : lib
-                                                    )
-                                                  )
-                                                  setSubmitMessage("Liability updated successfully!")
-                                                  setEditingLiability(null)
-                                                } else {
-                                                  setSubmitMessage(data.message || "Error updating liability")
+                                                  totalPayableAmount: calculateTotalPayableAmount(
+                                                    editingLiability.principalAmount,
+                                                    editingLiability.interestRate,
+                                                    editingLiability.interestType,
+                                                    editingLiability.paymentTerms,
+                                                    editingLiability.startDate,
+                                                    editingLiability.dueDate,
+                                                  ),
                                                 }
-                                              } catch (error) {
-                                                setSubmitMessage("Error updating liability")
-                                              } finally {
+                                                updatedLiability.remainingAmount =
+                                                  updatedLiability.totalPayableAmount - updatedLiability.paidAmount
+
+                                                setLiabilities(
+                                                  liabilities.map((lib) =>
+                                                    lib.id === editingLiability.id ? updatedLiability : lib,
+                                                  ),
+                                                )
+                                                setEditingLiability(null)
+                                                setSubmitMessage("Liability updated successfully!")
                                                 setTimeout(() => setSubmitMessage(""), 3000)
-                                              }
-                                            }}
-                                            className="w-full"
-                                          >
-                                            Save Changes
-                                          </Button>
+                                              }}
+                                              className="w-full"
+                                            >
+                                              Save Changes
+                                            </Button>
+                                          </div>
+                                        )}
+                                      </DialogContent>
+                                    </Dialog>
+
+                                    <Button
+                                      variant="destructive"
+                                      size="sm"
+                                      onClick={() => handleDeleteLiability(liability.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+
+                                    <Dialog
+                                      open={historyDialogFor?.id === liability.id}
+                                      onOpenChange={(open) => {
+                                        if (open) {
+                                          handleOpenHistoryDialog(liability);
+                                        } else {
+                                          setHistoryDialogFor(null);
+                                        }
+                                      }}
+                                    >
+                                      <DialogTrigger asChild>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
+                                        >
+                                          <History className="h-4 w-4 mr-1" />
+                                          Payment History
+                                        </Button>
+                                      </DialogTrigger>
+                                      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
+                                        <DialogHeader>
+                                          <DialogTitle className="flex items-center">
+                                            <History className="h-5 w-5 mr-2 text-blue-600" />
+                                            Payment History - {liability.name}
+                                          </DialogTitle>
+                                          <DialogDescription>
+                                            All payments made for this liability (automatically fetched from transaction records)
+                                          </DialogDescription>
+                                        </DialogHeader>
+
+                                        <div className="space-y-4 overflow-y-auto max-h-[calc(90vh-120px)]">
+                                          {/* Summary Section */}
+                                          <div className="grid grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
+                                            <div className="text-center">
+                                              <p className="text-sm font-medium text-gray-600">Principal Amount</p>
+                                              <p className="text-lg font-bold text-blue-600">
+                                                ₹{(Number(liability.principalAmount) || 0).toLocaleString()}
+                                              </p>
+                                            </div>
+                                            <div className="text-center">
+                                              <p className="text-sm font-medium text-gray-600">Total Payable</p>
+                                              <p className="text-lg font-bold text-red-600">
+                                                ₹{(Number(liability.totalPayableAmount) || 0).toLocaleString()}
+                                              </p>
+                                            </div>
+                                            <div className="text-center">
+                                              <p className="text-sm font-medium text-gray-600">Total Paid</p>
+                                              <p className="text-lg font-bold text-green-600">
+                                                ₹{(Number(liability.paidAmount) || 0).toLocaleString()}
+                                              </p>
+                                            </div>
+                                            <div className="text-center">
+                                              <p className="text-sm font-medium text-gray-600">Remaining</p>
+                                              <p className="text-lg font-bold text-orange-600">
+                                                ₹{(Number(liability.remainingAmount) || 0).toLocaleString()}
+                                              </p>
+                                            </div>
+                                          </div>
+
+                                          {/* Interest Calculation Details */}
+                                          <div className="bg-blue-50 p-4 rounded-lg">
+                                            <h4 className="font-semibold text-blue-800 mb-2">Interest Calculation Details</h4>
+                                            <div className="grid grid-cols-2 gap-4 text-sm">
+                                              <div>
+                                                <p>
+                                                  <span className="font-medium">Interest Type:</span> {liability.interestType || "None"}
+                                                </p>
+                                                <p>
+                                                  <span className="font-medium">Interest Rate:</span>{" "}
+                                                  {(Number(liability.interestRate) || 0).toFixed(2)}% per annum
+                                                </p>
+                                              </div>
+                                              <div>
+                                                <p>
+                                                  <span className="font-medium">Payment Terms:</span> {liability.paymentTerms || "One-time"}
+                                                </p>
+                                                <p>
+                                                  <span className="font-medium">Total Interest:</span> ₹
+                                                  {(
+                                                    (Number(liability.totalPayableAmount) || 0) - (Number(liability.principalAmount) || 0)
+                                                  ).toLocaleString()}
+                                                </p>
+                                              </div>
+                                            </div>
+                                            <p className="text-blue-600 text-xs mt-2">{getInterestExplanation(liability)}</p>
+                                          </div>
+
+                                          {/* Payment History Table */}
+                                          <div className="border rounded-lg overflow-hidden">
+                                            <div className="overflow-x-auto">
+                                              {isLoadingHistory[liability.id] ? (
+                                                <div className="text-center py-12 text-gray-500">
+                                                  <p className="text-lg font-medium">Loading Payment History...</p>
+                                                </div>
+                                              ) : errorHistory[liability.id] ? (
+                                                <div className="text-center py-12 text-red-500">
+                                                  <p className="text-lg font-medium">Error Loading Payment History</p>
+                                                  <p className="text-sm">{errorHistory[liability.id]}</p>
+                                                </div>
+                                              ) : (
+                                                <>
+                                                  <table className="w-full border-collapse min-w-[800px]">
+                                                    <thead className="bg-gray-100 sticky top-0">
+                                                      <tr>
+                                                        <th className="text-left p-3 font-semibold border-b whitespace-nowrap">Date of Payment</th>
+                                                        <th className="text-left p-3 font-semibold border-b whitespace-nowrap">Amount Paid</th>
+                                                        <th className="text-left p-3 font-semibold border-b whitespace-nowrap">Transaction ID</th>
+                                                        <th className="text-left p-3 font-semibold border-b whitespace-nowrap">Payment Method</th>
+                                                        <th className="text-left p-3 font-semibold border-b min-w-[200px]">Note</th>
+                                                        <th className="text-left p-3 font-semibold border-b whitespace-nowrap">Status</th>
+                                                      </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                      {(paymentHistory[liability.id] || []).map((payment, index) => (
+                                                        <tr key={index} className="border-b hover:bg-gray-50 transition-colors">
+                                                          <td className="p-3 text-sm whitespace-nowrap">
+                                                            {new Date(payment.date).toLocaleDateString("en-IN", {
+                                                              day: "2-digit",
+                                                              month: "short",
+                                                              year: "numeric",
+                                                            })}
+                                                          </td>
+                                                          <td className="p-3 whitespace-nowrap">
+                                                            <span className="font-semibold text-green-600 text-sm">
+                                                              ₹{(Number(payment.amount) || 0).toLocaleString()}
+                                                            </span>
+                                                          </td>
+                                                          <td className="p-3 text-sm font-mono text-blue-600 whitespace-nowrap">
+                                                            {payment.transactionId || `TXN-${Date.now() + index}`}
+                                                          </td>
+                                                          <td className="p-3 text-sm whitespace-nowrap">
+                                                            <Badge variant="outline" className="text-xs">
+                                                              {payment.paymentMethod || "Bank Transfer"}
+                                                            </Badge>
+                                                          </td>
+                                                          <td className="p-3 text-sm text-gray-600 max-w-[250px]">
+                                                            <div className="break-words">{payment.note || "No note available"}</div>
+                                                          </td>
+                                                          <td className="p-3 whitespace-nowrap">
+                                                            <Badge variant="default" className="text-xs bg-green-100 text-green-800">
+                                                              Completed
+                                                            </Badge>
+                                                          </td>
+                                                        </tr>
+                                                      ))}
+                                                    </tbody>
+                                                  </table>
+                                                  {(!paymentHistory[liability.id] || paymentHistory[liability.id].length === 0) && (
+                                                    <div className="text-center py-12 text-gray-500">
+                                                      <History className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                                                      <p className="text-lg font-medium">No Payment History Found</p>
+                                                      <p className="text-sm">
+                                                        No payments have been recorded for this liability yet.
+                                                      </p>
+                                                    </div>
+                                                  )}
+                                                </>
+                                              )}
+                                            </div>
+                                          </div>
+
+                                          {/* Payment Statistics */}
+                                          {paymentHistory[liability.id]?.length > 0 && !isLoadingHistory[liability.id] && !errorHistory[liability.id] && (
+                                            <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg">
+                                              <div>
+                                                <p className="text-sm font-medium text-blue-700">Total Payments Made</p>
+                                                <p className="text-xl font-bold text-blue-800">{paymentHistory[liability.id].length}</p>
+                                              </div>
+                                              <div>
+                                                <p className="text-sm font-medium text-blue-700">Average Payment Amount</p>
+                                                <p className="text-xl font-bold text-blue-800">
+                                                  ₹
+                                                  {Math.round(
+                                                    paymentHistory[liability.id].reduce(
+                                                      (sum, payment) => sum + (Number(payment.amount) || 0),
+                                                      0
+                                                    ) / paymentHistory[liability.id].length
+                                                  ).toLocaleString()}
+                                                </p>
+                                              </div>
+                                            </div>
+                                          )}
                                         </div>
-                                      )}
-                                    </DialogContent>
-                                  </Dialog>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={async () => {
-                                      setHistoryDialogFor(liability)
-                                      const history = await getPaymentHistory(liability.liability_id)
-                                      setFinancialHistory(history)
-                                    }}
-                                  >
-                                    <History className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="destructive"
-                                    size="sm"
-                                    onClick={() => handleDeleteLiability(liability.liability_id)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
+                                      </DialogContent>
+                                      <DialogTrigger asChild>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
+                                        >
+                                          <History className="h-4 w-4 mr-1" />
+                                          Payment History
+                                        </Button>
+                                      </DialogTrigger>
+                                      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
+                                        <DialogHeader>
+                                          <DialogTitle className="flex items-center">
+                                            <History className="h-5 w-5 mr-2 text-blue-600" />
+                                            Payment History - {liability.name}
+                                          </DialogTitle>
+                                          <DialogDescription>
+                                            All payments made for this liability (automatically fetched from transaction
+                                            records)
+                                          </DialogDescription>
+                                        </DialogHeader>
+
+                                        <div className="space-y-4 overflow-y-auto max-h-[calc(90vh-120px)]">
+                                          {/* Summary Section */}
+                                          <div className="grid grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
+                                            <div className="text-center">
+                                              <p className="text-sm font-medium text-gray-600">Principal Amount</p>
+                                              <p className="text-lg font-bold text-blue-600">
+                                                ₹{liability.principalAmount.toLocaleString()}
+                                              </p>
+                                            </div>
+                                            <div className="text-center">
+                                              <p className="text-sm font-medium text-gray-600">Total Payable</p>
+                                              <p className="text-lg font-bold text-red-600">
+                                                ₹{liability.totalPayableAmount.toLocaleString()}
+                                              </p>
+                                            </div>
+                                            <div className="text-center">
+                                              <p className="text-sm font-medium text-gray-600">Total Paid</p>
+                                              <p className="text-lg font-bold text-green-600">
+                                                ₹{liability.paidAmount.toLocaleString()}
+                                              </p>
+                                            </div>
+                                            <div className="text-center">
+                                              <p className="text-sm font-medium text-gray-600">Remaining</p>
+                                              <p className="text-lg font-bold text-orange-600">
+                                                ₹{liability.remainingAmount.toLocaleString()}
+                                              </p>
+                                            </div>
+                                          </div>
+
+                                          {/* Interest Calculation Details */}
+                                          <div className="bg-blue-50 p-4 rounded-lg">
+                                            <h4 className="font-semibold text-blue-800 mb-2">
+                                              Interest Calculation Details
+                                            </h4>
+                                            <div className="grid grid-cols-2 gap-4 text-sm">
+                                              <div>
+                                                <p>
+                                                  <span className="font-medium">Interest Type:</span>{" "}
+                                                  {liability.interestType}
+                                                </p>
+                                                <p>
+                                                  <span className="font-medium">Interest Rate:</span>{" "}
+                                                  {liability.interestRate}% per annum
+                                                </p>
+                                              </div>
+                                              <div>
+                                                <p>
+                                                  <span className="font-medium">Payment Terms:</span>{" "}
+                                                  {liability.paymentTerms}
+                                                </p>
+                                                <p>
+                                                  <span className="font-medium">Total Interest:</span> ₹
+                                                  {(
+                                                    liability.totalPayableAmount - liability.principalAmount
+                                                  ).toLocaleString()}
+                                                </p>
+                                              </div>
+                                            </div>
+                                            <p className="text-blue-600 text-xs mt-2">
+                                              {getInterestExplanation(liability)}
+                                            </p>
+                                          </div>
+
+                                          {/* Payment History Table */}
+                                          <div className="border rounded-lg overflow-hidden">
+                                            <div className="overflow-x-auto">
+                                              <table className="w-full border-collapse min-w-[800px]">
+                                                <thead className="bg-gray-100 sticky top-0">
+                                                  <tr>
+                                                    <th className="text-left p-3 font-semibold border-b whitespace-nowrap">
+                                                      Date of Payment
+                                                    </th>
+                                                    <th className="text-left p-3 font-semibold border-b whitespace-nowrap">
+                                                      Amount Paid
+                                                    </th>
+                                                    <th className="text-left p-3 font-semibold border-b whitespace-nowrap">
+                                                      Transaction ID
+                                                    </th>
+                                                    <th className="text-left p-3 font-semibold border-b whitespace-nowrap">
+                                                      Payment Method
+                                                    </th>
+                                                    <th className="text-left p-3 font-semibold border-b min-w-[200px]">
+                                                      Note
+                                                    </th>
+                                                    <th className="text-left p-3 font-semibold border-b whitespace-nowrap">
+                                                      Status
+                                                    </th>
+                                                  </tr>
+                                                </thead>
+                                                <tbody>
+                                                  {Array.isArray(paymentHistory[liability.id]) &&
+                                                    paymentHistory[liability.id].map((payment) => (
+                                                    <tr key={index} className="border-b hover:bg-gray-50 transition-colors">
+                                                      <td className="p-3 text-sm whitespace-nowrap">
+                                                        {new Date(payment.date).toLocaleDateString("en-IN", {
+                                                          day: "2-digit",
+                                                          month: "short",
+                                                          year: "numeric",
+                                                        })}
+                                                      </td>
+                                                      <td className="p-3 whitespace-nowrap">
+                                                        <span className="font-semibold text-green-600 text-sm">
+                                                          ₹{payment.amount.toLocaleString()}
+                                                        </span>
+                                                      </td>
+                                                      <td className="p-3 text-sm font-mono text-blue-600 whitespace-nowrap">
+                                                        {payment.transactionId || `TXN-${Date.now() + index}`}
+                                                      </td>
+                                                      <td className="p-3 text-sm whitespace-nowrap">
+                                                        <Badge variant="outline" className="text-xs">
+                                                          {payment.paymentMethod || "Bank Transfer"}
+                                                        </Badge>
+                                                      </td>
+                                                      <td className="p-3 text-sm text-gray-600 max-w-[250px]">
+                                                        <div className="break-words">{payment.note}</div>
+                                                      </td>
+                                                      <td className="p-3 whitespace-nowrap">
+                                                        <Badge
+                                                          variant="default"
+                                                          className="text-xs bg-green-100 text-green-800"
+                                                        >
+                                                          Completed
+                                                        </Badge>
+                                                      </td>
+                                                    </tr>
+                                                  ))}
+                                                </tbody>
+                                              </table>
+                                            </div>
+
+                                            {Array.isArray(paymentHistory[liability.id]) && paymentHistory[liability.id].length === 0 && (
+                                              <div className="text-center py-12 text-gray-500">
+                                                <History className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                                                <p className="text-lg font-medium">No Payment History Found</p>
+                                                <p className="text-sm">
+                                                  No payments have been recorded for this liability yet.
+                                                </p>
+                                              </div>
+                                            )}
+                                          </div>
+
+                                          {/* Payment Statistics */}
+                                          {paymentHistory[liability.id]?.length > 0 && (
+                                            <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg">
+                                              <div>
+                                                <p className="text-sm font-medium text-blue-700">Total Payments Made</p>
+                                                <p className="text-xl font-bold text-blue-800">
+                                                  {getPaymentHistory(liability.id).length}
+                                                </p>
+                                              </div>
+                                              <div>
+                                                <p className="text-sm font-medium text-blue-700">Average Payment Amount</p>
+                                                <p className="text-xl font-bold text-blue-800">
+                                                  ₹
+                                                  {Math.round(
+                                                    paymentHistory[liability.id]?.reduce((sum, p) => sum + p.amount, 0) /
+                                                    paymentHistory[liability.id]?.length || 1
+                                                  ).toLocaleString()}
+                                                </p>
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </DialogContent>
+                                    </Dialog>
+                                  </div>
                                 </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        )
-                      })}
-                    </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div> 
 
-                    {getSortedLiabilities().length === 0 && (
-                      <div className="text-center py-12 text-gray-500">
-                        <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                        <p className="text-lg font-medium">No Liabilities Found</p>
-                        <p className="text-sm">
-                          {liabilitySearchTerm
-                            ? "Try adjusting your search criteria."
-                            : "No liabilities have been created yet."}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Payment History Dialog */}
-      <Dialog
-        open={historyDialogFor !== null}
-        onOpenChange={(open) => {
-          if (!open) setHistoryDialogFor(null)
-        }}
-      >
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Payment History for {historyDialogFor?.liability_name}</DialogTitle>
-            <DialogDescription>View all payment transactions for this liability</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            {financialHistory.length > 0 ? (
-              <div className="space-y-4">
-                {financialHistory.map((payment, index) => (
-                  <Card key={index} className="border-l-4 border-l-blue-500">
-                    <CardContent className="pt-6">
-                      <div className="grid grid-cols-3 gap-4">
-                        <div>
-                          <p className="text-sm font-medium">Payment Date</p>
-                          <p className="text-sm">{new Date(payment.payment_date).toLocaleDateString()}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">Amount Paid</p>
-                           <p className="text-sm font-semibold text-green-600">
-                              ₹{Number(payment.amount?.$numberDecimal || 0).toLocaleString()}  
-                            </p> 
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">Reference</p>
-                          <p className="text-sm">{payment.reference || "N/A"}</p>
-                        </div>
+                        {getSortedLiabilities().length === 0 && (
+                          <div className="text-center py-12 text-gray-500">
+                            <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                            <p className="text-lg font-medium">No Liabilities Found</p>
+                            <p className="text-sm">
+                              {liabilitySearchTerm
+                                ? "Try adjusting your search criteria."
+                                : "No company liabilities have been created yet."}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
-                ))}
+                )}
               </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                <History className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <p className="text-lg font-medium">No Payment History</p>
-                <p className="text-sm">No payments have been recorded for this liability.</p>
-              </div>
-            )}
+            </div>
           </div>
-        </DialogContent>
-      </Dialog>
-    </div>
-  )
-}
+        </div>
+      )
+    }

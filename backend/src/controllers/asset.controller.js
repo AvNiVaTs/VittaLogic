@@ -1,10 +1,10 @@
 import fs from "fs"
 import { Asset } from "../models/assets.model.js"
-import { InternalTransaction } from "../models/internalTransaction.model.js"
-import { PurchaseTransaction } from "../models/purchasetransaction.model.js"
-import { SaleTransaction } from "../models/saletransaction.model.js"
 import { Department } from "../models/department.model.js"
 import { Employee } from "../models/employee.model.js"
+import { InternalTransaction } from "../models/internalTransaction.model.js"
+import { PurchaseTransaction } from "../models/purchaseTransaction.model.js"
+import { SaleTransaction } from "../models/saleTransaction.model.js"
 import { ApiErr } from "../utils/ApiError.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
@@ -129,9 +129,9 @@ const updateAssetAssignment = asyncHandler(async (req, res) => {
 
   // Validation & auto-modification based on assignment status
   if (updates.assignmentStatus === "Assigned") {
-    const { assignedDepartment, assignedToEmployee, assignedDate } = updates;
+    const { assignedDepartment, assignedToEmployee, } = updates;
 
-    if (!assignedDepartment || !assignedToEmployee || !assignedDate) {
+    if (!assignedDepartment || !assignedToEmployee) {
       throw new ApiErr(
         400,
         "For status 'Assigned', 'assignedDepartment', 'assignedToEmployee', and 'assignedDate' are required."
@@ -140,7 +140,6 @@ const updateAssetAssignment = asyncHandler(async (req, res) => {
   } else if (updates.assignmentStatus === "Unassigned") {
     updates.assignedDepartment = null;
     updates.assignedToEmployee = null;
-    updates.assignedDate = null;
   }
 
   const asset = await Asset.findOneAndUpdate({ assetId: id }, updates, {
@@ -559,40 +558,37 @@ const getMaintenanceHistory = asyncHandler(async (req, res) => {
 
 
 const getMaintenanceCardDetails = asyncHandler(async (req, res) => {
-  const { assetId, maintenanceId } = req.query;
-
-  if (!assetId || !maintenanceId) {
-    throw new ApiErr(400, "assetId and maintenanceId are required");
-  }
-
-  const asset = await Asset.findOne({
-    assetId,
-    "maintenanceDetails.maintenanceId": maintenanceId,
+  const assets = await Asset.find({
+    "maintenanceDetails.maintenanceId": { $exists: true, $ne: null },
   });
 
-  if (!asset) throw new ApiErr(404, "Maintenance details not found for given asset and maintenance ID");
-
-  const maintenanceDetail = asset.maintenanceDetails;
-
-  if (maintenanceDetail.maintenanceId !== maintenanceId) {
-    throw new ApiErr(404, "Maintenance ID not found on this asset");
+  if (!assets.length) {
+    throw new ApiErr(404, "No maintenance records found");
   }
 
-  const details = {
-    assetName: asset.assetName,
-    assetId: asset.assetId,
-    requestType: maintenanceDetail.requestType,
-    requestStatus: maintenanceDetail.requestStatus,
-    serviceProvider: maintenanceDetail.serviceProvider || null,
-    serviceNote: maintenanceDetail.serviceNote || null,
-    status: asset.status,
-    updatedBy: maintenanceDetail.updatedBy,
-    serviceStartDate: maintenanceDetail.serviceStartDate,
-    serviceEndDate: maintenanceDetail.serviceEndDate,
-  };
+  const maintenanceCards = assets.map((asset) => {
+    const m = asset.maintenanceDetails;
 
-  return res.status(200).json(new ApiResponse(200, details, "Maintenance card details fetched"));
+    return {
+      assetName: asset.assetName,
+      assetId: asset.assetId,
+      maintenanceId: m.maintenanceId,
+      requestType: m.requestType,
+      requestStatus: m.requestStatus,
+      serviceProvider: m.serviceProvider || null,
+      serviceNote: m.serviceNote || null,
+      status: asset.status,
+      updatedBy: m.updatedBy,
+      serviceStartDate: m.serviceStartDate,
+      serviceEndDate: m.serviceEndDate,
+    };
+  });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, maintenanceCards, "All maintenance card details fetched"));
 });
+
 
 // const getAssetMaintenanceSummary = asyncHandler(async (req, res) => {
 //   const assets = await Asset.find();
@@ -696,10 +692,7 @@ const syncMaintenanceStatus = asyncHandler(async (req, res) => {
 
 export {
   createAssets,
-  deleteAsset,
-  getDepartmentsForDropdown,
-  getEmployeesForDropdown,
-  fetchMaintenanceTransactionDetails,
+  deleteAsset, fetchMaintenanceTransactionDetails,
   getAssetById,
   getAssetDetailsFromPurchaseTransactionOnCard,
   // getAssetDisposalList,
@@ -708,7 +701,7 @@ export {
   // getAssetForDisposalEditCard, 
   getAssetListCards,
   // getAssetMaintenanceSummary, 
-  getAssetsEligibleForDisposalDropdown, getDisposedAssetsDetails,
+  getAssetsEligibleForDisposalDropdown, getDepartmentsForDropdown, getDisposedAssetsDetails, getEmployeesForDropdown,
   // getAssetTransactionHistory, 
   getMaintenanceCardDetails,
   getMaintenanceHistory,

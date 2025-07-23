@@ -1,8 +1,8 @@
 // Imports
 import { Asset } from "../models/assets.model.js"
-import { asyncHandler } from "../utils/asyncHandler.js"
 import { ApiErr } from "../utils/ApiError.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
+import { asyncHandler } from "../utils/asyncHandler.js"
 import { getNextSequence } from "../utils/getNextSequence.js"
 
 // 1. CREATE DEPRECIATION ENTRY
@@ -10,23 +10,23 @@ const createDepreciation = asyncHandler(async (req, res) => {
   const {
     assetId,
     depreciationMethod,
-    depreciationRate,        // required for WDM
-    usefulLifeYears,         // optional if present in asset
-    totalUnitsProduced,      // required for Units of Prod
-    unitsUsedThisYear,       // required for Units of Prod
-    depreciationStartDate,   // optional but good to log
+    depreciationRate,
+    usefulLifeYears,
+    totalUnitsProduced,
+    unitsUsedThisYear,
+    depreciationStartDate,
     notes
   } = req.body;
 
   const asset = await Asset.findOne({ assetId });
   if (!asset) throw new ApiErr(404, "Asset not found");
 
-  const purchaseCost = asset.purchaseCost;
+  const cost = asset.unitCost;
   const salvageValue = asset.salvageValue || 0;
   const usefulLife = usefulLifeYears || asset.usefulLifeYears;
 
   if (!usefulLife) {
-    throw new ApiErr(400, "Useful life is required if not already defined on the asset");
+    throw new ApiErr(400, "Useful life is required if not already defined");
   }
 
   if (depreciationMethod === "Written Down Method" && !depreciationRate) {
@@ -37,50 +37,43 @@ const createDepreciation = asyncHandler(async (req, res) => {
     depreciationMethod === "Units of Production Method" &&
     (!totalUnitsProduced || !unitsUsedThisYear)
   ) {
-    throw new ApiErr(
-      400,
-      "Total units produced and units used this year are required for Units of Production Method"
-    );
+    throw new ApiErr(400, "Total units produced and units used this year are required for Units of Production Method");
   }
 
   const depreciationId = `DEP-${(await getNextSequence("depreciation_Id")).toString().padStart(5, "0")}`;
 
   let annualDepreciation = 0;
-  let bookValue = 0;
-  let depreciationPercent = 0;
 
   switch (depreciationMethod) {
-    case "Straight Line Method": {
-      annualDepreciation = (purchaseCost - salvageValue) / usefulLife;
+    case "Straight Line Method":
+      annualDepreciation = (cost - salvageValue) / usefulLife;
       break;
-    }
-    case "Written Down Method": {
-      const rateDecimal = depreciationRate / 100;
-      annualDepreciation = purchaseCost * rateDecimal;
+
+    case "Written Down Method":
+      annualDepreciation = cost * (depreciationRate / 100);
       break;
-    }
-    case "Double Declining Method": {
-      const rate = 2 / usefulLife;
-      annualDepreciation = purchaseCost * rate;
+
+    case "Double Declining Method":
+      annualDepreciation = cost * (2 / usefulLife);
       break;
-    }
-    case "Units of Production Method": {
-      const perUnit = (purchaseCost - salvageValue) / totalUnitsProduced;
-      annualDepreciation = perUnit * unitsUsedThisYear;
+
+    case "Units of Production Method":
+      const perUnitCost = (cost - salvageValue) / totalUnitsProduced;
+      annualDepreciation = perUnitCost * unitsUsedThisYear;
       break;
-    }
-    case "Sum-of-the-Years Digits Method": {
+
+    case "Sum-of-the-Years Digits Method":
       const syd = (usefulLife * (usefulLife + 1)) / 2;
-      const n = 1; // First year, can be tracked differently if needed
-      annualDepreciation = ((usefulLife - n + 1) / syd) * (purchaseCost - salvageValue);
+      const year = 1; // Assuming year 1 for now
+      annualDepreciation = ((usefulLife - year + 1) / syd) * (cost - salvageValue);
       break;
-    }
+
     default:
       throw new ApiErr(400, "Unsupported depreciation method");
   }
 
-  bookValue = purchaseCost - annualDepreciation;
-  depreciationPercent = ((purchaseCost - bookValue) / purchaseCost) * 100;
+  const bookValue = cost - annualDepreciation;
+  const depreciationPercent = ((cost - bookValue) / cost) * 100;
 
   const depreciationData = {
     depreciationId,
@@ -98,7 +91,6 @@ const createDepreciation = asyncHandler(async (req, res) => {
     createdBy: req.body.createdBy
   };
 
-  // Assign depreciation details to asset
   asset.depreciationDetails = depreciationData;
   await asset.save();
 
@@ -174,3 +166,4 @@ export {
   getAssetDropdownByType,
   getDepreciationTrackingDetails
 }
+

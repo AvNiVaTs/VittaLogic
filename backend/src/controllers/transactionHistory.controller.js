@@ -20,7 +20,7 @@ const getTransactionHistory = asyncHandler(async (req, res) => {
 
   const formattedResults = [];
 
-  // Common populate options for custom IDs
+  // Populates using custom ID fields (not ObjectId)
   const approvalPopulate = {
     path: "approvalId",
     model: "Approval",
@@ -71,7 +71,7 @@ const getTransactionHistory = asyncHandler(async (req, res) => {
     return records.map((record) => formatterFn(record.toObject()));
   };
 
-  // Internal Transaction
+  // Internal Transactions
   if (type === "Internal" || type === "All") {
     const records = await fetchAndFormat(
       InternalTransaction,
@@ -93,12 +93,12 @@ const getTransactionHistory = asyncHandler(async (req, res) => {
           tx.reference_type === "Salary"
             ? tx.salaryDetails?.referenceId
             : tx.reference_type === "Liability"
-            ? tx.liabilityDetails?.referenceId
-            : tx.reference_type === "Refund/Investment"
-            ? tx.refundInvestmentDetails?.referenceId
-            : tx.reference_type === "Maintenance / Repair"
-            ? tx.maintenanceRepairDetails?.referenceId
-            : null,
+              ? tx.liabilityDetails?.referenceId
+              : tx.reference_type === "Refund/Investment"
+                ? tx.refundInvestmentDetails?.referenceId
+                : tx.reference_type === "Maintenance / Repair"
+                  ? tx.maintenanceRepairDetails?.referenceId
+                  : null,
         approvalId: tx.approvalId?.approvalId || null,
         debitAccount: tx.debitAccount?.accountName || null,
         creditAccount: tx.creditAccount?.accountName || null,
@@ -110,7 +110,7 @@ const getTransactionHistory = asyncHandler(async (req, res) => {
     formattedResults.push(...records);
   }
 
-  // Purchase Transaction
+  // Purchase Transactions
   if (type === "Purchase" || type === "All") {
     const records = await fetchAndFormat(
       PurchaseTransaction,
@@ -155,7 +155,7 @@ const getTransactionHistory = asyncHandler(async (req, res) => {
     formattedResults.push(...records);
   }
 
-  // Sale Transaction
+  // Sale Transactions
   if (type === "Sale" || type === "All") {
     const records = await fetchAndFormat(
       SaleTransaction,
@@ -179,7 +179,7 @@ const getTransactionHistory = asyncHandler(async (req, res) => {
         transactionDate: tx.saleDate,
         status: tx.status,
         transactionType: `Sale - ${tx.transactionType}`,
-        amount: tx.saleAmount,
+        amount: parseFloat(tx.saleAmount?.toString() || "0"),
         mode: `${tx.transactionMode} - ${tx.transactionSubmode}`,
         referenceId: tx.customerId?.customerName || null,
         approvalId: tx.approvalId?.approvalId || null,
@@ -198,5 +198,8 @@ const getTransactionHistory = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, formattedResults, "Transaction history fetched"));
 });
 
+
 export { getTransactionHistory };
+
+
 

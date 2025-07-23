@@ -133,135 +133,173 @@ export default function ApprovalsPage() {
   }, [approval_created_by])
 
 // Fetch received approvals
-  useEffect(() => {
-    if (activeSection === "received" && approval_created_by) {
-      const fetchReceivedApprovals = async () => {
-        try {
-          if (!approval_created_by) {
-            setSubmitMessage("Please log in to view received approvals")
-            setTimeout(() => setSubmitMessage(""), 3000)
-            return
-          }
-          const response = await fetch(
-            `http://localhost:8000/api/v1/approval/received${priorityFilter !== "all" ? `?priority=${priorityFilter}` : ""}`,
-            {
-              method: "GET",
-              credentials: "include",
-              headers: getAuthHeaders(),
-            }
-          )
-          const data = await response.json()
-
-          if (data.statusCode === 200) {
-            const transformedApprovals = data.data.map(approval => {
-              // Ensure min_expense and max_expense are valid numbers
-              const minExpense = isNaN(Number(approval.min_expense?.toString())) ? 0 : Number(approval.min_expense.toString())
-              const maxExpense = isNaN(Number(approval.max_expense?.toString())) ? 0 : Number(approval.max_expense.toString())
-
-              
-              return {
-                id: approval._id,
-                approval_id: approval.approval_id,
-                approvalfor: approval.approvalfor,
-                reason: approval.reason,
-                priority: approval.priority,
-                expenseRange: `${minExpense.toFixed(2)} - ${maxExpense.toFixed(2)}`,
-                tentative_date: new Date(approval.tentative_date).toISOString().split('T')[0],
-                receiveDate: new Date(approval.createdAt).toISOString().split('T')[0],
-                status: approval.status.toLowerCase(),
-                senderName: approval.approval_created_by?.name || 'Unknown',
-                senderDepartment:
-                  typeof approval.approval_created_by?.department === "object"
-                    ? `${approval.approval_created_by.department.department_id || "Unknown"} - ${approval.approval_created_by.department.departmentName || "Unknown"}`
-                    : approval.approval_created_by?.department || "Unknown",
-                senderDesignation: approval.approval_created_by?.role || 'Unknown',
-                senderId: approval.approval_created_by?.employeeId || '',
-                approval_to: approval.approval_to?.employeeId || '',
-                approverName: approval.approval_to?.name || 'Unknown',
-                actionDate: approval.decision_date ? new Date(approval.decision_date).toISOString().split('T')[0] : '',
-                actionNote: approval.approver_note || '',
-                decisionTime: approval.decision_time ? new Date(approval.decision_time).toLocaleTimeString() : '',
-                decisionDate: approval.decision_date ? new Date(approval.decision_date).toISOString().split('T')[0] : ''
-              }
-            })
-            setReceivedApprovals(transformedApprovals)
-          } else {
-            setSubmitMessage(data.message || "Error fetching received approvals")
-            setTimeout(() => setSubmitMessage(""), 3000)
-          }
-        } catch (error) {
-          console.error("Fetch received approvals error:", error)
-          setSubmitMessage("Error fetching received approvals")
-          setTimeout(() => setSubmitMessage(""), 3000)
+useEffect(() => {
+  if (activeSection === "received" && approval_created_by) {
+    const fetchReceivedApprovals = async () => {
+      try {
+        if (!approval_created_by) {
+          setSubmitMessage("Please log in to view received approvals");
+          setTimeout(() => setSubmitMessage(""), 3000);
+          return;
         }
+
+        const response = await fetch(
+          `http://localhost:8000/api/v1/approval/received${
+            priorityFilter !== "all" ? `?priority=${priorityFilter}` : ""
+          }`,
+          {
+            method: "GET",
+            credentials: "include",
+            headers: getAuthHeaders(),
+          }
+        );
+
+        const data = await response.json();
+
+        if (data.statusCode === 200) {
+          const transformedApprovals = data.data.map((approval) => {
+            const minExpense = Number(approval.min_expense?.$numberDecimal || 0);
+            const maxExpense = Number(approval.max_expense?.$numberDecimal || 0);
+
+            return {
+              id: approval._id,
+              approval_id: approval.approval_id,
+              approvalfor: approval.approvalfor,
+              reason: approval.reason,
+              priority: approval.priority,
+              expenseRange: `${minExpense.toFixed(2)} - ${maxExpense.toFixed(2)}`,
+              tentative_date: new Date(approval.tentative_date).toISOString().split("T")[0],
+              receiveDate: new Date(approval.createdAt).toISOString().split("T")[0],
+              status: approval.status?.toLowerCase() || "pending",
+
+              // Sender details
+              senderName: approval.approval_created_by?.name || "Unknown",
+              senderDepartment:
+                typeof approval.approval_created_by?.department === "object"
+                  ? `${approval.approval_created_by.department?.department_id || "Unknown"} - ${
+                      approval.approval_created_by.department?.departmentName || "Unknown"
+                    }`
+                  : approval.approval_created_by?.department || "Unknown",
+              senderDesignation: approval.approval_created_by?.role || "Unknown",
+              senderId: approval.approval_created_by?.employeeId || "",
+
+              // Receiver (approver) details
+              approval_to: approval.approval_to?.employeeId || "",
+              approverName: approval.approval_to?.name || "Unknown",
+
+              // Action info
+              actionDate: approval.decision_date
+                ? new Date(approval.decision_date).toISOString().split("T")[0]
+                : "",
+              actionNote: approval.approver_note || "",
+              decisionTime: approval.decision_time
+                ? new Date(approval.decision_time).toLocaleTimeString()
+                : "",
+              decisionDate: approval.decision_date
+                ? new Date(approval.decision_date).toISOString().split("T")[0]
+                : "",
+            };
+          });
+
+          setReceivedApprovals(transformedApprovals);
+        } else {
+          setSubmitMessage(data.message || "Error fetching received approvals");
+          setTimeout(() => setSubmitMessage(""), 3000);
+        }
+      } catch (error) {
+        console.error("Fetch received approvals error:", error);
+        setSubmitMessage("Error fetching received approvals");
+        setTimeout(() => setSubmitMessage(""), 3000);
       }
-      fetchReceivedApprovals()
-    }
-  }, [activeSection, priorityFilter, approval_created_by])
+    };
+
+    fetchReceivedApprovals();
+  }
+}, [activeSection, priorityFilter, approval_created_by]);
+
 
   // Fetch approval history
-  useEffect(() => {
-    if (activeSection === "history" && approval_created_by) {
-      const fetchApprovalHistory = async () => {
-        try {
-          const queryParams = new URLSearchParams()
-          if (statusFilter !== "all") queryParams.append("status", statusFilter)
-          queryParams.append("sort", sortBy === "newest" ? "desc" : "asc")
-          
-          const response = await fetch(
-            `http://localhost:8000/api/v1/approval/history?${queryParams}`,
-            {
-              method: "GET",
-              credentials: "include",
-              headers: getAuthHeaders(),
-            }
-          )
-          const data = await response.json()
-          console.log("Approval history raw data:", data) // Debug log
-          if (data.status === 200 || data.statusCode === 200) {
-            const transformedHistory = data.data.map(approval => {
-              // Ensure min_expense and max_expense are valid numbers
-              const minExpense = isNaN(Number(approval.min_expense)) ? 0 : Number(approval.min_expense)
-              const maxExpense = isNaN(Number(approval.max_expense)) ? 0 : Number(approval.max_expense)
-              
-              return {
-                id: approval._id,
-                approval_id: approval.approval_id,
-                approvalfor: approval.approvalfor,
-                reason: approval.reason,
-                priority: approval.priority,
-                expenseRange: `${minExpense.toFixed(2)} - ${maxExpense.toFixed(2)}`,
-                tentative_date: new Date(approval.tentative_date).toISOString().split('T')[0],
-                submittedDate: new Date(approval.createdAt).toISOString().split('T')[0],
-                status: approval.status.toLowerCase(),
-                approvedBy: approval.approvedBy ? `${approval.approvedBy.employeeId} - ${approval.approvedBy.name}` : "",
-                rejectedBy: approval.rejectedBy ? `${approval.rejectedBy.employeeId} - ${approval.rejectedBy.name}` : "",
-                actionDate: approval.decision_date ? new Date(approval.decision_date).toISOString().split('T')[0] : "",
-                actionNote: approval.approver_note || "",
-                senderName: approval.approval_created_by?.name || "Unknown",
-                senderDepartment: approval.approval_created_by?.department || "N/A",
-                senderDesignation: approval.approval_created_by?.role || "Unknown",
-                senderId: approval.approval_created_by?.employeeId || "",
-                approval_to: approval.approval_to?.employeeId || "",
-                approverName: approval.approval_to?.name || "Unknown",
-                decisionTime: approval.decision_time ? new Date(approval.decision_time).toLocaleTimeString() : "",
-                decisionDate: approval.decision_date ? new Date(approval.decision_date).toISOString().split('T')[0] : "",
-              }
-            })
-            setApprovalHistory(transformedHistory)
-          } else {
-            setSubmitMessage(data.message || "Error fetching approval history")
-            setTimeout(() => setSubmitMessage(""), 3000)
+useEffect(() => {
+  if (activeSection === "history" && approval_created_by) {
+    const fetchApprovalHistory = async () => {
+      try {
+        const queryParams = new URLSearchParams();
+        if (statusFilter !== "all") queryParams.append("status", statusFilter);
+        queryParams.append("sort", sortBy === "newest" ? "desc" : "asc");
+
+        const response = await fetch(
+          `http://localhost:8000/api/v1/approval/history?${queryParams.toString()}`,
+          {
+            method: "GET",
+            credentials: "include",
+            headers: getAuthHeaders(),
           }
-        } catch (error) {
-          console.error("Fetch approval history error:", error)
-          setSubmitMessage("Error fetching approval history")
-          setTimeout(() => setSubmitMessage(""), 3000)
+        );
+
+        const data = await response.json();
+        console.log("Approval history raw data:", data); // Debug log
+
+        if (data.status === 200 || data.statusCode === 200) {
+          const transformedHistory = data.data.map((approval) => {
+            const minExpense = Number(approval.min_expense?.$numberDecimal || 0);
+            const maxExpense = Number(approval.max_expense?.$numberDecimal || 0);
+
+            const approvalCreatedBy = approval.approval_created_by
+            const approvalTo = approval.approval_to
+
+            const senderId =
+              typeof approvalCreatedBy === "object" && approvalCreatedBy !== null
+                ? approvalCreatedBy.employeeId
+                : typeof approvalCreatedBy === "string"
+                  ? approvalCreatedBy
+                  : ""
+
+            const approvalToId =
+              typeof approvalTo === "object" && approvalTo !== null
+                ? approvalTo.employeeId
+                : typeof approvalTo === "string"
+                  ? approvalTo
+                  : ""
+
+            return {
+              id: approval._id,
+              approval_id: approval.approval_id,
+              approvalfor: approval.approvalfor,
+              reason: approval.reason,
+              priority: approval.priority,
+              expenseRange: `${minExpense.toFixed(2)} - ${maxExpense.toFixed(2)}`,
+              tentative_date: new Date(approval.tentative_date).toISOString().split('T')[0],
+              submittedDate: new Date(approval.createdAt).toISOString().split('T')[0],
+              status: approval.status.toLowerCase(),
+              approvedBy: approval.approvedBy ? `${approval.approvedBy.employeeId} - ${approval.approvedBy.name}` : "",
+              rejectedBy: approval.rejectedBy ? `${approval.rejectedBy.employeeId} - ${approval.rejectedBy.name}` : "",
+              actionDate: approval.decision_date ? new Date(approval.decision_date).toISOString().split('T')[0] : "",
+              actionNote: approval.approver_note || "",
+              senderId: senderId,
+              approval_to: approvalToId,
+              approverName:
+                typeof approvalTo === "object" && approvalTo !== null ? approvalTo.name : "Unknown",
+              decisionTime: approval.decision_time ? new Date(approval.decision_time).toLocaleTimeString() : "",
+              decisionDate: approval.decision_date ? new Date(approval.decision_date).toISOString().split('T')[0] : "",
+            }
+          })
+
+          setApprovalHistory(transformedHistory);
+        } else {
+          setSubmitMessage(data.message || "Error fetching approval history");
+          setTimeout(() => setSubmitMessage(""), 3000);
         }
+      } catch (error) {
+        console.error("Fetch approval history error:", error);
+        setSubmitMessage("Error fetching approval history");
+        setTimeout(() => setSubmitMessage(""), 3000);
       }
-      fetchApprovalHistory()
-    }
-  }, [activeSection, statusFilter, sortBy, approval_created_by])
+    };
+
+    fetchApprovalHistory();
+  }
+}, [activeSection, statusFilter, sortBy, approval_created_by]);
+
 
   // Generate approval ID
   useEffect(() => {
@@ -915,147 +953,133 @@ export default function ApprovalsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Approval Detail Dialog */}
-      <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Approval Details - {selectedApprovalDetail?.approval_id}</DialogTitle>
-            <DialogDescription>Complete information about this approval request</DialogDescription>
-          </DialogHeader>
-          {selectedApprovalDetail && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+{/* Approval Detail Dialog */}
+<Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
+  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+    <DialogHeader>
+      <DialogTitle>Approval Details - {selectedApprovalDetail?.approval_id}</DialogTitle>
+      <DialogDescription>Complete information about this approval request</DialogDescription>
+    </DialogHeader>
+
+    {selectedApprovalDetail && (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+          <div>
+            <Label className="text-sm font-medium text-gray-700">Approval ID</Label>
+            <p className="text-sm text-gray-900">{selectedApprovalDetail.approval_id}</p>
+          </div>
+          <div>
+            <Label className="text-sm font-medium text-gray-700">Approval For</Label>
+            <p className="text-sm text-gray-900">
+              {getApprovalCategoryName(selectedApprovalDetail.approvalfor)}
+            </p>
+          </div>
+          <div>
+            <Label className="text-sm font-medium text-gray-700">Approver's Employee ID</Label>
+            <p className="text-sm text-gray-900">{selectedApprovalDetail.approval_to}</p>
+          </div>
+          <div>
+            <Label className="text-sm font-medium text-gray-700">Status</Label>
+            <Badge className={getStatusColor(selectedApprovalDetail.status)}>
+              {selectedApprovalDetail.status.toUpperCase()}
+            </Badge>
+          </div>
+          <div>
+            <Label className="text-sm font-medium text-gray-700">Priority</Label>
+            <Badge className={getPriorityColor(selectedApprovalDetail.priority)}>
+              {selectedApprovalDetail.priority.toUpperCase()}
+            </Badge>
+          </div>
+          <div>
+            <Label className="text-sm font-medium text-gray-700">Submitted Date</Label>
+            <p className="text-sm text-gray-900">
+              {new Date(selectedApprovalDetail.submittedDate).toLocaleDateString()}
+            </p>
+          </div>
+          <div>
+            <Label className="text-sm font-medium text-gray-700">Sender's Employee ID</Label>
+            <p className="text-sm text-gray-900">{selectedApprovalDetail.senderId}</p>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <h4 className="font-medium text-gray-900">Financial Details</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label className="text-sm font-medium text-gray-700">Expense Range</Label>
+              <p className="text-sm text-gray-900">₹{selectedApprovalDetail.expenseRange}</p>
+            </div>
+            <div>
+              <Label className="text-sm font-medium text-gray-700">Tentative Date</Label>
+              <p className="text-sm text-gray-900">
+                {new Date(selectedApprovalDetail.tentative_date).toLocaleDateString()}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-sm font-medium text-gray-700">Reason</Label>
+          <p className="text-sm text-gray-900 p-3 bg-gray-50 rounded-lg">
+            {selectedApprovalDetail.reason}
+          </p>
+        </div>
+
+        {(selectedApprovalDetail.approvedBy ||
+          selectedApprovalDetail.rejectedBy ||
+          selectedApprovalDetail.actionDate ||
+          selectedApprovalDetail.actionNote) && (
+          <div className="space-y-4 p-4 border rounded-lg">
+            <h4 className="font-medium text-gray-900">Action Details</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {selectedApprovalDetail.approvedBy && (
                 <div>
-                  <Label className="text-sm font-medium text-gray-700">Approval ID</Label>
-                  <p className="text-sm text-gray-900">{selectedApprovalDetail.approval_id}</p>
+                  <Label className="text-sm font-medium text-gray-700">Approved By</Label>
+                  <p className="text-sm text-gray-900">{selectedApprovalDetail.approvedBy}</p>
                 </div>
+              )}
+              {selectedApprovalDetail.rejectedBy && (
                 <div>
-                  <Label className="text-sm font-medium text-gray-700">Approval For</Label>
-                  <p className="text-sm text-gray-900">{getApprovalCategoryName(selectedApprovalDetail.approvalfor)}</p>
+                  <Label className="text-sm font-medium text-gray-700">Rejected By</Label>
+                  <p className="text-sm text-gray-900">{selectedApprovalDetail.rejectedBy}</p>
                 </div>
+              )}
+              {selectedApprovalDetail.actionDate && (
                 <div>
-                  <Label className="text-sm font-medium text-gray-700">Approval To</Label>
+                  <Label className="text-sm font-medium text-gray-700">Action Date</Label>
                   <p className="text-sm text-gray-900">
-                    {selectedApprovalDetail.approverName || selectedApprovalDetail.approval_to}
+                    {new Date(selectedApprovalDetail.actionDate).toLocaleDateString()}
                   </p>
                 </div>
+              )}
+              {selectedApprovalDetail.decisionDate && (
                 <div>
-                  <Label className="text-sm font-medium text-gray-700">Status</Label>
-                  <Badge className={getStatusColor(selectedApprovalDetail.status)}>
-                    {selectedApprovalDetail.status.toUpperCase()}
-                  </Badge>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-700">Priority</Label>
-                  <Badge className={getPriorityColor(selectedApprovalDetail.priority)}>
-                    {selectedApprovalDetail.priority.toUpperCase()}
-                  </Badge>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-700">Submitted Date</Label>
+                  <Label className="text-sm font-medium text-gray-700">Decision Date</Label>
                   <p className="text-sm text-gray-900">
-                    {new Date(selectedApprovalDetail.submittedDate).toLocaleDateString()}
+                    {new Date(selectedApprovalDetail.decisionDate).toLocaleDateString()}
                   </p>
                 </div>
+              )}
+              {selectedApprovalDetail.decisionTime && (
                 <div>
-                  <Label className="text-sm font-medium text-gray-700">Sender's Employee ID</Label>
-                  <p className="text-sm text-gray-900">{selectedApprovalDetail.senderId}</p>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <h4 className="font-medium text-gray-900">Sender Information</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">Sender's Name</Label>
-                    <p className="text-sm text-gray-900">{selectedApprovalDetail.senderName}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">Sender's Department</Label>
-                    <p className="text-sm text-gray-900">{selectedApprovalDetail.senderDepartment}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">Sender's Designation</Label>
-                    <p className="text-sm text-gray-900">{selectedApprovalDetail.senderDesignation}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <h4 className="font-medium text-gray-900">Financial Details</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">Expense Range</Label>
-                    <p className="text-sm text-gray-900">₹{selectedApprovalDetail.expenseRange}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">Tentative Date</Label>
-                    <p className="text-sm text-gray-900">
-                      {new Date(selectedApprovalDetail.tentative_date).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-700">Reason</Label>
-                <p className="text-sm text-gray-900 p-3 bg-gray-50 rounded-lg">{selectedApprovalDetail.reason}</p>
-              </div>
-
-              {(selectedApprovalDetail.approvedBy ||
-                selectedApprovalDetail.rejectedBy ||
-                selectedApprovalDetail.actionDate ||
-                selectedApprovalDetail.actionNote) && (
-                <div className="space-y-4 p-4 border rounded-lg">
-                  <h4 className="font-medium text-gray-900">Action Details</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {selectedApprovalDetail.approvedBy && (
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700">Approved By</Label>
-                        <p className="text-sm text-gray-900">{selectedApprovalDetail.approvedBy}</p>
-                      </div>
-                    )}
-                    {selectedApprovalDetail.rejectedBy && (
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700">Rejected By</Label>
-                        <p className="text-sm text-gray-900">{selectedApprovalDetail.rejectedBy}</p>
-                      </div>
-                    )}
-                    {selectedApprovalDetail.actionDate && (
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700">Action Date</Label>
-                        <p className="text-sm text-gray-900">
-                          {new Date(selectedApprovalDetail.actionDate).toLocaleDateString()}
-                        </p>
-                      </div>
-                    )}
-                    {selectedApprovalDetail.decisionDate && (
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700">Decision Date</Label>
-                        <p className="text-sm text-gray-900">
-                          {new Date(selectedApprovalDetail.decisionDate).toLocaleDateString()}
-                        </p>
-                      </div>
-                    )}
-                    {selectedApprovalDetail.decisionTime && (
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700">Decision Time</Label>
-                        <p className="text-sm text-gray-900">{selectedApprovalDetail.decisionTime}</p>
-                      </div>
-                    )}
-                  </div>
-                  {selectedApprovalDetail.actionNote && (
-                    <div>
-                      <Label className="text-sm font-medium text-gray-700">Approver's Note</Label>
-                      <p className="text-sm text-gray-900 p-3 bg-blue-50 rounded-lg">
-                        {selectedApprovalDetail.actionNote}
-                      </p>
-                    </div>
-                  )}
+                  <Label className="text-sm font-medium text-gray-700">Decision Time</Label>
+                  <p className="text-sm text-gray-900">{selectedApprovalDetail.decisionTime}</p>
                 </div>
               )}
             </div>
-          )}
+            {selectedApprovalDetail.actionNote && (
+              <div>
+                <Label className="text-sm font-medium text-gray-700">Approver's Note</Label>
+                <p className="text-sm text-gray-900 p-3 bg-blue-50 rounded-lg">
+                  {selectedApprovalDetail.actionNote}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    )}
+
           <DialogFooter>
             <Button onClick={() => setDetailDialogOpen(false)}>Close</Button>
           </DialogFooter>
