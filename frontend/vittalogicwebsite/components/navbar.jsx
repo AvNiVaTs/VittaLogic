@@ -2,7 +2,7 @@
 
 import { LogOut, Menu, User } from "lucide-react"
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -17,14 +17,33 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
+
   // This is a mock state for demonstration. In a real app, this would come from an authentication context.
-  const isLoggedIn = true // Set to true to show logged in state
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const checkLoginStatus = () => {
+      const accessToken = localStorage.getItem("accessToken");
+      setIsLoggedIn(!!accessToken);
+    };
+
+    checkLoginStatus(); // On mount
+
+    window.addEventListener("storage", checkLoginStatus); // Listen for token changes across tabs/components
+
+    return () => {
+      window.removeEventListener("storage", checkLoginStatus);
+    };
+  }, []);
 
   const handleSignOut = () => {
     // Add your sign out logic here
-    console.log("User signed out")
-    // For demonstration, we'll just reload the page or redirect
-    window.location.href = "/login"
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("token");
+    localStorage.removeItem("loggedInEmployee");
+    setIsLoggedIn(false);
+    window.dispatchEvent(new Event("storage")); // Important!
+    window.location.href = "/";
   }
 
   return (

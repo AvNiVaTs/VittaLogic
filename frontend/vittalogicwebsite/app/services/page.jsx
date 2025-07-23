@@ -13,8 +13,9 @@ import {
   Users,
 } from "lucide-react"
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
+import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -57,7 +58,7 @@ export default function ServicesPage() {
   const [showLoginDialog, setShowLoginDialog] = useState(false)
   const [showEmployeeAuthDialog, setShowEmployeeAuthDialog] = useState(false)
   const [showForgotPasswordDialog, setShowForgotPasswordDialog] = useState(false)
-  const [isLoggedIn, setIsLoggedIn] = useState(true) // Set to true to show logged in state
+  const [isLoggedIn, setIsLoggedIn] = useState(false) // Set to true to show logged in state
   const [selectedService, setSelectedService] = useState("")
   const [employeeId, setEmployeeId] = useState("")
   const [password, setPassword] = useState("")
@@ -73,6 +74,19 @@ export default function ServicesPage() {
   const [forgotPasswordNew, setForgotPasswordNew] = useState("")
   const [forgotPasswordConfirm, setForgotPasswordConfirm] = useState("")
   const [forgotPasswordError, setForgotPasswordError] = useState("")
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    const accessToken = localStorage.getItem("accessToken")
+    if (!accessToken) {
+      window.location.href = "/login"
+    } else {
+      setIsLoggedIn(true)
+      setIsLoading(false)
+    }
+  }, [])
+
+  if (isLoading) return <div></div>
 
   const services = [
     {
@@ -309,9 +323,12 @@ export default function ServicesPage() {
 
 
   const handleSignOut = () => {
-    setIsLoggedIn(false)
-    // Add your sign out logic here
-    console.log("User signed out")
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("token");
+    localStorage.removeItem("loggedInEmployee");
+    setIsLoggedIn(false);
+    window.dispatchEvent(new Event("storage")); // Important!
+    window.location.href = "/";
   }
 
   const resetAuthDialog = () => {
@@ -347,73 +364,7 @@ export default function ServicesPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
-      {/* Modified Navbar with Profile Icon */}
-      <nav className="fixed top-0 w-full bg-white/95 backdrop-blur-sm border-b border-gray-200 z-50">
-        <div className="container mx-auto max-w-6xl px-4">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <Link href="/" className="flex items-center space-x-2">
-              <img
-                src="/favicon2.png"
-                alt="Logo"
-                className="w-14 h-14 rounded-full object-cover"
-                style={{ boxShadow: '1px 1px 5px rgba(0, 0, 0, 0.5)' }}
-              />
-              <span className="text-2xl font-bold text-blue-600">VittaLogic</span>
-            </Link>
-
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-8">
-              <Link href="/" className="text-gray-700 hover:text-blue-600 font-medium transition-colors">
-                HOME
-              </Link>
-              <Link href="/services" className="text-blue-600 font-medium">
-                SERVICES
-              </Link>
-              <Link href="#contact" className="text-gray-700 hover:text-blue-600 font-medium transition-colors">
-                CONTACT US
-              </Link>
-            </div>
-
-            {/* Profile Icon or Auth Buttons */}
-            <div className="flex items-center space-x-4">
-              {isLoggedIn ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback className="bg-blue-600 text-white">ORG</AvatarFallback>
-                      </Avatar>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56" align="end" forceMount>
-                    <DropdownMenuItem asChild>
-                      <Link href="/org-profile" className="flex items-center">
-                        <User className="mr-2 h-4 w-4" />
-                        <span>Organization Profile</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleSignOut}>
-                      <LogOut className="mr-2 h-4 w-4" />
-                      <span>Sign Out</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : (
-                <div className="hidden md:flex items-center space-x-4">
-                  <Button asChild variant="ghost">
-                    <Link href="/login">Login</Link>
-                  </Button>
-                  <Button asChild className="bg-blue-600 hover:bg-blue-700">
-                    <Link href="/signup">Sign Up</Link>
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Navbar />
 
       {/* Service Details Section */}
       <section className="pt-32 pb-16 bg-white">
