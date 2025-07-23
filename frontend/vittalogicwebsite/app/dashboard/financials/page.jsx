@@ -89,6 +89,7 @@ const calculateTotalPayableAmount = (principal, interestRate, interestType, paym
 
 const accountTypes = [
   "Asset",
+  "Cash",
   "Liability",
   "Equity",
   "Income",

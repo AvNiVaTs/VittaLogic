@@ -1,10 +1,10 @@
+import { Department } from "../models/department.model.js";
+import { Employee } from "../models/employee.model.js";
 import { EmployeeSalary } from "../models/employeeSalary.model.js";
-import { Employee } from "../models/employee.model.js"
-import { Department } from "../models/department.model.js"
-import {asyncHandler} from "../utils/asyncHandler.js"
-import {ApiErr} from "../utils/ApiError.js"
-import {ApiResponse} from "../utils/ApiResponse.js"
-import {getNextSequence} from "../utils/getNextSequence.js"
+import { ApiErr } from "../utils/ApiError.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { getNextSequence } from "../utils/getNextSequence.js";
 
 const registerSalary = asyncHandler(async (req, res) => {
     const {
@@ -64,10 +64,15 @@ const registerSalary = asyncHandler(async (req, res) => {
 
 const updateSalaryDetails = asyncHandler(async (req, res) => {
     const { salaryId } = req.params;
-    const { baseSalary, bonus = 0, deduction = 0, paymentDate, updatedBy } = req.body;
+    const { baseSalary, bonus = 0, deduction = 0, paymentDate, updatedBy, payMonth } = req.body;
 
     if (baseSalary === undefined || baseSalary === null || !paymentDate || !updatedBy) {
         throw new ApiErr(400, "Base salary, payment date, and updatedBy are required");
+    }
+
+    // Optional validation for payMonth format: MM-YYYY
+    if (payMonth && !/^\d{2}-\d{4}$/.test(payMonth)) {
+        throw new ApiErr(400, "Invalid payMonth format. Use MM-YYYY");
     }
 
     const salary = await EmployeeSalary.findOne({ salaryId });
@@ -75,8 +80,6 @@ const updateSalaryDetails = asyncHandler(async (req, res) => {
         throw new ApiErr(404, "Salary record not found");
     }
 
-    // Optional but recommended:
-    // Verify employee still exists and has the same department/role
     const emp = await Employee.findOne({ employeeId: salary.employee });
     if (!emp) {
         throw new ApiErr(404, "Employee linked to this salary record no longer exists");
@@ -98,12 +101,17 @@ const updateSalaryDetails = asyncHandler(async (req, res) => {
     salary.paymentDate = paymentDate;
     salary.updatedBy = updatedBy;
 
+    if (payMonth) {
+        salary.payMonth = payMonth;
+    }
+
     await salary.save();
 
     return res.status(200).json(
         new ApiResponse(200, salary, "Salary updated successfully")
     );
 });
+
 
 const getEmpSalaryDetails = asyncHandler(async (req, res) => {
   const { employeeId } = req.params;
@@ -260,14 +268,55 @@ const getEmployeesByDepartmentAndRole = asyncHandler(async (req, res) => {
   );
 });
 
+const getAllEmployeeSalary = asyncHandler(async (req, res) => {
+  const salaryRecords = await EmployeeSalary.find().sort({ createdAt: -1 });
+
+  if (!salaryRecords.length) {
+    return res.status(404).json(new ApiResponse(404, [], "No salary records found"));
+  }
+
+  // Step 1: Collect unique employee and department IDs
+  const employeeIds = [...new Set(salaryRecords.map(s => s.employee))];
+  const departmentIds = [...new Set(salaryRecords.map(s => s.department))];
+
+  // Step 2: Fetch employees and departments
+  const employees = await Employee.find(
+    { employeeId: { $in: employeeIds } }
+  ).select("employeeId employeeName");
+
+  const departments = await Department.find(
+    { department_id: { $in: departmentIds } }
+  ).select("department_id departmentName");
+
+  // Step 3: Create lookup maps
+  const empMap = Object.fromEntries(
+    employees.map(emp => [emp.employeeId, emp.employeeName])
+  );
+
+  const deptMap = Object.fromEntries(
+    departments.map(dept => [dept.department_id, dept.departmentName])
+  );
+
+  // Step 4: Build final response
+  const enrichedRecords = salaryRecords.map(record => ({
+    ...record.toObject(),
+    employee: {
+      employeeId: record.employee,
+      employeeName: empMap[record.employee] || "Unknown"
+    },
+    department: {
+      department_id: record.department,
+      departmentName: deptMap[record.department] || "Unknown"
+    }
+  }));
+
+  return res.status(200).json(
+    new ApiResponse(200, enrichedRecords, "All employee salary records fetched")
+  );
+});
+
 
 export {
-    registerSalary,
-    updateSalaryDetails,
-    getEmpSalaryDetails,
-    searchSalaryByEmpName,
-    getEligibleEmpForSalary,
-    getDepartmentDropdown,
-    getRolesByDepartment,
-    getEmployeesByDepartmentAndRole
-}
+  getAllEmployeeSalary, getDepartmentDropdown, getEligibleEmpForSalary, getEmployeesByDepartmentAndRole, getEmpSalaryDetails, getRolesByDepartment, registerSalary, searchSalaryByEmpName, updateSalaryDetails
+};
+

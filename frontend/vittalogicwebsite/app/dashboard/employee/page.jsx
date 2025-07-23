@@ -123,7 +123,7 @@ export default function EmployeePage() {
   useEffect(() => {
     const fetchSalaryRecords = async () => {
       try {
-        const res = await fetch("http://localhost:8000/api/v1/emp/salary/search", {
+        const res = await fetch("http://localhost:8000/api/v1/emp/salary/getAllSal", {
           credentials: "include",
         })
         const data = await res.json()
@@ -432,39 +432,48 @@ const handleSalarySubmit = async (e) => {
   }
 
   // Save salary changes
-  const saveSalaryChanges = async () => {
-    try {
-      const res = await fetch(`http://localhost:8000/api/v1/emp/salary/update/${editingSalary.salaryId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          baseSalary: Number.parseFloat(editingSalary.baseSalary),
-          bonus: Number.parseFloat(editingSalary.bonus) || 0,
-          deduction: Number.parseFloat(editingSalary.deduction) || 0,
-          paymentDate: editingSalary.paymentDate,
-          updatedBy: LOGGED_IN_EMPLOYEE_ID,
-        }),
-      })
-      const data = await res.json()
-      if (data.success) {
-        setSalaryRecords(salaryRecords.map((record) =>
-          record.salaryId === editingSalary.salaryId ? data.data : record
-        ))
-        setEditingSalaryDialogOpen(false)
-        setSubmitMessage("Salary record updated successfully!")
-      } else {
-        setSubmitMessage(data.message || "Failed to update salary record")
-      }
-    } catch (error) {
-      console.error("Error updating salary:", error)
-      setSubmitMessage("Something went wrong.")
-    } finally {
-      setTimeout(() => setSubmitMessage(""), 3000)
+const saveSalaryChanges = async () => {
+  try {
+    // Extract the payMonth from paymentDate (format to MM-YYYY)
+    const payMonthDate = new Date(editingSalary.paymentDate);
+    const payMonth = `${String(payMonthDate.getMonth() + 1).padStart(2, "0")}-${payMonthDate.getFullYear()}`;
+
+    const res = await fetch(`http://localhost:8000/api/v1/emp/salary/update/${editingSalary.salaryId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({
+        baseSalary: Number.parseFloat(editingSalary.baseSalary),
+        bonus: Number.parseFloat(editingSalary.bonus) || 0,
+        deduction: Number.parseFloat(editingSalary.deduction) || 0,
+        paymentDate: editingSalary.paymentDate,
+        updatedBy: LOGGED_IN_EMPLOYEE_ID,
+        payMonth, // ✅ correctly formatted MM-YYYY
+      }),
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      setSalaryRecords(salaryRecords.map((record) =>
+        record.salaryId === editingSalary.salaryId ? data.data : record
+      ));
+      setEditingSalaryDialogOpen(false);
+      setSubmitMessage("Salary record updated successfully!");
+    } else {
+      setSubmitMessage(data.message || "Failed to update salary record");
     }
+  } catch (error) {
+    console.error("Error updating salary:", error);
+    setSubmitMessage("Something went wrong.");
+  } finally {
+    setTimeout(() => setSubmitMessage(""), 3000);
   }
+};
+
+
 
   const filteredEmployees = employees.filter(
     (emp) =>
