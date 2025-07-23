@@ -1,7 +1,7 @@
 import { Approval } from "../models/approval.model.js";
 import { FinancialAccount } from "../models/companyFinancial.model.js";
 import { Department } from "../models/department.model.js";
-import { PurchaseTransaction } from "../models/purchaseTransaction.model.js";
+import { PurchaseTransaction } from "../models/purchasetransaction.model.js";
 import { Vendor } from "../models/vendor.model.js";
 import { VendorPayment } from "../models/vendorPayment.model.js";
 import { ApiErr } from "../utils/ApiError.js";
