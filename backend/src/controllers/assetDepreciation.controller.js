@@ -130,36 +130,39 @@ const getAssetDropdownByType = asyncHandler(async (req, res) => {
 
 // 3. GET DEPRECIATION TRACKING CARD DETAILS
 const getDepreciationTrackingDetails = asyncHandler(async (req, res) => {
-  const { assetId } = req.params;
+  // Find all assets where a depreciation method is set
+  const assets = await Asset.find({ 
+    "depreciationDetails.depreciationMethod": { $exists: true, $ne: null }
+  });
 
-  const asset = await Asset.findOne({ assetId });
-  if (!asset) throw new ApiErr(404, "Asset not found");
+  if (!assets.length) throw new ApiErr(404, "No depreciating assets found");
 
-  const dep = asset.depreciationDetails;
-  if (!dep || !dep.depreciationMethod) {
-    throw new ApiErr(404, "No depreciation record found for this asset");
-  }
+  const detailsList = assets.map(asset => {
+    const dep = asset.depreciationDetails;
 
-  const details = {
-    assetName: asset.assetName,
-    assetId: asset.assetId,
-    assetType: asset.assetType,
-    depreciationMethod: dep.depreciationMethod,
-    purchaseCost: asset.unitCost,
-    bookValue: dep.currentBookValue,
-    annualDepreciation: dep.annualDepreciation,
-    enteredBy: dep.createdBy,
-    depreciationPercent: dep.depreciatedPercentage,
-    notes: dep.notes || ""
-  };
+    const details = {
+      assetName: asset.assetName,
+      assetId: asset.assetId,
+      assetType: asset.assetType,
+      depreciationMethod: dep.depreciationMethod,
+      purchaseCost: asset.unitCost,
+      bookValue: dep.currentBookValue,
+      annualDepreciation: dep.annualDepreciation,
+      enteredBy: dep.createdBy,
+      depreciationPercent: dep.depreciatedPercentage,
+      notes: dep.notes || ""
+    };
 
-  if (dep.depreciationMethod === "Units of Production Method") {
-    details.totalUnitsProduced = dep.totalExpectedUnits;
-    details.unitsUsedThisYear = dep.actualUnitsUsed;
-  }
+    if (dep.depreciationMethod === "Units of Production Method") {
+      details.totalUnitsProduced = dep.totalExpectedUnits;
+      details.unitsUsedThisYear = dep.actualUnitsUsed;
+    }
+
+    return details;
+  });
 
   return res.status(200).json(
-    new ApiResponse(200, details, "Depreciation tracking details fetched successfully")
+    new ApiResponse(200, detailsList, "Depreciation tracking details fetched successfully")
   );
 });
 

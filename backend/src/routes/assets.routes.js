@@ -71,6 +71,6 @@ router.route("/sync-maintenance").patch(verifyEmployeeJWT, populateCreatedByUpda
 // router.route("/depreciation/update/:assetId").patch(verifyEmployeeJWT, populateCreatedByUpdatedBy, updateAssetDepreciation)
 router.route("/depreciation/create").post(verifyEmployeeJWT, populateCreatedByUpdatedBy, createDepreciation)
 router.route("/depreciation/dropdown/asset").get(getAssetDropdownByType)
-router.route("/depreciation/tracking/:assetId").get(getDepreciationTrackingDetails)
+router.route("/depreciation/tracking").get(getDepreciationTrackingDetails)
 
 export default router
