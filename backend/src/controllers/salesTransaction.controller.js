@@ -4,7 +4,7 @@ import { Asset } from "../models/assets.model.js";
 import { FinancialAccount } from "../models/companyFinancial.model.js";
 import { Customer } from "../models/customer.model.js";
 import { CustomerPayment } from "../models/customerPayment.model.js";
-import { SaleTransaction } from "../models/saleTransaction.model.js";
+import { SaleTransaction } from "../models/saletransaction.model.js";
 import { ApiErr } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
