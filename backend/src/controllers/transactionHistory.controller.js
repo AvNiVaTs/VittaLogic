@@ -1,6 +1,6 @@
 import { InternalTransaction } from "../models/internalTransaction.model.js";
-import { PurchaseTransaction } from "../models/purchaseTransaction.model.js";
-import { SaleTransaction } from "../models/saleTransaction.model.js";
+import { PurchaseTransaction } from "../models/purchasetransaction.model.js";
+import { SaleTransaction } from "../models/saletransaction.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
