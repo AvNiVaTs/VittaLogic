@@ -1,5 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 
+const decimal = mongoose.Schema.Types.Decimal128;
+
 // Customer Types
 const customerTypes = [
   "Technology",
@@ -128,7 +130,7 @@ const saleTransactionSchema = new Schema({
     immutable: true
   },
   saleAmount: {
-    type: Number,
+    type: decimal,
     required: true
   },
   transactionType: {

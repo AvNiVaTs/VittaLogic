@@ -78,21 +78,17 @@ const createSaleTransaction = asyncHandler(async (req, res) => {
     status
   });
 
-  if (saleAmount > 0 && paymentId) {
+  if (saleAmount > 0) {
     const customerPayment = await CustomerPayment.findOne({ customer_payment_id: paymentId });
     if (!customerPayment) {
       throw new ApiErr(404, "Linked customer payment not found");
     }
 
-    const existingPaid = parseFloat(customerPayment.paid_amount?.toString() || "0");
-    const incomingAmount = parseFloat(saleAmount?.toString() || "0"); // force numeric
+    const currentPaid = parseFloat(customerPayment.paid_amount || 0);
+    const newPaidAmount = currentPaid + parseFloat(saleAmount || 0);
+    customerPayment.paid_amount = newPaidAmount;
 
-    const totalPaid = existingPaid + incomingAmount;
-
-    customerPayment.paid_amount = mongoose.Types.Decimal128.fromString(totalPaid.toString());
-
-    const due = parseFloat(customerPayment.payment_amount_in_inr?.toString() || "0");
-    if (totalPaid >= due) {
+    if (newPaidAmount >= parseFloat(customerPayment.payment_amount_in_inr)) {
       customerPayment.status = "Completed";
     }
 

@@ -141,8 +141,6 @@ const createPurchaseTransaction = asyncHandler(async (req, res) => {
   );
 });
 
-
-
 const getDepartmentsForDropdown = asyncHandler(async (req, res) => {
   const departments = await Department.find({}, "department_id departmentName");
 
