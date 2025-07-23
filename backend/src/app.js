@@ -14,6 +14,13 @@ app.use(express.static("public"))
 
 app.use(cookieParser())
 
+app.get('/', (req, res) => {
+    res.send({
+        activeStatus: "Server is running",
+        error: false,
+    })
+})
+
 import orgRouter from "./routes/organization.routes.js"
 import deptRouter from "./routes/department.routes.js"
 import empRouter from "./routes/employee.routes.js"
