@@ -214,7 +214,7 @@ export default function FinancialsPage() {
         }
 
         // Fetch liabilities
-        const liabilitiesResponse = await fetch(`http://localhost:8000/api/v1/use/`, {
+        const liabilitiesResponse = await fetch(`http://localhost:8000/api/v1/use/getAll`, {
           headers: { "Content-Type": "application/json" },
           credentials: "include",
         })
@@ -555,45 +555,50 @@ export default function FinancialsPage() {
 
   // Helper function to get interest calculation explanation
   const getInterestExplanation = (liability) => {
-    if (liability.interest_type === "None" || liability.interest_rate === 0) {
-      return "No interest applied"
+    if (liability.interest_type === "None" || !liability.interest_rate) {
+      return "No interest applied";
     }
 
-    const principal = liability.principle_amount
-    const rate = liability.interest_rate
-    const terms = liability.payment_terms
+    const principal = Number(liability.principle_amount); // Ensure principal is a number
+    const rate = Number(liability.interest_rate); // Convert interest_rate to number
+    const terms = liability.payment_terms;
 
-    let frequency = ""
-    let periodRate = rate
+    if (isNaN(rate)) {
+      return "Invalid interest rate";
+    }
+
+    let frequency = "";
+    let periodRate = rate;
 
     switch (terms) {
       case "Monthly":
-        frequency = "monthly"
-        periodRate = rate / 12
-        break
+        frequency = "monthly";
+        periodRate = rate / 12;
+        break;
       case "Quarterly":
-        frequency = "quarterly"
-        periodRate = rate / 4
-        break
+        frequency = "quarterly";
+        periodRate = rate / 4;
+        break;
       case "Yearly":
-        frequency = "yearly"
-        periodRate = rate
-        break
+        frequency = "yearly";
+        periodRate = rate;
+        break;
       case "One-time":
-        frequency = "one-time"
-        periodRate = rate
-        break
+        frequency = "one-time";
+        periodRate = rate;
+        break;
+      default:
+        frequency = "unknown";
     }
 
     if (liability.interest_type === "Simple") {
-      return `${rate}% simple interest applied ${frequency} (${periodRate.toFixed(2)}% per period)`
+      return `${rate.toFixed(2)}% simple interest applied ${frequency} (${periodRate.toFixed(2)}% per period)`;
     } else if (liability.interest_type === "Compound") {
-      return `${rate}% compound interest applied ${frequency} (${periodRate.toFixed(2)}% per period, compounded)`
+      return `${rate.toFixed(2)}% compound interest applied ${frequency} (${periodRate.toFixed(2)}% per period, compounded)`;
     }
 
-    return ""
-  }
-
+    return "No interest applied";
+  };
   // Helper function to get account name by ID
   const getAccountNameById = (accountId) => {
     const account = accounts.find((acc) => acc.account_id === accountId)
@@ -1742,7 +1747,7 @@ export default function FinancialsPage() {
                                     <div>
                                       <p className="text-sm font-medium">Principal Amount</p>
                                       <p className="text-lg font-semibold text-blue-600">
-                                        ₹{liability.principle_amount.toLocaleString()}
+                                        ₹{parseFloat(liability.principle_amount?.$numberDecimal)}
                                       </p>
                                     </div>
                                     <div>
