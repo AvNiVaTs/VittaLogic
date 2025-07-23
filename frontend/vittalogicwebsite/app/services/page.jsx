@@ -79,7 +79,7 @@ export default function ServicesPage() {
       title: "Dashboard",
       description: "Comprehensive analytics and overview of all business operations",
       icon: BarChart3,
-      href: "/dashboard",
+      href: "https://app.powerbi.com/links/jYnkzhllI3?ctid=27282fdd-4c0b-4dfb-ba91-228cd83fdf71&pbi_source=linkShare",
       id: "Dashboard Service",
     },
     {
