@@ -30,6 +30,7 @@ export default function CustomersPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitMessage, setSubmitMessage] = useState("")
   const [customers, setCustomers] = useState([])
+  const [payments, setPayments] = useState([])
   const [searchTerm, setSearchTerm] = useState("")
   const [editingPayment, setEditingPayment] = useState(null)
   const [editDialogStates, setEditDialogStates] = useState({})
@@ -91,10 +92,9 @@ export default function CustomersPage() {
   const [paymentCurrency, setPaymentCurrency] = useState("INR")
   const [exchangeRate, setExchangeRate] = useState("")
   const [paymentCreationDate, setPaymentCreationDate] = useState("")
-  const [paymentMethod, setPaymentMethod] = useState("Bank Transfer") // New state for payment method
-  const [notes, setNotes] = useState("") // New state for payment notes
-  const [formErrors, setFormErrors] = useState({}) // New state for form validation errors
-  
+  const [paymentMethod, setPaymentMethod] = useState("Bank Transfer")
+  const [notes, setNotes] = useState("")
+  const [formErrors, setFormErrors] = useState({})
 
   // Available options
   const availableCustomerTypes = [
@@ -119,16 +119,17 @@ export default function CustomersPage() {
   const taxProfiles = ["VAT", "Sales Tax"]
   const paymentStatuses = ["pending", "completed", "overdue", "cancelled", "processing"]
   const agingCategories = ["0-30", "31-60", "61-90", "90+"]
-  const paymentMethods = ["Bank Transfer", "Credit Card", "UPI", "Cash", "Cheque"] // New payment methods
+  const paymentMethods = ["Bank Transfer", "Credit Card", "UPI", "Cash", "Cheque"]
 
   // Generate unique ID based on timestamp for UI purposes
   const generateTimestampId = (prefix) => {
     return `${prefix}_${Date.now()}`
   }
 
-  // Fetch customers on mount
+  // Fetch customers and payments on mount
   useEffect(() => {
     fetchCustomers()
+    fetchPayments()
     setCustomerId(generateTimestampId("CUST"))
     setPaymentId(generateTimestampId("PAY"))
     setPaymentCreationDate(new Date().toISOString())
@@ -157,6 +158,29 @@ export default function CustomersPage() {
     }
   }
 
+  // Fetch all payments using getAllCustomerPayments
+  const fetchPayments = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/api/v1/customer/payment/", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      })
+      const data = await response.json()
+      if (data.statusCode === 200) {
+        setPayments(data.data)
+      } else {
+        setSubmitMessage("Error fetching payments")
+        setTimeout(() => setSubmitMessage(""), 3000)
+      }
+    } catch (error) {
+      setSubmitMessage("Error fetching payments")
+      setTimeout(() => setSubmitMessage(""), 3000)
+    }
+  }
+
   // Filter customers based on search term and priority
   const filteredCustomers = customers
     .filter(
@@ -169,63 +193,54 @@ export default function CustomersPage() {
       return customer.customerPriority === customerPriorityFilter
     })
 
-  // Get all payments
-  const allPayments = customers.flatMap((customer) =>
-    (customer.payments || []).map((payment) => ({
-      ...payment,
-      customerName: customer.company_Name,
-      customerId: customer.customer_Id,
-    })),
-  )
-
-  const filteredPayments = allPayments.filter((payment) => {
+  // Filter payments based on search term and status
+  const filteredPayments = payments.filter((payment) => {
     const matchesSearch =
-      payment.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (payment.customerDetails?.company_Name?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
       payment.customer_payment_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.customerId.toLowerCase().includes(searchTerm.toLowerCase())
+      payment.customer_id.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = paymentStatusFilter === "all" || payment.status === paymentStatusFilter
     return matchesSearch && matchesStatus
   })
 
   // Validate payment form
-const validatePaymentForm = () => {
-  const errors = {}
-  
-  if (!paymentCustomerId) errors.paymentCustomerId = "Customer selection is required"
-  if (!paymentAmount || paymentAmount <= 0) errors.paymentAmount = "Valid payment amount is required"
-  if (!paymentAmountINR || paymentAmountINR <= 0) errors.paymentAmountINR = "INR amount is required"
-  if (!purpose.trim()) errors.purpose = "Purpose is required"
-  if (!dueDate) errors.dueDate = "Due date is required"
-  if (!paymentStatus) errors.paymentStatus = "Payment status is required"
-  if (!paymentCurrency) errors.paymentCurrency = "Currency is required"
-  if (!paymentMethod) errors.paymentMethod = "Payment method is required"
-  
-  // Don't require exchange rate validation for INR currency
-  if (paymentCurrency === "INR") {
-    setExchangeRate(1);
-  } else {
-    if (!exchangeRate || exchangeRate <= 0) {
-      errors.exchangeRate = "Valid exchange rate is required";
+  const validatePaymentForm = () => {
+    const errors = {}
+    
+    if (!paymentCustomerId) errors.paymentCustomerId = "Customer selection is required"
+    if (!paymentAmount || paymentAmount <= 0) errors.paymentAmount = "Valid payment amount is required"
+    if (!paymentAmountINR || paymentAmountINR <= 0) errors.paymentAmountINR = "INR amount is required"
+    if (!purpose.trim()) errors.purpose = "Purpose is required"
+    if (!dueDate) errors.dueDate = "Due date is required"
+    if (!paymentStatus) errors.paymentStatus = "Payment status is required"
+    if (!paymentCurrency) errors.paymentCurrency = "Currency is required"
+    if (!paymentMethod) errors.paymentMethod = "Payment method is required"
+    
+    if (paymentCurrency === "INR") {
+      setExchangeRate(1)
+    } else {
+      if (!exchangeRate || exchangeRate <= 0) {
+        errors.exchangeRate = "Valid exchange rate is required"
+      }
     }
+
+    if (creditDays && creditDays < 0) errors.creditDays = "Credit days cannot be negative"
+    if (outstandingAmount && outstandingAmount < 0) errors.outstandingAmount = "Outstanding amount cannot be negative"
+    
+    return errors
   }
 
-  if (creditDays && creditDays < 0) errors.creditDays = "Credit days cannot be negative"
-  if (outstandingAmount && outstandingAmount < 0) errors.outstandingAmount = "Outstanding amount cannot be negative"
-  
-  return errors
-}
-
   const handleCustomerSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setSubmitMessage("");
+    e.preventDefault()
+    setIsSubmitting(true)
+    setSubmitMessage("")
 
     const customerData = {
       company_Name: companyName,
       address,
       company_Email: email,
       customer_Types: customerTypes,
-      contact_Person: {
+      contact_Personii: {
         name: contactPersonName,
         email: contactPersonEmail,
         number: contactPersonNumber,
@@ -272,7 +287,7 @@ const validatePaymentForm = () => {
               iecCode: iec
             },
           }),
-    };
+    }
 
     try {
       const response = await fetch("http://localhost:8000/api/v1/customer/registerCustomer", {
@@ -283,102 +298,80 @@ const validatePaymentForm = () => {
         },
         credentials: "include",
         body: JSON.stringify(customerData),
-      });
-      const data = await response.json();
+      })
+      const data = await response.json()
       if (data.statusCode === 200) {
-        setCustomers((prev) => [...prev, data.data]);
-        setSubmitMessage("Customer created successfully!");
-        resetCustomerForm();
+        setCustomers((prev) => [...prev, data.data])
+        setSubmitMessage("Customer created successfully!")
+        resetCustomerForm()
       } else {
-        setSubmitMessage(data.message || "Error creating customer");
+        setSubmitMessage(data.message || "Error creating customer")
       }
     } catch (error) {
-      setSubmitMessage("Error creating customer");
+      setSubmitMessage("Error creating customer")
     } finally {
-      setIsSubmitting(false);
-      setTimeout(() => setSubmitMessage(""), 3000);
+      setIsSubmitting(false)
+      setTimeout(() => setSubmitMessage(""), 3000)
     }
-  };
-
-const handlePaymentSubmit = async (e) => {
-  e.preventDefault()
-  setIsSubmitting(true)
-  setSubmitMessage("")
-  setFormErrors({})
-
-  const errors = validatePaymentForm()
-  if (Object.keys(errors).length > 0) {
-    setFormErrors(errors)
-    setIsSubmitting(false)
-    setSubmitMessage("Please fix the form errors")
-    setTimeout(() => setSubmitMessage(""), 3000)
-    return
   }
 
-  // Create payment data with all required fields
-  const paymentData = {
-    customer_id: paymentCustomerId,
-    payment_amount: Number.parseFloat(paymentAmount),
-    payment_amount_inr: Number.parseFloat(paymentAmountINR), // Add INR amount
-    purpose,
-    due_date: dueDate,
-    status: paymentStatus, // Make sure status is included
-    credit_days: Number.parseInt(creditDays) || 0,
-    outstanding_amount: Number.parseFloat(outstandingAmount) || 0,
-    exchange_rate: Number.parseFloat(exchangeRate),
-    payment_currency: paymentCurrency, // Add currency
-    payment_method: paymentMethod,
-    notes: notes || "", // Ensure notes is not undefined
-    createdBy: LOGGED_IN_EMPLOYEE_ID,
-    updatedBy: LOGGED_IN_EMPLOYEE_ID,
-  }
+  const handlePaymentSubmit = async (e) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+    setSubmitMessage("")
+    setFormErrors({})
 
-  // Debug: Log the payload to console
-  console.log("Payment Data being sent:", paymentData)
-  
-  // Check for any undefined or null values
-  const missingFields = Object.entries(paymentData)
-    .filter(([key, value]) => value === null || value === undefined || value === "")
-    .map(([key]) => key)
-  
-  if (missingFields.length > 0) {
-    console.log("Missing or empty fields:", missingFields)
-    setSubmitMessage(`Missing fields: ${missingFields.join(", ")}`)
-    setIsSubmitting(false)
-    setTimeout(() => setSubmitMessage(""), 3000)
-    return
-  }
-
-  try {
-    const response = await fetch("http://localhost:8000/api/v1/customer/payment/create", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("employeeToken")}`,
-      },
-      credentials: "include",
-      body: JSON.stringify(paymentData),
-    })
-    
-    const data = await response.json()
-    console.log("Response from server:", data) // Debug response
-    
-    if (data.statusCode === 200) {
-      await fetchCustomers()
-      setSubmitMessage("Customer payment created successfully!")
-      resetPaymentForm()
-    } else {
-      setSubmitMessage(data.message || "Error creating payment")
-      console.log("Server error details:", data) // Debug server error
+    const errors = validatePaymentForm()
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors)
+      setIsSubmitting(false)
+      setSubmitMessage("Please fix the form errors")
+      setTimeout(() => setSubmitMessage(""), 3000)
+      return
     }
-  } catch (error) {
-    console.error("Request error:", error) // Debug request error
-    setSubmitMessage("Error creating payment")
-  } finally {
-    setIsSubmitting(false)
-    setTimeout(() => setSubmitMessage(""), 3000)
+
+    const paymentData = {
+      customer_id: paymentCustomerId,
+      payment_amount: Number.parseFloat(paymentAmount),
+      payment_amount_inr: Number.parseFloat(paymentAmountINR),
+      purpose,
+      due_date: dueDate,
+      status: paymentStatus,
+      credit_days: Number.parseInt(creditDays) || 0,
+      outstanding_amount: Number.parseFloat(outstandingAmount) || 0,
+      exchange_rate: Number.parseFloat(exchangeRate),
+      currency: paymentCurrency,
+      payment_method: paymentMethod,
+      notes: notes || "",
+      createdBy: LOGGED_IN_EMPLOYEE_ID,
+      updatedBy: LOGGED_IN_EMPLOYEE_ID,
+    }
+
+    try {
+      const response = await fetch("http://localhost:8000/api/v1/customer/payment/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("employeeToken")}`,
+        },
+        credentials: "include",
+        body: JSON.stringify(paymentData),
+      })
+      const data = await response.json()
+      if (data.statusCode === 200) {
+        await fetchPayments()
+        setSubmitMessage("Customer payment created successfully!")
+        resetPaymentForm()
+      } else {
+        setSubmitMessage(data.message || "Error creating payment")
+      }
+    } catch (error) {
+      setSubmitMessage("Error creating payment")
+    } finally {
+      setIsSubmitting(false)
+      setTimeout(() => setSubmitMessage(""), 3000)
+    }
   }
-}
 
   const resetCustomerForm = () => {
     setCustomerId(generateTimestampId("CUST"))
@@ -483,7 +476,7 @@ const handlePaymentSubmit = async (e) => {
       })
       const data = await response.json()
       if (data.statusCode === 200) {
-        await fetchCustomers()
+        await fetchPayments()
         setEditingPayment(null)
         setSubmitMessage("Payment updated successfully!")
       } else {
@@ -1712,6 +1705,7 @@ const handlePaymentSubmit = async (e) => {
                   </CardTitle>
                   <CardDescription>View and manage all customer payment records</CardDescription>
                 </CardHeader>
+
                 <CardContent>
                   <div className="mb-6 space-y-4">
                     <div className="relative">
@@ -1723,6 +1717,7 @@ const handlePaymentSubmit = async (e) => {
                         className="pl-10"
                       />
                     </div>
+
                     <div className="flex items-center gap-4">
                       <Label htmlFor="paymentStatusFilter" className="text-sm font-medium text-gray-700">
                         Filter by Status:
@@ -1754,152 +1749,300 @@ const handlePaymentSubmit = async (e) => {
                           : "No payment records created yet."}
                       </div>
                     ) : (
-                      filteredPayments.map((payment) => (
-                        <Card
-                          key={payment.customer_payment_id}
-                          className="border border-gray-200 hover:shadow-md transition-shadow"
-                        >
-                          <CardContent className="p-6">
-                            <div className="flex justify-between items-start mb-4">
-                              <div className="flex-1">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-1">{payment.customerName}</h3>
-                                <div className="text-sm text-gray-600 space-y-1">
-                                  <p>Payment ID: {payment.customer_payment_id}</p>
-                                  <p>Customer ID: {payment.customerId}</p>
-                                  <p>Created by: {payment.createdBy} | Updated by: {payment.updatedBy}</p>
+                      filteredPayments.map((payment) => {
+                        // Enhanced amount formatting function to handle MongoDB Decimal128
+                        const formatAmount = (val) => {
+                          if (typeof val === "object" && val !== null) {
+                            // Handle MongoDB Decimal128 format
+                            const amount = val.$numberDecimal || val.amount;
+                            if (amount) {
+                              const numericValue = parseFloat(amount);
+                              return isNaN(numericValue) ? "N/A" : numericValue.toLocaleString("en-IN");
+                            }
+                            return "N/A";
+                          }
+                          if (typeof val === "number") {
+                            return val.toLocaleString("en-IN");
+                          }
+                          return "N/A";
+                        };
+
+                        // Calculate outstanding amount (total - paid)
+                        const calculateOutstandingAmount = (payment) => {
+                          const totalAmount = payment.payment_amount_in_customer_currency?.$numberDecimal || 
+                                            payment.payment_amount_in_customer_currency || 0;
+                          const paidAmount = payment.paid_amount?.$numberDecimal || 
+                                          payment.paid_amount || 0;
+                          
+                          const total = parseFloat(totalAmount) || 0;
+                          const paid = parseFloat(paidAmount) || 0;
+                          const outstanding = total - paid;
+                          
+                          return outstanding > 0 ? outstanding : 0;
+                        };
+
+                        // Handle customer name with multiple fallbacks
+                        const getCustomerName = () => {
+                          if (payment.customerDetails?.company_Name) {
+                            return payment.customerDetails.company_Name;
+                          }
+                          if (payment.customerDetails?.name) {
+                            return payment.customerDetails.name;
+                          }
+                          if (payment.customer_name) {
+                            return payment.customer_name;
+                          }
+                          return `Customer ${payment.customer_id}`;
+                        };
+
+                        // Get status variant for badge
+                        const getStatusVariant = (status) => {
+                          const statusLower = status?.toLowerCase();
+                          switch (statusLower) {
+                            case "completed":
+                            case "paid":
+                              return "default";
+                            case "pending":
+                              return "secondary";
+                            case "overdue":
+                            case "failed":
+                              return "destructive";
+                            default:
+                              return "outline";
+                          }
+                        };
+
+                        const outstandingAmount = calculateOutstandingAmount(payment);
+
+                        return (
+                          <Card
+                            key={payment.customer_payment_id}
+                            className="border border-gray-200 hover:shadow-md transition-shadow"
+                          >
+                            <CardContent className="p-6">
+                              <div className="flex justify-between items-start mb-4">
+                                <div className="flex-1">
+                                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                                    {getCustomerName()}
+                                  </h3>
+                                  <div className="text-sm text-gray-600 space-y-1">
+                                    <p>Payment ID: {payment.customer_payment_id}</p>
+                                    <p>Customer ID: {payment.customer_id}</p>
+                                    <p>
+                                      Created by: {payment.createdBy} | Updated by: {payment.updatedBy}
+                                    </p>
+                                    <p>
+                                      Created: {new Date(payment.createdAt).toLocaleDateString("en-IN")} | 
+                                      Updated: {new Date(payment.updatedAt).toLocaleDateString("en-IN")}
+                                    </p>
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="flex items-center gap-3">
-                                <Badge
-                                  variant={
-                                    payment.status === "completed"
-                                      ? "default"
-                                      : payment.status === "pending"
-                                        ? "secondary"
-                                        : payment.status === "overdue"
-                                          ? "destructive"
-                                          : "outline"
-                                  }
-                                  className="text-sm px-3 py-1"
-                                >
-                                  {payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
-                                </Badge>
-                                <div className="flex gap-2">
-                                  <Dialog
-                                    open={editDialogStates[payment.customer_payment_id] || false}
-                                    onOpenChange={(open) => {
-                                      setEditDialogStates((prev) => ({
-                                        ...prev,
-                                        [payment.customer_payment_id]: open,
-                                      }))
-                                    }}
+
+                                <div className="flex items-center gap-3">
+                                  <Badge
+                                    variant={getStatusVariant(payment.status)}
+                                    className="text-sm px-3 py-1"
                                   >
-                                    <DialogTrigger asChild>
-                                      <Button variant="outline" size="sm">
-                                        <Edit className="h-4 w-4" />
-                                      </Button>
-                                    </DialogTrigger>
-                                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                                      <DialogHeader>
-                                        <DialogTitle>Edit Payment</DialogTitle>
-                                        <DialogDescription>
-                                          Update payment information for {payment.customerName}
-                                        </DialogDescription>
-                                      </DialogHeader>
-                                      <PaymentEditForm
-                                        payment={payment}
-                                        onSave={(updatedPayment) => {
-                                          handleEditPayment(payment.customerId, payment.customer_payment_id, updatedPayment)
-                                          setEditDialogStates((prev) => ({
-                                            ...prev,
-                                            [payment.customer_payment_id]: false,
-                                          }))
-                                        }}
-                                        onCancel={() => {
-                                          setEditDialogStates((prev) => ({
-                                            ...prev,
-                                            [payment.customer_payment_id]: false,
-                                          }))
-                                        }}
-                                      />
-                                    </DialogContent>
-                                  </Dialog>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={async () => {
-                                      try {
-                                        const response = await fetch(`http://localhost:8000/api/v1/customer/payment/delete/${payment.customer_payment_id}`, {
-                                          method: "DELETE",
-                                          headers: {
-                                            "Content-Type": "application/json",
-                                          },
-                                          credentials: "include",
-                                        })
-                                        const data = await response.json()
-                                        if (data.statusCode === 200) {
-                                          await fetchCustomers()
-                                          setSubmitMessage("Payment deleted successfully!")
-                                        } else {
-                                          setSubmitMessage(data.message || "Error deleting payment")
-                                        }
-                                      } catch (error) {
-                                        setSubmitMessage("Error deleting payment")
-                                      } finally {
-                                        setTimeout(() => setSubmitMessage(""), 3000)
+                                    {payment.status?.charAt(0).toUpperCase() + payment.status?.slice(1)}
+                                  </Badge>
+
+                                  <div className="flex gap-2">
+                                    <Dialog
+                                      open={editDialogStates[payment.customer_payment_id] || false}
+                                      onOpenChange={(open) =>
+                                        setEditDialogStates((prev) => ({
+                                          ...prev,
+                                          [payment.customer_payment_id]: open,
+                                        }))
                                       }
-                                    }}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
+                                    >
+                                      <DialogTrigger asChild>
+                                        <Button variant="outline" size="sm">
+                                          <Edit className="h-4 w-4" />
+                                        </Button>
+                                      </DialogTrigger>
+                                      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                                        <DialogHeader>
+                                          <DialogTitle>Edit Payment</DialogTitle>
+                                          <DialogDescription>
+                                            Update payment information for {getCustomerName()}
+                                          </DialogDescription>
+                                        </DialogHeader>
+                                        <PaymentEditForm
+                                          payment={payment}
+                                          onSave={(updatedPayment) => {
+                                            handleEditPayment(
+                                              payment.customer_id,
+                                              payment.customer_payment_id,
+                                              updatedPayment
+                                            );
+                                            setEditDialogStates((prev) => ({
+                                              ...prev,
+                                              [payment.customer_payment_id]: false,
+                                            }));
+                                          }}
+                                          onCancel={() => {
+                                            setEditDialogStates((prev) => ({
+                                              ...prev,
+                                              [payment.customer_payment_id]: false,
+                                            }));
+                                          }}
+                                        />
+                                      </DialogContent>
+                                    </Dialog>
+
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={async () => {
+                                        // Add confirmation dialog
+                                        if (!window.confirm(`Are you sure you want to delete payment ${payment.customer_payment_id}?`)) {
+                                          return;
+                                        }
+
+                                        try {
+                                          const response = await fetch(
+                                            `http://localhost:8000/api/v1/customer/payment/delete/${payment.customer_payment_id}`,
+                                            {
+                                              method: "DELETE",
+                                              headers: {
+                                                "Content-Type": "application/json",
+                                              },
+                                              credentials: "include",
+                                            }
+                                          );
+                                          const data = await response.json();
+                                          if (data.statusCode === 200) {
+                                            await fetchPayments();
+                                            setSubmitMessage("Payment deleted successfully!");
+                                          } else {
+                                            setSubmitMessage(data.message || "Error deleting payment");
+                                          }
+                                        } catch (error) {
+                                          console.error("Delete error:", error);
+                                          setSubmitMessage("Error deleting payment");
+                                        } finally {
+                                          setTimeout(() => setSubmitMessage(""), 3000);
+                                        }
+                                      }}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                            <div className="grid grid-cols-5 gap-6 mb-4">
-                              <div>
-                                <p className="text-sm text-gray-600 mb-1">Payment Amount</p>
-                                <p className="text-lg font-semibold text-blue-600">
-                                  {payment.currency === "INR" ? "₹" : payment.currency + " "}
-                                  {payment.payment_amount_in_customer_currency?.toLocaleString() || "N/A"}
-                                </p>
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-4">
+                                <div>
+                                  <p className="text-sm text-gray-600 mb-1">Payment Amount</p>
+                                  <p className="text-lg font-semibold text-blue-600">
+                                    {payment.currency === "INR" ? "₹" : `${payment.currency} `}
+                                    {formatAmount(payment.payment_amount_in_customer_currency)}
+                                  </p>
+                                </div>
+
+                                <div>
+                                  <p className="text-sm text-gray-600 mb-1">Amount (INR)</p>
+                                  <p className="text-lg font-semibold text-green-600">
+                                    ₹ {formatAmount(payment.payment_amount_in_inr)}
+                                  </p>
+                                </div>
+
+                                <div>
+                                  <p className="text-sm text-gray-600 mb-1">Paid Amount</p>
+                                  <p className="text-lg font-semibold text-purple-600">
+                                    {payment.currency === "INR" ? "₹" : `${payment.currency} `}
+                                    {formatAmount(payment.paid_amount)}
+                                  </p>
+                                </div>
+
+                                <div>
+                                  <p className="text-sm text-gray-600 mb-1">Outstanding Amount</p>
+                                  <p className={`text-lg font-semibold ${outstandingAmount > 0 ? 'text-red-600' : 'text-gray-400'}`}>
+                                    {payment.currency === "INR" ? "₹" : `${payment.currency} `}
+                                    {outstandingAmount.toLocaleString("en-IN")}
+                                  </p>
+                                </div>
+
+                                <div>
+                                  <p className="text-sm text-gray-600 mb-1">Due Date</p>
+                                  <p className={`text-lg font-medium ${
+                                    payment.due_date && new Date(payment.due_date) < new Date() && payment.status?.toLowerCase() !== 'completed'
+                                      ? 'text-red-600' 
+                                      : 'text-gray-900'
+                                  }`}>
+                                    {payment.due_date
+                                      ? new Date(payment.due_date).toLocaleDateString("en-IN", {
+                                          day: "2-digit",
+                                          month: "long",
+                                          year: "numeric",
+                                        })
+                                      : "N/A"}
+                                  </p>
+                                </div>
                               </div>
-                              <div>
-                                <p className="text-sm text-gray-600 mb-1">Amount (INR)</p>
-                                <p className="text-lg font-semibold text-green-600">
-                                  ₹ {payment.payment_amount_in_inr?.toLocaleString() || "N/A"}
-                                </p>
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                                <div>
+                                  <p className="text-sm text-gray-600 mb-1">Payment Method</p>
+                                  <p className="text-lg font-medium text-gray-900">
+                                    {payment.payment_method || "N/A"}
+                                  </p>
+                                </div>
+
+                                <div>
+                                  <p className="text-sm text-gray-600 mb-1">Credit Days</p>
+                                  <p className="text-lg font-medium text-gray-900">
+                                    {payment.credit_days !== undefined ? `${payment.credit_days} days` : "N/A"}
+                                  </p>
+                                </div>
                               </div>
-                              <div>
-                                <p className="text-sm text-gray-600 mb-1">Outstanding Amount</p>
-                                <p className="text-lg font-semibold text-red-600">
-                                  {payment.currency === "INR" ? "₹" : payment.currency + " "}
-                                  {payment.outstanding_amount?.toLocaleString() || "N/A"}
-                                </p>
+
+                              {payment.currency !== "INR" && (
+                                <div className="mb-4">
+                                  <p className="text-sm text-gray-600 mb-1">Exchange Rate</p>
+                                  <p className="text-gray-900">
+                                    1 {payment.currency} = ₹ {formatAmount(payment.exchange_rate)}
+                                  </p>
+                                </div>
+                              )}
+
+                              {payment.purpose && (
+                                <div className="mb-4">
+                                  <p className="text-sm text-gray-600 mb-1">Purpose</p>
+                                  <p className="text-gray-900">{payment.purpose}</p>
+                                </div>
+                              )}
+
+                              {payment.notes && (
+                                <div>
+                                  <p className="text-sm text-gray-600 mb-1">Notes</p>
+                                  <p className="text-gray-900">{payment.notes}</p>
+                                </div>
+                              )}
+
+                              {/* Status indicator at bottom */}
+                              <div className="mt-4 pt-4 border-t border-gray-100">
+                                <div className="flex justify-between text-xs text-gray-500">
+                                  <span>
+                                    {payment.status?.toLowerCase() === 'completed' 
+                                      ? '✓ Payment completed' 
+                                      : payment.status?.toLowerCase() === 'pending'
+                                      ? '⏳ Payment pending'
+                                      : payment.status?.toLowerCase() === 'overdue'
+                                      ? '⚠️ Payment overdue'
+                                      : `Status: ${payment.status}`
+                                    }
+                                  </span>
+                                  <span>
+                                    Last updated: {new Date(payment.updatedAt).toLocaleString("en-IN")}
+                                  </span>
+                                </div>
                               </div>
-                              <div>
-                                <p className="text-sm text-gray-600 mb-1">Due Date</p>
-                                <p className="text-lg font-medium text-gray-900">{payment.due_date || "N/A"}</p>
-                              </div>
-                              <div>
-                                <p className="text-sm text-gray-600 mb-1">Payment Method</p>
-                                <p className="text-lg font-medium text-gray-900">{payment.payment_method || "N/A"}</p>
-                              </div>
-                            </div>
-                            {payment.purpose && (
-                              <div className="mb-4">
-                                <p className="text-sm text-gray-600 mb-1">Purpose</p>
-                                <p className="text-gray-900">{payment.purpose}</p>
-                              </div>
-                            )}
-                            {payment.notes && (
-                              <div>
-                                <p className="text-sm text-gray-600 mb-1">Notes</p>
-                                <p className="text-gray-900">{payment.notes}</p>
-                              </div>
-                            )}
-                          </CardContent>
-                        </Card>
-                      ))
+                            </CardContent>
+                          </Card>
+                        );
+                      })
                     )}
                   </div>
                 </CardContent>

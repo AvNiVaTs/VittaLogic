@@ -1,9 +1,9 @@
-import {VendorPayment} from "../models/vendorPayment.model.js"
-import {Vendor} from "../models/vendor.model.js"
-import {asyncHandler} from "../utils/asyncHandler.js"
-import {ApiErr} from "../utils/ApiError.js"
-import {ApiResponse} from "../utils/ApiResponse.js"
-import {getNextSequence} from "../utils/getNextSequence.js"
+import { Vendor } from "../models/vendor.model.js"
+import { VendorPayment } from "../models/vendorPayment.model.js"
+import { ApiErr } from "../utils/ApiError.js"
+import { ApiResponse } from "../utils/ApiResponse.js"
+import { asyncHandler } from "../utils/asyncHandler.js"
+import { getNextSequence } from "../utils/getNextSequence.js"
 
 const toNumber = (decimal) => parseFloat(decimal?.toString() || 0)
 
@@ -65,28 +65,27 @@ const createVendorPayment = asyncHandler(async (req, res) => {
 })
 
 const getAllVendorPayments = asyncHandler(async (req, res) => {
-    const payments = await VendorPayment.find().sort({ createdAt: -1 });
+  const payments = await VendorPayment.find().sort({ createdAt: -1 }).lean(); // 👈 lean added
 
-    const enrichedPayments = await Promise.all(
-        payments.map(async (payment) => {
-            const vendor = await Vendor.findOne(
-                { vendor_id: payment.vendor_id },
-                "vendor_id company_Name"
-            );
+  const enrichedPayments = await Promise.all(
+    payments.map(async (payment) => {
+      const vendor = await Vendor.findOne(
+        { vendor_id: payment.vendor_id },
+        "vendor_id company_Name"
+      ).lean(); // 👈 lean added here too
 
-            return {
-                ...payment.toObject(),
-                vendorDetails: vendor || null
-            };
-        })
-    );
+      return {
+        ...payment,
+        vendorDetails: vendor || null
+      };
+    })
+  );
 
-    return res
-        .status(200)
-        .json(
-            new ApiResponse(200, enrichedPayments, "Vendor payments fetched")
-        );
-})
+  return res
+    .status(200)
+    .json(new ApiResponse(200, enrichedPayments, "Vendor payments fetched"));
+});
+
 
 const getVendorPaymentById = asyncHandler(async (req, res) => {
     const { id } = req.params;
@@ -219,11 +218,6 @@ const getVendorsForDropDown = asyncHandler(async (req, res) => {
 })
 
 export {
-    createVendorPayment,
-    getAllVendorPayments,
-    getVendorPaymentById,
-    updateVendorPayment,
-    deleteVendorPayment,
-    searchVendorPayment,
-    getVendorsForDropDown
+    createVendorPayment, deleteVendorPayment, getAllVendorPayments,
+    getVendorPaymentById, getVendorsForDropDown, searchVendorPayment, updateVendorPayment
 }

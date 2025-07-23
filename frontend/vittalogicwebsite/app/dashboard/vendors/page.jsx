@@ -32,6 +32,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 
+// Enhanced utility function to convert Decimal128 objects to strings recursively
+const formatMongoData = (data) => {
+  if (!data) return data;
+  if (Array.isArray(data)) {
+    return data.map((item) => formatMongoData(item));
+  }
+  if (typeof data === "object" && data !== null) {
+    if (data.$numberDecimal) {
+      return data.toString(); // Convert Decimal128 to string
+    }
+    const formatted = {};
+    for (const key in data) {
+      formatted[key] = formatMongoData(data[key]); // Recursively process nested fields
+    }
+    return formatted;
+  }
+  return data;
+};
+
 const employee = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("loggedInEmployee")) : null
 const LOGGED_IN_EMPLOYEE_ID = employee?.employeeId || null
 const TOKEN = typeof window !== "undefined" ? localStorage.getItem("token") : null
@@ -133,7 +152,7 @@ export default function VendorsPage() {
       })
       if (!response.ok) throw new Error("Failed to fetch vendors")
       const data = await response.json()
-      setVendors(data.data)
+      setVendors(formatMongoData(data.data))
     } catch (error) {
       console.error("Error fetching vendors:", error)
       setSuccessMessage("Failed to fetch vendors")
@@ -153,7 +172,7 @@ export default function VendorsPage() {
       })
       if (!response.ok) throw new Error("Failed to fetch payments")
       const data = await response.json()
-      setPayments(data.data)
+      setPayments(formatMongoData(data.data))
     } catch (error) {
       console.error("Error fetching payments:", error)
       setSuccessMessage("Failed to fetch payments")
@@ -270,7 +289,7 @@ export default function VendorsPage() {
         throw new Error(errorData.message || "Failed to add vendor")
       }
       const data = await response.json()
-      setVendors((prev) => [...prev, data.data])
+      setVendors((prev) => [...prev, formatMongoData(data.data)])
       setVendorForm({
         vendorId: "",
         companyName: "",
@@ -338,7 +357,7 @@ export default function VendorsPage() {
         throw new Error(errorData.message || "Failed to create payment")
       }
       const data = await response.json()
-      setPayments((prev) => [...prev, data.data])
+      setPayments((prev) => [...prev, formatMongoData(data.data)])
       setPaymentForm({
         paymentId: "",
         vendorId: "",
@@ -409,7 +428,7 @@ export default function VendorsPage() {
       const data = await response.json()
       setVendors((prev) =>
         prev.map((vendor) =>
-          vendor.vendor_id === editVendorForm.vendor_id ? data.data : vendor
+          vendor.vendor_id === editVendorForm.vendor_id ? formatMongoData(data.data) : vendor
         )
       )
       setEditVendorDialog(false)
@@ -468,7 +487,7 @@ export default function VendorsPage() {
       const data = await response.json()
       setPayments((prev) =>
         prev.map((payment) =>
-          payment.payment_id === editPaymentForm.payment_id ? data.data : payment
+          payment.payment_id === editPaymentForm.payment_id ? formatMongoData(data.data) : payment
         )
       )
       setEditPaymentDialog(false)
@@ -542,25 +561,19 @@ export default function VendorsPage() {
     return matchesSearch && matchesType
   })
 
-const filteredPayments = payments.filter((payment) => {
-  const searchTerm = paymentSearchTerm?.toLowerCase?.() || "";
-
-  const companyName = payment?.vendor_id?.company_Name?.toLowerCase?.() || "";
-  const paymentId = payment?.payment_id?.toLowerCase?.() || "";
-  const vendorId = payment?.vendor_id?._id?.toLowerCase?.() || ""; // fallback if you want to search by vendor's _id
-
-  const matchesSearch =
-    companyName.includes(searchTerm) ||
-    paymentId.includes(searchTerm) ||
-    vendorId.includes(searchTerm);
-
-  const matchesStatus =
-    paymentStatusFilter === "All" || payment.status === paymentStatusFilter;
-
-  return matchesSearch && matchesStatus;
-});
-
-
+  const filteredPayments = payments.filter((payment) => {
+    const searchTerm = paymentSearchTerm?.toLowerCase?.() || "";
+    const companyName = payment?.vendor_id?.company_Name?.toLowerCase?.() || "";
+    const paymentId = payment?.payment_id?.toLowerCase?.() || "";
+    const vendorId = payment?.vendor_id?._id?.toLowerCase?.() || "";
+    const matchesSearch =
+      companyName.includes(searchTerm) ||
+      paymentId.includes(searchTerm) ||
+      vendorId.includes(searchTerm);
+    const matchesStatus =
+      paymentStatusFilter === "All" || payment.status === paymentStatusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   const tabs = [
     { id: "add-vendor", label: "Add Vendor", icon: Plus },
@@ -1239,10 +1252,13 @@ const filteredPayments = payments.filter((payment) => {
                     <Banknote className="h-5 w-5 mr-2" />
                     Payment Records
                   </CardTitle>
-                  <CardDescription>View and manage all vendor payment records</CardDescription>
+                  <CardDescription>
+                    View and manage all vendor payment records
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
+                    {/* Search and Filter */}
                     <div className="flex flex-col sm:flex-row gap-4">
                       <div className="flex items-center space-x-2 flex-1">
                         <Search className="h-4 w-4 text-gray-400" />
@@ -1270,77 +1286,116 @@ const filteredPayments = payments.filter((payment) => {
                       </div>
                     </div>
 
+                    {/* Payment Cards */}
                     <div className="grid gap-4">
-                      {filteredPayments.map((payment) => (
-                        <Card key={payment.payment_id} className="border-l-4 border-l-green-500">
-                          <CardContent className="p-6">
-                            <div className="flex justify-between items-start mb-4">
-                              <div>
-                                <h3 className="text-lg font-semibold">{payment.vendor_id.company_Name}</h3>
-                                <p className="text-sm text-gray-600">Payment ID: {payment.payment_id}</p>
-                                <p className="text-sm text-gray-600">Vendor ID: {payment.vendor_id.vendor_id}</p>
-                                <p className="text-sm text-gray-600">Created By: {payment.createdBy}</p>
-                                <p className="text-sm text-gray-600">Updated By: {payment.updatedBy}</p>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <Badge
-                                  variant={
-                                    payment.status === "Completed"
-                                      ? "default"
-                                      : payment.status === "Pending"
+                      {filteredPayments.map((payment) => {
+                        // Calculate amounts properly
+                        const purchaseAmount = Number(payment.payment_amount_in_indian_currency?.$numberDecimal || 0);
+                        const paidAmount = Number(payment.paid_amount?.$numberDecimal || 0);
+                        const outstandingAmount = purchaseAmount - paidAmount;
+                        const vendorCurrencyAmount = Number(payment.payment_amount_in_vendor_currency?.$numberDecimal || 0);
+                        const exchangeRate = Number(payment.exchangeRate?.$numberDecimal || 0);
+
+                        return (
+                          <Card key={payment.payment_id} className="border-l-4 border-l-green-500">
+                            <CardContent className="p-6">
+                              <div className="flex justify-between items-start mb-4">
+                                <div>
+                                  <h3 className="text-lg font-semibold">
+                                    {payment.vendorDetails?.company_Name || 'Unknown Company'}
+                                  </h3>
+                                  <p className="text-sm text-gray-600">Payment ID: {payment.payment_id}</p>
+                                  <p className="text-sm text-gray-600">Vendor ID: {payment.vendor_id}</p>
+                                  <p className="text-sm text-gray-600">Created By: {payment.createdBy}</p>
+                                  <p className="text-sm text-gray-600">Updated By: {payment.updatedBy}</p>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <Badge
+                                    variant={
+                                      payment.status === "Completed"
+                                        ? "default"
+                                        : payment.status === "Pending"
                                         ? "secondary"
                                         : payment.status === "Failed"
-                                          ? "destructive"
-                                          : "outline"
-                                  }
-                                >
-                                  {payment.status}
-                                </Badge>
-                                <Button size="sm" variant="outline" onClick={() => handleEditPayment(payment)}>
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleDeletePayment(payment.payment_id)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                        ? "destructive"
+                                        : "outline"
+                                    }
+                                  >
+                                    {payment.status}
+                                  </Badge>
+                                  <Button size="sm" variant="outline" onClick={() => handleEditPayment(payment)}>
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleDeletePayment(payment.payment_id)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
                               </div>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                              <div className="space-y-1">
-                                <p className="text-sm font-medium text-gray-500">Purchase Amount</p>
-                                <p className="text-lg font-semibold text-blue-600">₹{payment.payment_amount_in_indian_currency}</p>
+
+                              {/* Payment Details */}
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                                <div className="space-y-1">
+                                  <p className="text-sm font-medium text-gray-500">Purchase Amount</p>
+                                  <p className="text-lg font-semibold text-blue-600">
+                                    ₹{purchaseAmount.toFixed(2)}
+                                  </p>
+                                </div>
+                                <div className="space-y-1">
+                                  <p className="text-sm font-medium text-gray-500">Paid Amount</p>
+                                  <p className="text-lg font-semibold text-green-600">
+                                    ₹{paidAmount.toFixed(2)}
+                                  </p>
+                                </div>
+                                <div className="space-y-1">
+                                  <p className="text-sm font-medium text-gray-500">Outstanding Amount</p>
+                                  <p className={`text-lg font-semibold ${outstandingAmount > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                    ₹{outstandingAmount.toFixed(2)}
+                                  </p>
+                                </div>
+                                <div className="space-y-1">
+                                  <p className="text-sm font-medium text-gray-500">Due Date</p>
+                                  <p className="text-sm">
+                                    {new Date(payment.due_date).toLocaleDateString()}
+                                  </p>
+                                </div>
+                                <div className="space-y-1">
+                                  <p className="text-sm font-medium text-gray-500">Payment Method</p>
+                                  <p className="text-sm">{payment.payment_method}</p>
+                                </div>
                               </div>
-                              <div className="space-y-1">
-                                <p className="text-sm font-medium text-gray-500">Paid Amount</p>
-                                <p className="text-lg font-semibold text-green-600">₹0</p>
-                              </div>
-                              <div className="space-y-1">
-                                <p className="text-sm font-medium text-gray-500">Outstanding Amount</p>
-                                <p className="text-lg font-semibold text-red-600">₹{payment.payment_amount_in_indian_currency}</p>
-                              </div>
-                              <div className="space-y-1">
-                                <p className="text-sm font-medium text-gray-500">Due Date</p>
-                                <p className="text-sm">{payment.due_date}</p>
-                              </div>
-                              <div className="space-y-1">
-                                <p className="text-sm font-medium text-gray-500">Payment Method</p>
-                                <p className="text-sm">{payment.payment_method}</p>
-                              </div>
-                            </div>
-                            {payment.purpose && (
-                              <div className="mt-4">
-                                <p className="text-sm font-medium text-gray-500">Purpose</p>
-                                <p className="text-sm">{payment.purpose}</p>
-                              </div>
-                            )}
-                          </CardContent>
-                        </Card>
-                      ))}
+
+                              {/* Optional Fields */}
+                              {payment.purpose && (
+                                <div className="mt-4">
+                                  <p className="text-sm font-medium text-gray-500">Purpose</p>
+                                  <p className="text-sm">{payment.purpose}</p>
+                                </div>
+                              )}
+                              {payment.payment_amount_in_vendor_currency && (
+                                <div className="mt-4">
+                                  <p className="text-sm font-medium text-gray-500">Amount in Vendor Currency</p>
+                                  <p className="text-sm">
+                                    {payment.currency} {vendorCurrencyAmount.toFixed(2)}
+                                  </p>
+                                </div>
+                              )}
+                              {payment.exchangeRate && (
+                                <div className="mt-4">
+                                  <p className="text-sm font-medium text-gray-500">Exchange Rate</p>
+                                  <p className="text-sm">{exchangeRate.toFixed(2)}</p>
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
                     </div>
 
+                    {/* No Results */}
                     {filteredPayments.length === 0 && (
                       <div className="text-center py-8 text-gray-500">
                         No payment records found matching your search criteria.
@@ -1350,6 +1405,7 @@ const filteredPayments = payments.filter((payment) => {
                 </CardContent>
               </Card>
             )}
+
           </div>
         </div>
       </div>
@@ -1676,6 +1732,30 @@ const filteredPayments = payments.filter((payment) => {
               <div className="space-y-2">
                 <Label>Vendor Name</Label>
                 <Input value={editPaymentForm.vendorName || ""} className="bg-gray-50" readOnly />
+              </div>
+              <div className="space-y-2">
+                <Label>Amount in Vendor Currency</Label>
+                <Input
+                  value={editPaymentForm.payment_amount_in_vendor_currency || "0.00"}
+                  className="bg-gray-50"
+                  readOnly
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Exchange Rate</Label>
+                <Input
+                  value={editPaymentForm.exchangeRate || "0.00"}
+                  className="bg-gray-50"
+                  readOnly
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Amount in INR</Label>
+                <Input
+                  value={editPaymentForm.payment_amount_in_indian_currency || "0.00"}
+                  className="bg-gray-50"
+                  readOnly
+                />
               </div>
               <div className="space-y-2">
                 <Label>Created By</Label>

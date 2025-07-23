@@ -4,6 +4,7 @@ const DECIMAL_TYPE = mongoose.Schema.Types.Decimal128;
 
 const ACCOUNT_TYPES = [
   "Asset", 
+  "Cash",
   "Liability", 
   "Equity",
   "Income", 

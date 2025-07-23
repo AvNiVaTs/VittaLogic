@@ -1,23 +1,24 @@
 import { Router } from "express"
 import {
-    registerEmployee,
+    assignPermissions,
+    changeCurrPassword,
+    deleteEmp,
+    getAllEmployees,
+    getDepartmentsForDropdown,
     loginEmp,
     logoutEmp,
     refreshAccessToken,
-    changeCurrPassword,
-    updatedEmpDetails,
-    deleteEmp,
-    assignPermissions,
-    getAllEmployees,
+    registerEmployee,
     searchEmpDept,
-    getDepartmentsForDropdown
+    updatedEmpDetails
 } from "../controllers/employee.controller.js"
 import {
+    getAllEmployeeSalary,
     getDepartmentDropdown,
-    getRolesByDepartment,
-    getEmployeesByDepartmentAndRole,
     getEligibleEmpForSalary,
+    getEmployeesByDepartmentAndRole,
     getEmpSalaryDetails,
+    getRolesByDepartment,
     registerSalary,
     searchSalaryByEmpName,
     updateSalaryDetails
@@ -52,5 +53,6 @@ router.route("/salary/eligible").get(getEligibleEmpForSalary)
 router.route("/salary/dept-dropdown").get(getDepartmentDropdown)
 router.route("/salary/dept-role-dropdown").get(getRolesByDepartment)
 router.route("/salary/emp-role-dropdown").get(getEmployeesByDepartmentAndRole)
+router.route("/salary/getAllSal").get(getAllEmployeeSalary)
 
 export default router
