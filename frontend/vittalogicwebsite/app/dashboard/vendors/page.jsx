@@ -1333,12 +1333,13 @@ const fetchPayments = async () => {
                               <div className="flex justify-between items-start mb-4">
                                 <div>
                                   <h3 className="text-lg font-semibold">
-                                    {payment.vendorDetails?.company_Name || 'Unknown Company'}
+                                    {payment.vendorName || 'Unknown Company'}
                                   </h3>
-                                  <p className="text-sm text-gray-600">Payment ID: {payment.payment_id}</p>
-                                  <p className="text-sm text-gray-600">Vendor ID: {payment.vendor_id}</p>
-                                  <p className="text-sm text-gray-600">Created By: {payment.createdBy}</p>
-                                  <p className="text-sm text-gray-600">Updated By: {payment.updatedBy}</p>
+                                    <p>Payment ID: {payment.paymentId}</p>
+                                    <p>Vendor ID: {payment.vendorId}</p>
+                                    <p>Vendor Name: {payment.vendorName}</p>
+                                    <p>Exchange Rate: {payment.exchangeRate?.toFixed(2)}</p>
+
                                 </div>
                                 <div className="flex items-center space-x-2">
                                   <Badge
@@ -1418,7 +1419,7 @@ const fetchPayments = async () => {
                               {payment.exchangeRate && (
                                 <div className="mt-4">
                                   <p className="text-sm font-medium text-gray-500">Exchange Rate</p>
-                                  <p className="text-sm">{exchangeRate.toFixed(2)}</p>
+                                  <p className="text-sm">{payment.exchangeRate?.toFixed(2)}</p>
                                 </div>
                               )}
                             </CardContent>
