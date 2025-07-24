@@ -2615,15 +2615,15 @@ export default function TransactionPage() {
                                 <span className="font-medium text-gray-700">Entered By:</span>
                                 <p>{transaction.enteredBy}</p>
                               </div>
-                              <div>
+                          {/*    <div>
                                 <span className="font-medium text-gray-700">Approved By:</span>
                                 <p>{transaction.approvedBy}</p>
-                              </div>
+                              </div> */}
                             </div>
 
                             <Separator className="my-4" />
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                       { /*    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                               <div>
                                 <span className="font-medium text-gray-700">Debit Account:</span>
                                 <p>{transaction.debitAccount}</p>
@@ -2632,7 +2632,7 @@ export default function TransactionPage() {
                                 <span className="font-medium text-gray-700">Credit Account:</span>
                                 <p>{transaction.creditAccount}</p>
                               </div>
-                            </div>
+                            </div>  */}
 
                             {transaction.narration && (
                               <div className="mt-4">
