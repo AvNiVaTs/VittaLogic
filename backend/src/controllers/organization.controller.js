@@ -44,8 +44,6 @@ const registerOrg = asyncHandler(async (req, res) => {
     // Field validation remains the same
     if ([
         organizationName,
-        panNumber,
-        website,
         email,
         contactNumber,
         gstin,

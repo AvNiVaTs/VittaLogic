@@ -76,10 +76,7 @@ const employeeSchema = new Schema({
     type: String,
     required: true,
     unique: true,
-    validate: {
-      validator: v => /^\+?[1-9]\d{7,14}$/.test(v),
-      message: 'Invalid contact number format. Use international format like +14155552671'
-    }
+    match: /^[0-9+\-() ]{7,20}$/
   },
   password: {
     type: String,
