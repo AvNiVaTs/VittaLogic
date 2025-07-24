@@ -1921,111 +1921,136 @@ function AssetMaintenanceTab() {
 }
 
 // Asset Disposal Tab Component
-const assetService = {
-  // Fetch all assets eligible for disposal
-  async fetchAssets(assetType, assetSubtype) {
-    if (!assetType || !assetSubtype) {
-      console.error("Both assetType and assetSubtype are required");
-      return;
-    }
-
-//    const query = new URLSearchParams({
-//      assetType,
- //     assetSubtype,
- //   }).toString();
-    try {
-      const response = await fetch(
-        `http://localhost:8000/api/v1/asset/eligible-for-disposal?assetType=${assetType}&assetSubtype=${assetSubtype}(
-          assetType
-        )}&assetSubtype=${encodeURIComponent(assetSubtype)}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            // ✅ FIX: Use the correct employee.token variable
-            Authorization: `Bearer ${employee?.token}`,
-          },
-          credentials: "include",
-        }
-      );
-
-      if (!response.ok) {
-        // More descriptive error for debugging
-        const errorData = await response.json().catch(() => ({ message: "Failed to fetch assets" }));
-        throw new Error(errorData.message || "Failed to fetch assets");
-      }
-
-      const data = await response.json();
-      return data.data || [];
-    } catch (error) {
-      console.error("Error fetching assets:", error);
-      toast.error(error.message); // Show error to the user
-      throw error;
-    }
+const staticAssetsForDisposal = [
+  {
+    assetId: "AST-00007-3",
+    assetName: "Laptop",
+    assetType: "IT Equipment",
+    assetSubtype: "Laptop",
+    status: "Active",
+    purchaseCost: 350000,
+    purchaseDate: "2025-07-15T00:00:00Z",
+    vendorId: "VEND-00005",
+    linkedReferenceId: "REF-00002",
+    numberOfAssets: 5,
+    unitCost: 70000,
+    description: "High-performance laptop for development team",
+    documents: null,
+    createdBy: "EMP-00029",
+    updatedBy: "EMP-00029",
+    createdAt: "2025-07-16T12:50:41Z",
+    updatedAt: "2025-07-20T00:22:45Z",
+    assignmentStatus: "Unassigned",
+    assignedDepartment: null,
+    assignedToEmployee: null,
+    maintenanceDetails: {
+      maintenanceId: "MAINT-00008",
+      maintenanceType: "Maintenance Needed",
+      maintenancePeriod: "90 Days",
+      serviceProvider: "ABC Maintenance Co.",
+      serviceStartDate: "2025-07-21T00:00:00Z",
+      serviceEndDate: "2025-07-23T00:00:00Z",
+      serviceNote: "Quarterly preventive maintenance for system checks.",
+      requestType: "Maintenance",
+      requestStatus: "Requested",
+      transactionId: "INT_TXN-00008",
+      maintenanceCost: 30000,
+      createdBy: "EMP-00001",
+      updatedBy: "EMP-00001",
+    },
+    depreciationDetails: {
+      depreciationId: "DEP-00003",
+      depreciationMethod: "Straight Line Method",
+      depreciationStartDate: "2025-07-22T00:00:00Z",
+      salvageValue: 0,
+      usefulLifeYears: 5,
+      annualDepreciation: 70000,
+      currentBookValue: 280000,
+      depreciatedPercentage: 20,
+      notes: "",
+      createdBy: "EMP-00029",
+    },
   },
-
-  // Submit disposal request
-  async submitDisposalRequest(disposalData) {
-    try {
-      const response = await fetch(`http://localhost:8000/api/v1/asset/asset-for-disposal`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          // ✅ FIX: Use the correct employee.token variable
-          Authorization: `Bearer ${employee?.token}`,
-        },
-        body: JSON.stringify({
-          assetId: disposalData.assetId,
-          disposalReason: disposalData.reason,
-          createdBy: LOGGED_IN_EMPLOYEE_ID,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to submit disposal request");
-      }
-
-      const data = await response.json();
-      return data.data;
-    } catch (error) {
-      console.error("Error submitting disposal request:", error);
-      throw error;
-    }
+  {
+    assetId: "AST-00007-4",
+    assetName: "Laptop",
+    assetType: "IT Equipment",
+    assetSubtype: "Laptop",
+    status: "Approved",
+    purchaseCost: 350000,
+    purchaseDate: "2025-07-15T00:00:00Z",
+    vendorId: "VEND-00005",
+    linkedReferenceId: "REF-00002",
+    numberOfAssets: 5,
+    unitCost: 70000,
+    description: "High-performance laptop for development team",
+    documents: null,
+    createdBy: "EMP-00029",
+    updatedBy: "EMP-00029",
+    createdAt: "2025-07-16T12:50:41Z",
+    updatedAt: "2025-07-19T17:49:45Z",
+    assignmentStatus: "Unassigned",
+    assignedDepartment: null,
+    assignedToEmployee: null,
+    maintenanceDetails: {
+      maintenanceId: "MAINT-00007",
+      maintenanceType: "Maintenance Needed",
+      maintenancePeriod: "90 Days",
+      serviceProvider: "ABC Maintenance Co.",
+      serviceStartDate: "2025-07-21T00:00:00Z",
+      serviceEndDate: "2025-07-23T00:00:00Z",
+      serviceNote: "Quarterly preventive maintenance for system checks.",
+      requestType: "Maintenance",
+      requestStatus: "Requested",
+      createdBy: "EMP-00001",
+      updatedBy: "EMP-00001",
+    },
   },
-
-  // Fetch disposed assets details
-  async fetchDisposedAssets() {
-    try {
-      const response = await fetch(`http://localhost:8000/api/v1/asset/update-disposal`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-           // ✅ FIX: Use the correct employee.token variable
-          Authorization: `Bearer ${employee?.token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch disposed assets");
-      }
-
-      const data = await response.json();
-      return data.data || [];
-    } catch (error) {
-      console.error("Error fetching disposed assets:", error);
-      throw error;
-    }
+  {
+    assetId: "AST-00007-5",
+    assetName: "Laptop",
+    assetType: "IT Equipment",
+    assetSubtype: "Laptop",
+    status: "Active",
+    purchaseCost: 350000,
+    purchaseDate: "2025-07-15T00:00:00Z",
+    vendorId: "VEND-00005",
+    linkedReferenceId: "REF-00002",
+    numberOfAssets: 5,
+    unitCost: 70000,
+    description: "High-performance laptop for development team",
+    documents: null,
+    createdBy: "EMP-00001",
+    updatedBy: "EMP-00001",
+    createdAt: "2025-07-16T12:50:41Z",
+    updatedAt: "2025-07-19T09:56:11Z",
+    assignmentStatus: "Unassigned",
+    assignedDepartment: null,
+    assignedToEmployee: null,
+    depreciationDetails: {
+      depreciationId: "DEP-00001",
+      depreciationMethod: "Sum-of-the-Years Digits Method",
+      depreciationStartDate: "2025-01-01T00:00:00Z",
+      salvageValue: 0,
+      usefulLifeYears: 5,
+      annualDepreciation: 13725.49,
+      currentBookValue: 336274.51,
+      depreciatedPercentage: 3.92,
+      notes: "",
+      createdBy: "EMP-00029",
+    },
   },
-};
-
+];
 function AssetDisposalTab({
-  assets,
   disposalForm,
   setDisposalForm,
   handleDisposalSubmit,
   currentUserId,
   getAssetSubtypes,
 }) {
+  // Initialize state with staticAssetsForDisposal
+  const [assets] = useState(staticAssetsForDisposal);
+
   return (
     <Card>
       <CardHeader>
@@ -2054,13 +2079,7 @@ function AssetDisposalTab({
               <Select
                 value={disposalForm.assetType}
                 onValueChange={(value) => {
-                  console.log("✅ assetType changed to", value); // ADD THIS
-                  setDisposalForm((prev) => ({
-                    ...prev,
-                    assetType: value,
-                    assetSubtype: "",
-                    assetId: "",
-                  }));
+                  setDisposalForm((prev) => ({ ...prev, assetType: value, assetSubtype: "", assetId: "" }));
                 }}
               >
                 <SelectTrigger>
@@ -2083,14 +2102,8 @@ function AssetDisposalTab({
               <Label htmlFor="disposal-asset-subtype">Asset Subtype</Label>
               <Select
                 value={disposalForm.assetSubtype}
-                onValueChange={(value) => {
-                  console.log("✅ assetSubtype changed to", value); // ADD THIS
-                  setDisposalForm((prev) => ({
-                    ...prev,
-                    assetSubtype: value,
-                    assetId: "",
-                  }));
-                }}
+                onValueChange={(value) => setDisposalForm((prev) => ({ ...prev, assetSubtype: value }))}
+                disabled={!disposalForm.assetType}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select asset subtype" />
@@ -2111,17 +2124,24 @@ function AssetDisposalTab({
               <Select
                 value={disposalForm.assetId}
                 onValueChange={(value) => setDisposalForm((prev) => ({ ...prev, assetId: value }))}
-                disabled={!disposalForm.assetType || !disposalForm.assetSubtype}
+                disabled={!disposalForm.assetType}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select asset" />
                 </SelectTrigger>
                 <SelectContent>
-                  {assets.map((asset) => (
-                    <SelectItem key={asset.value} value={asset.value}>
-                      {asset.label}
-                    </SelectItem>
-                  ))}
+                  {assets
+                    .filter(
+                      (asset) =>
+                        asset.assetType === disposalForm.assetType &&
+                        (!disposalForm.assetSubtype || asset.assetSubtype === disposalForm.assetSubtype) &&
+                        asset.status === "Active", // Only show active assets for disposal
+                    )
+                    .map((asset) => (
+                      <SelectItem key={asset.assetId} value={asset.assetId}>
+                        {asset.assetId} - {asset.assetName}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
@@ -2149,8 +2169,95 @@ function AssetDisposalTab({
   );
 }
 
+// Disposal List Tab Component
+// const staticDisposalAssets = [
+//   {
+//     assetId: "AST-00007-1",
+//     assetName: "Laptop",
+//     assetType: "IT Equipment",
+//     assetSubtype: "Laptop",
+//     status: "disposed", // Updated to reflect disposal completion
+//     purchaseCost: 350000,
+//     purchaseDate: "2025-07-15T00:00:00Z",
+//     vendorId: "VEND-00005",
+//     linkedReferenceId: "REF-00002",
+//     numberOfAssets: 5,
+//     unitCost: 70000,
+//     description: "High-performance laptop for development team",
+//     documents: null,
+//     createdBy: "EMP-00029",
+//     updatedBy: "EMP-00029",
+//     createdAt: "2025-07-16T12:50:41Z",
+//     updatedAt: "2025-07-20T00:23:02Z",
+//     assignmentStatus: "Assigned",
+//     assignedDepartment: "DEPT-00001",
+//     assignedToEmployee: "EMP-00035",
+//     disposalDetails: {
+//       disposalId: "DISP-00003",
+//       disposalReason: "I want to dispose it cause yeh budha ho gya hai",
+//       requestDate: "2025-07-16T18:38:44Z",
+//       createdBy: "EMP-00001",
+//       saleAmount: 20000,
+//       saleDate: "2025-07-10T00:00:00Z",
+//       transactionId: "SALE_TXN-00007",
+//     },
+//   },
+//   {
+//     assetId: "AST-00007-2",
+//     assetName: "Laptop",
+//     assetType: "IT Equipment",
+//     assetSubtype: "Laptop",
+//     status: "awaiting_disposal", // Updated to reflect pending disposal
+//     purchaseCost: 350000,
+//     purchaseDate: "2025-07-15T00:00:00Z",
+//     vendorId: "VEND-00005",
+//     linkedReferenceId: "REF-00002",
+//     numberOfAssets: 5,
+//     unitCost: 70000,
+//     description: "High-performance laptop for development team",
+//     documents: null,
+//     createdBy: "EMP-00029",
+//     updatedBy: "EMP-00029",
+//     createdAt: "2025-07-16T12:50:41Z",
+//     updatedAt: "2025-07-20T00:22:04Z",
+//     assignmentStatus: "Assigned",
+//     assignedDepartment: "DEPT-00001",
+//     assignedToEmployee: "EMP-00031",
+//     disposalDetails: {
+//       disposalId: "DISP-00004",
+//       disposalReason: "I want to dispose it cause yeh budha ho gya hai",
+//       requestDate: "2025-07-17T09:23:16Z",
+//       createdBy: "EMP-00001",
+//     },
+//   },
+// ];
+
+const staticDisposalRequests = [
+  {
+    id: "DISP-00003",
+    assetId: "AST-00007-1",
+    assetType: "IT Equipment",
+    assetSubtype: "Laptop",
+    reason: "I want to dispose it cause yeh budha ho gya hai",
+    status: "disposed",
+    createdBy: "EMP-00001",
+    createdAt: "2025-07-16T18:38:44Z",
+    transactionId: "SALE_TXN-00007",
+    saleAmount: 20000,
+    saleDate: "2025-07-10T00:00:00Z",
+  },
+  {
+    id: "DISP-00004",
+    assetId: "AST-00007-2",
+    assetType: "IT Equipment",
+    assetSubtype: "Laptop",
+    reason: "I want to dispose it cause yeh budha ho gya hai",
+    status: "awaiting_disposal",
+    createdBy: "EMP-00001",
+    createdAt: "2025-07-17T09:23:16Z",
+  },
+];
 function DisposalListTab({
-  disposedAssets,
   disposalSearch,
   setDisposalSearch,
   disposalStatusFilter,
@@ -2159,14 +2266,18 @@ function DisposalListTab({
   setDisposalTypeFilter,
   getStatusBadge,
 }) {
-  const filteredDisposalAssets = disposedAssets.filter((asset) => {
+  // Initialize states with static data
+  const [assets] = useState(staticDisposalAssets);
+  const [disposalRequests] = useState(staticDisposalRequests);
+
+  const filteredDisposalAssets = assets.filter((asset) => {
+    if (asset.status !== "awaiting_disposal" && asset.status !== "disposed") return false;
+
     const matchesSearch =
       asset.assetName.toLowerCase().includes(disposalSearch.toLowerCase()) ||
       asset.assetId.toLowerCase().includes(disposalSearch.toLowerCase());
 
-    const matchesStatus = disposalStatusFilter === "all" ||
-      (disposalStatusFilter === "awaiting_disposal" && asset.status === "Awaiting Disposal") ||
-      (disposalStatusFilter === "disposed" && asset.status === "Disposed");
+    const matchesStatus = disposalStatusFilter === "all" || asset.status === disposalStatusFilter;
 
     const matchesType = disposalTypeFilter === "all" || asset.assetType === disposalTypeFilter;
 
@@ -2183,6 +2294,7 @@ function DisposalListTab({
         <CardDescription>Assets awaiting disposal or already disposed</CardDescription>
       </CardHeader>
       <CardContent>
+        {/* Search and Filters */}
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
           <div className="flex-1">
             <div className="relative">
@@ -2223,51 +2335,57 @@ function DisposalListTab({
           </Select>
         </div>
 
+        {/* Disposal Assets Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredDisposalAssets.map((asset) => (
-            <Card
-              key={asset.assetId}
-              className={`hover:shadow-md transition-shadow border-l-4 ${
-                asset.status === "Disposed" ? "border-l-red-500" : "border-l-orange-500"
-              }`}
-            >
-              <CardHeader className="pb-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="text-lg">{asset.assetName}</CardTitle>
-                    <p className="text-sm text-gray-500">{asset.assetId}</p>
+          {filteredDisposalAssets.map((asset) => {
+            const disposalRequest = disposalRequests.find((r) => r.assetId === asset.assetId);
+            return (
+              <Card
+                key={asset.assetId}
+                className={`hover:shadow-md transition-shadow border-l-4 ${
+                  asset.status === "disposed" ? "border-l-red-500" : "border-l-orange-500"
+                }`}
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle className="text-lg">{asset.assetName}</CardTitle>
+                      <p className="text-sm text-gray-500">{asset.assetId}</p>
+                    </div>
+                    {getStatusBadge(asset.status)}
                   </div>
-                  {getStatusBadge(asset.status)}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Type:</span>
-                  <Badge variant="outline">{asset.assetType}</Badge>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Purchase Cost:</span>
-                  <span className="font-semibold">₹{asset.purchaseCost.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Created By:</span>
-                  <span className="text-sm font-mono">{asset.createdBy}</span>
-                </div>
-                <div className="mt-3">
-                  <span className="text-sm font-medium text-gray-600">Disposal Reason:</span>
-                  <p className="text-sm bg-gray-50 p-2 rounded mt-1">{asset.disposalReason}</p>
-                </div>
-                {asset.status === "Disposed" && asset.saleAmount && (
+                </CardHeader>
+                <CardContent className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Sale Amount:</span>
-                    <span className="font-semibold text-green-600">
-                      ₹{asset.saleAmount.toLocaleString()}
-                    </span>
+                    <span className="text-sm text-gray-600">Type:</span>
+                    <Badge variant="outline">{asset.assetType}</Badge>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Purchase Cost:</span>
+                    <span className="font-semibold">₹{asset.purchaseCost.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Created By:</span>
+                    <span className="text-sm font-mono">{disposalRequest?.createdBy}</span>
+                  </div>
+                  {disposalRequest && (
+                    <div className="mt-3">
+                      <span className="text-sm font-medium text-gray-600">Disposal Reason:</span>
+                      <p className="text-sm bg-gray-50 p-2 rounded mt-1">{disposalRequest.reason}</p>
+                    </div>
+                  )}
+                  {asset.status === "disposed" && disposalRequest?.saleAmount && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Sale Amount:</span>
+                      <span className="font-semibold text-green-600">
+                        ₹{disposalRequest.saleAmount.toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
         {filteredDisposalAssets.length === 0 && (
@@ -2279,165 +2397,6 @@ function DisposalListTab({
         )}
       </CardContent>
     </Card>
-  );
-}
-
-function AssetDisposalManager() {
-  const [assets, setAssets] = useState([]);
-  const [disposedAssets, setDisposedAssets] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  const [disposalForm, setDisposalForm] = useState({
-    assetType: "",
-    assetSubtype: "",
-    assetId: "",
-    reason: "",
-  });
-
-  const [disposalSearch, setDisposalSearch] = useState("");
-  const [disposalStatusFilter, setDisposalStatusFilter] = useState("all");
-  const [disposalTypeFilter, setDisposalTypeFilter] = useState("all");
-
-  // Load eligible assets when assetType and assetSubtype are selected
-  useEffect(() => {
-    // 1. Move the data-loading logic *inside* the useEffect hook.
-    // This ensures it always has access to the latest state and avoids dependency issues.
-    const loadAssets = async () => {
-      console.log("🔄 Triggering asset fetch for:", disposalForm.assetType, disposalForm.assetSubtype);
-      try {
-        setLoading(true);
-        setError(null); // Clear previous errors
-        const assetsData = await assetService.fetchAssets(disposalForm.assetType, disposalForm.assetSubtype);
-        console.log("✅ Raw assets from API:", assetsData);
-
-        const dropdownAssets = assetsData.map((asset) => ({
-          value: asset.assetId,
-          label: `${asset.assetId} - ${asset.assetName}`,
-        }));
-
-        console.log("📦 Transformed dropdown assets:", dropdownAssets);
-        setAssets(dropdownAssets);
-      } catch (err) {
-        console.error("❌ Failed to load assets:", err);
-        setError("Failed to load assets");
-        setAssets([]); // Clear assets on error
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    // 2. Check if both values are present before fetching.
-    if (disposalForm.assetType && disposalForm.assetSubtype) {
-      loadAssets();
-    } else {
-      // 3. Clear the assets list if the conditions are not met.
-      // This prevents showing stale data (e.g., old asset IDs after changing the asset type).
-      setAssets([]);
-    }
-  }, [disposalForm.assetType, disposalForm.assetSubtype]);
-
-  const loadDisposedAssets = async () => {
-    try {
-      const disposedData = await assetService.fetchDisposedAssets();
-      console.log("📁 Disposed assets:", disposedData);
-      setDisposedAssets(disposedData);
-    } catch (err) {
-      console.error("❌ Failed to load disposed assets:", err);
-      setError("Failed to load disposed assets");
-    }
-  };
-
-  const handleDisposalSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!disposalForm.assetId || !disposalForm.reason) {
-      alert("Please fill in all required fields");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      await assetService.submitDisposalRequest(disposalForm);
-
-      alert("✅ Disposal request submitted successfully!");
-
-      // Reset the form AFTER the submission is successful
-      setDisposalForm({
-        assetType: "",
-        assetSubtype: "",
-        assetId: "",
-        reason: "",
-      });
-
-      // Refresh the list of disposed assets
-      await loadDisposedAssets();
-
-    } catch (err) {
-      console.error("❌ Failed to submit disposal request:", err);
-      setError("Failed to submit disposal request");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getAssetSubtypes = (type) => {
-    const subtypes = {
-      "IT Equipment": ["Laptop", "Desktop", "Server", "Network Equipment"],
-      "Office Furniture": ["Desk", "Chair", "Cabinet", "Table"],
-      "Machinery": ["Manufacturing Equipment", "Tools", "Heavy Machinery"],
-      "Vehicles": ["Car", "Truck", "Motorcycle", "Commercial Vehicle"],
-      "Real Estate": ["Office Space", "Warehouse", "Land"],
-      "Electrical Appliances": ["Air Conditioner", "Refrigerator", "Printer"],
-      "Software Licenses": ["Operating System", "Application Software", "Antivirus"],
-      "Miscellaneous": ["Other Equipment", "Supplies"],
-    };
-    return subtypes[type] || [];
-  };
-
-  const getStatusBadge = (status) => {
-    const statusConfig = {
-      Active: { variant: "default", text: "Active" },
-      "Awaiting Disposal": { variant: "secondary", text: "Awaiting Disposal" },
-      Disposed: { variant: "destructive", text: "Disposed" },
-    };
-
-    const config = statusConfig[status] || { variant: "default", text: status };
-    return <Badge variant={config.variant}>{config.text}</Badge>;
-  };
-
-  if (loading) return <div className="text-center p-4">Loading...</div>;
-  if (error) return <div className="text-center p-4 text-red-500">{error}</div>;
-
-  return (
-    <div className="space-y-6">
-      {/* Debug UI */}
-      <div className="bg-yellow-50 p-2 rounded text-xs text-gray-700 border border-yellow-300">
-        <p>Debug: assetType = <strong>{disposalForm.assetType}</strong></p>
-        <p>Debug: assetSubtype = <strong>{disposalForm.assetSubtype}</strong></p>
-        <p>Debug: assetId = <strong>{disposalForm.assetId}</strong></p>
-      </div>
-
-      <AssetDisposalTab
-        assets={assets}
-        disposalForm={disposalForm}
-        setDisposalForm={setDisposalForm}
-        handleDisposalSubmit={handleDisposalSubmit}
-        currentUserId={LOGGED_IN_EMPLOYEE_ID}
-        getAssetSubtypes={getAssetSubtypes}
-      />
-
-      <DisposalListTab
-        disposedAssets={disposedAssets}
-        disposalSearch={disposalSearch}
-        setDisposalSearch={setDisposalSearch}
-        disposalStatusFilter={disposalStatusFilter}
-        setDisposalStatusFilter={setDisposalStatusFilter}
-        disposalTypeFilter={disposalTypeFilter}
-        setDisposalTypeFilter={setDisposalTypeFilter}
-        getStatusBadge={getStatusBadge}
-      />
-    </div>
   );
 }
 
@@ -3701,7 +3660,7 @@ const getAssignmentStatusBadge = (asset) => {
 
               <TabsContent value="disposal">
                 <AssetDisposalTab
-                  assets={assets}
+                  // assets={assets}
                   disposalForm={disposalForm}
                   setDisposalForm={setDisposalForm}
                   handleDisposalSubmit={handleDisposalSubmit}
@@ -3712,8 +3671,6 @@ const getAssignmentStatusBadge = (asset) => {
 
               <TabsContent value="disposal-list">
                 <DisposalListTab
-                  assets={assets}
-                  disposalRequests={disposalRequests}
                   disposalSearch={disposalSearch}
                   setDisposalSearch={setDisposalSearch}
                   disposalStatusFilter={disposalStatusFilter}
@@ -3721,6 +3678,15 @@ const getAssignmentStatusBadge = (asset) => {
                   disposalTypeFilter={disposalTypeFilter}
                   setDisposalTypeFilter={setDisposalTypeFilter}
                   getStatusBadge={getStatusBadge}
+                  // assets={assets}
+                  // disposalRequests={disposalRequests}
+                  // disposalSearch={disposalSearch}
+                  // setDisposalSearch={setDisposalSearch}
+                  // disposalStatusFilter={disposalStatusFilter}
+                  // setDisposalStatusFilter={setDisposalStatusFilter}
+                  // disposalTypeFilter={disposalTypeFilter}
+                  // setDisposalTypeFilter={setDisposalTypeFilter}
+                  // getStatusBadge={getStatusBadge}
                 />
               </TabsContent>
 
