@@ -161,25 +161,56 @@ export default function VendorsPage() {
     }
   }
 
-  const fetchPayments = async () => {
-    try {
-      const response = await fetch("http://localhost:8000/api/v1/vendor/payment", {
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${employee?.token || ""}`,
-        },
-        credentials: "include",
-      })
-      if (!response.ok) throw new Error("Failed to fetch payments")
-      const data = await response.json()
-      setPayments(formatMongoData(data.data))
-    } catch (error) {
-      console.error("Error fetching payments:", error)
-      setSuccessMessage("Failed to fetch payments")
-      setShowSuccessMessage(true)
-      setTimeout(() => setShowSuccessMessage(false), 3000)
-    }
+const fetchPayments = async () => {
+  try {
+    const response = await fetch("http://localhost:8000/api/v1/vendor/payment/", {
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${employee?.token || ""}`,
+      },
+      credentials: "include",
+    })
+
+    if (!response.ok) throw new Error("Failed to fetch payments")
+
+    const data = await response.json()
+
+    const normalizedPayments = data.data.map(payment => {
+      const parseDecimal = (val) => parseFloat(val?.$numberDecimal || "0")
+
+      return {
+        id: payment._id,
+        paymentId: payment.payment_id,
+        vendorId: payment.vendor_id,
+        vendorName: payment.vendorDetails?.company_Name || "Unknown Vendor",
+
+        currency: payment.currency,
+        paymentAmountVendor: parseDecimal(payment.payment_amount_in_vendor_currency),
+        exchangeRate: parseDecimal(payment.exchangeRate),
+        paymentAmountINR: parseDecimal(payment.payment_amount_in_indian_currency),
+        paidAmount: parseDecimal(payment.paid_amount),
+
+        dueDate: new Date(payment.due_date).toISOString().split("T")[0],
+        purpose: payment.purpose,
+        paymentMethod: payment.payment_method,
+        status: payment.status,
+
+        createdBy: payment.createdBy,
+        updatedBy: payment.updatedBy,
+        createdAt: new Date(payment.createdAt).toISOString().split("T")[0],
+        updatedAt: new Date(payment.updatedAt).toISOString().split("T")[0],
+      }
+    })
+
+    setPayments(normalizedPayments)
+  } catch (error) {
+    console.error("Error fetching payments:", error)
+    setSuccessMessage("Failed to fetch payments")
+    setShowSuccessMessage(true)
+    setTimeout(() => setShowSuccessMessage(false), 3000)
   }
+}
+
 
   const getSelectedVendor = () => {
     return vendors.find((v) => v.vendor_id === paymentForm.vendorId)
@@ -1341,32 +1372,33 @@ export default function VendorsPage() {
                                 <div className="space-y-1">
                                   <p className="text-sm font-medium text-gray-500">Purchase Amount</p>
                                   <p className="text-lg font-semibold text-blue-600">
-                                    ₹{purchaseAmount.toFixed(2)}
+                                    ₹{payment.paymentAmountINR?.toFixed(2) ?? "0.00"}
                                   </p>
                                 </div>
                                 <div className="space-y-1">
                                   <p className="text-sm font-medium text-gray-500">Paid Amount</p>
                                   <p className="text-lg font-semibold text-green-600">
-                                    ₹{paidAmount.toFixed(2)}
+                                    ₹{payment.paidAmount?.toFixed(2) ?? "0.00"}
                                   </p>
                                 </div>
                                 <div className="space-y-1">
                                   <p className="text-sm font-medium text-gray-500">Outstanding Amount</p>
-                                  <p className={`text-lg font-semibold ${outstandingAmount > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                    ₹{outstandingAmount.toFixed(2)}
+                                  <p className={`text-lg font-semibold ${payment.paymentAmountINR - payment.paidAmount > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                    ₹{(payment.paymentAmountINR - payment.paidAmount)?.toFixed(2) ?? "0.00"}
                                   </p>
                                 </div>
                                 <div className="space-y-1">
                                   <p className="text-sm font-medium text-gray-500">Due Date</p>
                                   <p className="text-sm">
-                                    {new Date(payment.due_date).toLocaleDateString()}
+                                    {payment.dueDate ? new Date(payment.dueDate).toLocaleDateString("en-IN") : "N/A"}
                                   </p>
                                 </div>
                                 <div className="space-y-1">
                                   <p className="text-sm font-medium text-gray-500">Payment Method</p>
-                                  <p className="text-sm">{payment.payment_method}</p>
+                                  <p className="text-sm">{payment.paymentMethod || "N/A"}</p>
                                 </div>
                               </div>
+
 
                               {/* Optional Fields */}
                               {payment.purpose && (
