@@ -210,7 +210,8 @@ const saleTransactionSchema = new Schema({
   }
 }, { timestamps: true });
 
-export const SaleTransaction = mongoose.model("SaleTransaction", saleTransactionSchema);
+export const SaleTransaction = mongoose.models.SaleTransaction || mongoose.model("SaleTransaction", saleTransactionSchema);
+
 
 
 // import mongoose, { Schema } from "mongoose";

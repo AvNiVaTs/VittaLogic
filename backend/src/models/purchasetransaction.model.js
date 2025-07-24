@@ -200,4 +200,4 @@ const purchaseTransactionSchema = new Schema({
   }
 }, { timestamps: true });
 
-export const PurchaseTransaction = mongoose.model("PurchaseTransaction", purchaseTransactionSchema);
+export const PurchaseTransaction = mongoose.models.PurchaseTransaction || mongoose.model("PurchaseTransaction", purchaseTransactionSchema);
